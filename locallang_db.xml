@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<T3locallang>
+	<meta type="array">
+		<type>database</type>
+		<description>Language labels for database tables/fields belonging to extension 'pp_forum'</description>
+	</meta>
+	<data type="array">
+		<languageKey index="default" type="array">
+			<label index="tx_ppforum_forums">Forums</label>
+			<label index="tx_ppforum_forums.title">Forum title</label>
+			<label index="tx_ppforum_forums.description">Forum description</label>
+			<label index="tx_ppforum_forums.parent">Parent forum</label>
+			<label index="tx_ppforum_forums.notopic">Disable topics in this forum</label>
+			<label index="tx_ppforum_forums.notoolbar">Disable forum's toolbar</label>
+			<!-- Access fields -->
+			<label index="tx_ppforum_forums.readaccess">Read access (empty means everybody !)</label>
+			<label index="tx_ppforum_forums.readaccess_mode">Read access mode</label>
+			<label index="tx_ppforum_forums.writeaccess">Write access (empty means everybody !)</label>
+			<label index="tx_ppforum_forums.writeaccess_mode">Write access mode</label>
+			<label index="tx_ppforum_forums.guardaccess">Guard access (can edit and delete every message/topic)</label>
+			<label index="tx_ppforum_forums.guardaccess_mode">Guard access mode</label>
+			<label index="tx_ppforum_forums.adminaccess">Admin access</label>
+			<label index="tx_ppforum_forums.adminaccess_mode">Admin access mode</label>
+			<!-- Restrict fields -->
+			<label index="tx_ppforum_forums.newtopic">Allow posting new topics to :</label>
+			<label index="tx_ppforum_forums.edit_restrict">Allow editing messages/topics to :</label>
+			<label index="tx_ppforum_forums.delete_restrict">Allow deleting messages/topics to :</label>
+			<!-- List-Item labels -->
+			<label index="tx_ppforum_forums.basic.mode.inherit">Herited</label>
+			<label index="tx_ppforum_forums.basic.mode.erase">Redefine</label>
+			<label index="tx_ppforum_forums.basic.restrict.inherit">Herited</label>
+			<label index="tx_ppforum_forums.basic.restrict.everybody">Everybody</label>
+			<label index="tx_ppforum_forums.basic.restrict.guard">Guard &amp; Admin</label>
+			<label index="tx_ppforum_forums.basic.restrict.admin">Admin only</label>
+
+			<label index="tx_ppforum_topics">Topics</label>
+			<label index="tx_ppforum_topics.author">Author</label>
+			<label index="tx_ppforum_topics.title">Title</label>
+			<label index="tx_ppforum_topics.message">Message</label>
+			<label index="tx_ppforum_topics.forum">Forum</label>
+			<label index="tx_ppforum_topics.pinned">Pinned</label>
+			<label index="tx_ppforum_topics.status">State</label>
+			<label index="tx_ppforum_topics.status.normal">Normal</label>
+			<label index="tx_ppforum_topics.status.hidden">Hidden</label>
+			<label index="tx_ppforum_topics.status.closed">Closed</label>
+			<label index="tx_ppforum_messages">Messages</label>
+			<label index="tx_ppforum_messages.author">Author</label>
+			<label index="tx_ppforum_messages.message">Message</label>
+			<label index="tx_ppforum_messages.topic">Topic</label>
+			<label index="tx_ppforum_messages.nosmileys">Disable smileys</label>
+			<label index="tt_content.list_type_pi1">Popy Forum</label>
+
+			<label index="flexform.tab_config">Configuration</label>
+			<label index="flexform.tab_config.savepage">Save page</label>
+			<label index="flexform.tab_config.mergeSearchResults">Merge search results</label>
+			<label index="flexform.tab_display">Display</label>
+			<label index="flexform.tab_display.maxMessages">Max amount of topic's messages to display</label>
+			<label index="flexform.tab_display.maxTopics">Max amount of topic to display</label>
+			<label index="flexform.tab_display.pageRange">Max amount of page-links to display</label>
+			<label index="flexform.tab_display.csstemplate">Css template</label>
+			<label index="flexform.tab_display.csstemplate.macmade">Macmade's Template</label>
+			<label index="flexform.tab_display.lightMode_def">Enable light mode by default</label>
+			<label index="flexform.tab_display.printStats">Print performance statistics</label>
+
+			<label index="flexform.tab_image">Avatars</label>
+			<label index="flexform.tab_image.maxWidth">Avatar image max width</label>
+			<label index="flexform.tab_image.maxHeight">Avatar image max height</label>
+			<label index="flexform.tab_image.resizeImg">Save a resized image</label>
+			<label index="flexform.tab_image.allowedExt">Allowed image ext</label>
+		</languageKey>
+		<languageKey index="fr" type="array">
+			<label index="tx_ppforum_forums">Forums</label>
+			<label index="tx_ppforum_forums.title">Titre du forum</label>
+			<label index="tx_ppforum_forums.description">Description du forum</label>
+			<label index="tx_ppforum_forums.parent">Forum parent</label>
+			<label index="tx_ppforum_forums.notopic">Désactiver les topics dans ce forum</label>
+			<label index="tx_ppforum_forums.notoolbar">Désactiver la barre d'outil pour ce forum</label>
+			<!-- Access fields -->
+			<label index="tx_ppforum_forums.readaccess">Accès en lecture (vide= tout le monde)</label>
+			<label index="tx_ppforum_forums.readaccess_mode">Mode d'accès en lecture</label>
+			<label index="tx_ppforum_forums.writeaccess">Accès en écriture (vide= tout le monde)</label>
+			<label index="tx_ppforum_forums.writeaccess_mode">Mode d'accès en écriture</label>
+			<label index="tx_ppforum_forums.guardaccess">Modérateurs (peuvent éditer et supprimer les messages/topics)</label>
+			<label index="tx_ppforum_forums.guardaccess_mode">Mode de définition des Modérateurs</label>
+			<label index="tx_ppforum_forums.adminaccess">Administrateurs</label>
+			<label index="tx_ppforum_forums.adminaccess_mode">Mode de définition des Administrateurs</label>
+			<!-- Restrict fields -->
+			<label index="tx_ppforum_forums.newtopic_restrict">Autoriser la création de nouveaux messages à :</label>
+			<label index="tx_ppforum_forums.edit_restrict">Autoriser l'édition de messages/topics à :</label>
+			<label index="tx_ppforum_forums.delete_restrict">Autoriser la suppression de messages/topics à :</label>
+			<!-- List-Item labels -->
+			<label index="tx_ppforum_forums.basic.mode.inherit">Hérité</label>
+			<label index="tx_ppforum_forums.basic.mode.erase">Redéfinir</label>
+			<label index="tx_ppforum_forums.basic.restrict.inherit">Hérité</label>
+			<label index="tx_ppforum_forums.basic.restrict.everybody">Tout le monde</label>
+			<label index="tx_ppforum_forums.basic.restrict.guard">Modérateurs &amp; Administrateurs</label>
+			<label index="tx_ppforum_forums.basic.restrict.admin">Administrateurs seulement</label>
+
+			<label index="tx_ppforum_topics">Sujets</label>
+			<label index="tx_ppforum_topics.author">Auteur</label>
+			<label index="tx_ppforum_topics.title">Titre</label>
+			<label index="tx_ppforum_topics.message">Message</label>
+			<label index="tx_ppforum_topics.forum">Forum</label>
+			<label index="tx_ppforum_topics.pinned">Epinglé</label>
+			<label index="tx_ppforum_topics.status">Status</label>
+			<label index="tx_ppforum_topics.status.normal">Normal</label>
+			<label index="tx_ppforum_topics.status.hidden">Caché</label>
+			<label index="tx_ppforum_topics.status.closed">Fermé</label>
+			<label index="tx_ppforum_messages">Messages</label>
+			<label index="tx_ppforum_messages.author">Auteur</label>
+			<label index="tx_ppforum_messages.message">Message</label>
+			<label index="tx_ppforum_messages.topic">Sujet</label>
+			<label index="tx_ppforum_messages.nosmileys">Désactiver les smileys</label>
+			<label index="tt_content.list_type_pi1">Popy Forum</label>
+
+			<label index="flexform.tab_config">Configuration</label>
+			<label index="flexform.tab_config.savepage">Page de sauvegarde</label>
+			<label index="flexform.tab_config.mergeSearchResults">Regrouper les résultats de la recherche</label>
+			<label index="flexform.tab_display">Affichage</label>
+			<label index="flexform.tab_display.maxMessages">Nombre maximum de messages à afficher</label>
+			<label index="flexform.tab_display.maxTopics">Nombre maximum de topics à afficher</label>
+			<label index="flexform.tab_display.pageRange">Nombre maximum de "pages" à afficher</label>
+			<label index="flexform.tab_display.lightMode_def">Mode "light" activé par défaut</label>
+			<label index="flexform.tab_display.csstemplate">Gabarit Css</label>
+			<label index="flexform.tab_display.csstemplate.macmade">Gabarit Macmade</label>
+			<label index="flexform.tab_display.printStats">Affiche les statistiques</label>
+
+			<label index="flexform.tab_image">Avatars</label>
+			<label index="flexform.tab_image.maxWidth">Largeur maximale de l'avatar (en pixels)</label>
+			<label index="flexform.tab_image.maxHeight">Hauteur maximale de l'avatar (en pixels)</label>
+			<label index="flexform.tab_image.resizeImg">Enregistrer l'image redimensionnée</label>
+			<label index="flexform.tab_image.allowedExt">Extensions autorisées</label>
+		</languageKey>
+	</data>
+</T3locallang>

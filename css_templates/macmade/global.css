@@ -1,0 +1,158 @@
+/********************************************
+ * Css template for the pp_forum extension
+ * @see http://typo3.org
+ *
+ * @author: macmade
+ * @co-author: popy
+ *
+ * Global part
+ */
+
+
+
+/*** BEGIN Base */
+	.tx-ppforum-pi1 {
+		width: 100%;
+	}
+
+	/* Rootline */
+	.tx-ppforum-pi1 .rootline ul {
+		overflow: auto;
+		_height: 100%;
+		list-style: none;
+		margin: 0px;
+		padding: 5px;
+	}
+	.tx-ppforum-pi1 .rootline li {
+		float: left;
+		margin-right: 4px;
+	}
+
+	.tx-ppforum-pi1 img {
+		border: none;
+	}
+/*** END Base */
+
+/*** BEGIN general styles */
+
+	.tx-ppforum-pi1 form {
+		margin: 0px;
+	}
+
+	.tx-ppforum-pi1 a {
+		color: rgb(190, 0, 39);
+		text-decoration: none;
+	}
+	.tx-ppforum-pi1 a:hover {
+		text-decoration: underline;
+	}
+
+	.tx-ppforum-pi1 .forum-title {
+		font-size: 2em;
+		margin: 0.5em 0px;
+		font-weight: bold;
+	}
+
+	.tx-ppforum-pi1 table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+/* END general style */
+
+
+/* BEGIN Rows layout */
+	.tx-ppforum-pi1 .row, .tx-ppforum-pi1 .row-alt {
+		overflow: hidden;
+		_height: 100%;
+	}
+
+	.tx-ppforum-pi1 .left-col {
+		float: left;
+		width: 200px;
+	}
+
+	/* Fixing heights */
+	.tx-ppforum-pi1 .right-col, .tx-ppforum-pi1 .left-col {
+		overflow: hidden;
+		padding: 5px 5px 32767px 5px;
+		margin-bottom: -32762px;
+	}
+	
+	.tx-ppforum-pi1 .right-col {
+		_margin-left: 200px;
+	}
+/* END Rows layout */
+
+/*** BEGIN Buttons */
+	.tx-ppforum-pi1 .button {
+		float: left;
+		width: auto;
+	}
+
+	.tx-ppforum-pi1 .button {
+		padding: 2px 4px 3px 3px;
+		margin: 2px;
+		background: #dddddd;
+		border: 2px outset buttonface;
+		cursor: pointer;
+		_border-style: solid;
+		_border-color: #f9f8f3 #828177 #828177 #f9f8f3;
+	}
+
+	.tx-ppforum-pi1 .button:hover:active {
+		padding: 3px 3px 2px 4px;
+		border: 2px inset buttonface;
+	}
+/*** END Buttons */
+
+
+/*** BEGIN Tools part */
+	.tx-ppforum-pi1 .toolbar {
+		background-color: #dddddd;
+		padding: 2px;
+		overflow: hidden;
+		_height: 100%;
+	}
+/*** END Tools part */
+
+/*** BEGIN Hidden tools part */
+
+.tx-ppforum-pi1 .hiddentools .single-tool {
+	margin-top: 10px;
+}
+
+.tx-ppforum-pi1 .hiddentools .single-tool .tool-title {
+	background: #cccccc;
+	color: black;
+	font-weight: bold;
+	padding: 5px;
+}
+
+/*** END Hidden tools part */
+
+/*** BEGIN Stats part */
+.tx-ppforum-pi1 .stats {
+	margin-top: 10px;
+	padding: 5px;
+	background: #EEEEEE;
+}
+/*** END Stats part */
+
+
+/* User bar */
+.tx-ppforum-pi1 .user-bar div {
+	padding: 5px;
+}
+
+/* Author style */
+.tx-ppforum-pi1 .author {
+	font-weight: bold;
+	color: rgb(255, 135, 0);
+	text-decoration: underline;
+}
+
+/* browsers */
+.tx-ppforum-pi1 .browser {
+	padding: 5px;
+}
+

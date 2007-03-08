@@ -1,0 +1,8 @@
+plugin.tx_ppforum_pi1 { 
+
+  # cat=plugin.tx_ppfetasks_pi1/links; type=int+; label= Default Starting Point : Used when no starting point is found in the flexform
+  startingPoint = 0
+
+  # cat=plugin.tx_ppfetasks_pi1/links; type=int+; label= Default Save page : Used when no save page is found in the flexform
+  savepage = 0
+}

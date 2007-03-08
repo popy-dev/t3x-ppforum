@@ -1,0 +1,50 @@
+/********************************************
+ * Css template for the pp_forum extension
+ * @see http://typo3.org
+ *
+ * @author: macmade
+ * @co-author: popy
+ *
+ * Forums part
+ */
+.tx-ppforum-pi1 .forum-description {
+	margin-top: -0.5em;
+	padding: 0px 5px 5px 5px;
+	font-style: italic;
+}
+
+.tx-ppforum-pi1 .child-list-title {
+	padding: 5px;
+	background-color: #FF8700;
+	color: #FFFFFF;
+}
+
+.tx-ppforum-pi1 .child-list-head {
+	background-color: #FFBD73;
+	color: #FFFFFF;
+}
+
+.tx-ppforum-pi1 .child-list table td {
+	padding: 5px;
+}
+
+.tx-ppforum-pi1 .child-list .single-col {
+	border-left: solid 1px #FFFFFF;
+}
+.tx-ppforum-pi1 .child-list table .row-alt {
+	border-bottom: solid 1px #FFFFFF;
+	background-color: #DDDDDD;
+}
+.tx-ppforum-pi1 .child-list table .row {
+	border-bottom: solid 1px #FFFFFF;
+	background-color: #EEEEEE;
+}
+
+.tx-ppforum-pi1 .child-list table .row {
+	border-bottom: solid 1px #FFFFFF;
+	background-color: #EEEEEE;
+}
+
+.tx-ppforum-pi1 .topic-list {
+	margin-bottom: 10px;
+}
