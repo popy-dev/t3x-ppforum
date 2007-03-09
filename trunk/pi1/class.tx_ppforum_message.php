@@ -711,19 +711,19 @@ class tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function _display_toolsRow() {
+	function _display_toolsRow($conf) {
 		/* Declare */
 		$content='';
-		$mode=$this->parent->conf['cmd.']['div.']['mode'];
+		$mode=$conf['div.']['mode'];
 		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
 		//Loading topic/forum object (checking type because this function is called for topics too !)
 		if (!$this->id) {
 			if ($this->type=='message') {
-				$this->topic=&$this->parent->getTopicObj($this->parent->conf['cmd.']['div.']['topic']);
+				$this->topic=&$this->parent->getTopicObj($conf['div.']['topic']);
 			} else {
-				$this->forum=&$this->parent->getForumObj($this->parent->conf['cmd.']['div.']['forum']);
+				$this->forum=&$this->parent->getForumObj($conf['div.']['forum']);
 			}
 		}
 
