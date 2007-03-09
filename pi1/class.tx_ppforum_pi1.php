@@ -205,12 +205,12 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			}
 			//$theObj->parent=&$this;//Force backref to this
 			if (method_exists($theObj,$method=$this->conf['cmd.']['method'])) {
-				$content.=$theObj->$method(); //Call the specified method
+				$content.=$theObj->$method($this->conf['cmd.']); //Call the specified method
 			}
 			break;
 		case 'self':
 			if (method_exists($this,$method=$this->conf['cmd.']['method'])) {
-				$content.=$this->$method();
+				$content.=$this->$method($this->conf['cmd.']);
 			}
 			break;
 		}
