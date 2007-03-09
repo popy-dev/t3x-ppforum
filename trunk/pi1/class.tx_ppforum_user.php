@@ -203,7 +203,7 @@ class tx_ppforum_user {
 	 * @access public
 	 * @return void 
 	 */
-	function _displaySmallProfile() {
+	function _displaySmallProfile($conf) {
 		$rows=array();
 		$nbMessages=intval(reset(reset(tx_pplib::doCachedQuery(
 			array(

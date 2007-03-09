@@ -801,7 +801,7 @@ class tx_ppforum_forum {
 	 * @access public
 	 * @return string 
 	 */
-	function _displayForumTools() {
+	function _displayForumTools($conf) {
 		/* Declare */
 		$content='';
 		$param=array('forum'=>intval($this->id));

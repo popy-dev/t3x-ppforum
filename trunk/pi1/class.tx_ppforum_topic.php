@@ -711,7 +711,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function _displayTopicTools() {
+	function _displayTopicTools($conf) {
 		/* Declare */
 		$tarr=array();
 		$content='';
