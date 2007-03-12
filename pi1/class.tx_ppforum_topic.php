@@ -340,12 +340,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			if ($data['mode']!='delete') {
 				if (!trim($this->parent->piVars['editpost']['message'])) {
 					$data['errors']['field']['message']='You should enter a message';
-				} else {
-					$data['message']->data['message']=str_replace("\r",'',$this->parent->piVars[$data['message']->datakey]['message']);
 				}
+				$data['message']->mergedData['message']=str_replace("\r",'',$data['message']->mergedData['message']);
 
-				$data['message']->data['nosmileys']=$this->parent->piVars[$data['message']->datakey]['nosmileys'];
-				$data['message']->data['parser']=$this->parent->piVars[$data['message']->datakey]['parser'];
+				/*$data['message']->data['nosmileys']=$this->parent->piVars[$data['message']->datakey]['nosmileys'];
+				$data['message']->data['parser']=$this->parent->piVars[$data['message']->datakey]['parser'];*/
 			}
 
 			//Playing hook list : Allows to fill other fields

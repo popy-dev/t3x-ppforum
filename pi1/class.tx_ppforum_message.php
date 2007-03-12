@@ -173,16 +173,16 @@ class tx_ppforum_message {
 			);
 		
 		//Updating tstamp field
-		$this->data['tstamp']=$GLOBALS['SIM_EXEC_TIME'];
+		$this->mergedData['tstamp']=$GLOBALS['SIM_EXEC_TIME'];
 
 		if ($this->id) {
 			//*** Optimistic update :
 			//Loading old data
-			if ($this->type=='message') {
+			/* ($this->type=='message') {
 				$oldData=$this->parent->getSingleMessage($this->id);
 			} else {
 				$oldData=$this->parent->getSingleTopic($this->id);
-			}
+			}*/
 
 			//This part of code is here only for explaination, everything is in the same row (for memory consumming reasons)
 			/*
@@ -198,8 +198,8 @@ class tx_ppforum_message {
 				$this->tablename,
 				'uid='.$this->id,
 				array_diff_assoc(
-					$this->data,
-					$oldData
+					$this->mergedData,
+					$this->data
 					)
 				);
 
@@ -207,20 +207,21 @@ class tx_ppforum_message {
 		} else {
 			//Initialize some fields
 			if ($this->type=='message') {
-				$this->data['topic']=$this->topic->id;
+				$this->mergedData['topic']=$this->topic->id;
 			} else {
-				$this->data['forum']=$this->forum->id;
+				$this->mergedData['forum']=$this->forum->id;
 			}
-			$this->data['pid']=$this->parent->config['savepage'];
-			$this->data['author']=$this->parent->getCurrentUser();
-			$this->data['crdate']=$GLOBALS['SIM_EXEC_TIME'];
+			$this->mergedData['pid']=$this->parent->config['savepage'];
+			$this->mergedData['author']=$this->parent->getCurrentUser();
+			$this->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
 
 			//Insert db row
-			$result=$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->tablename,$this->data);
+			$result=$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->tablename,$this->mergedData);
 			$this->parent->log('INSERT');
 
 			//Initialize id. Maybe we should load the full row, but for now this will not be usefull
-			$this->id=$this->data['uid']=$GLOBALS['TYPO3_DB']->sql_insert_id();
+			$this->id=$this->mergedData['uid']=$GLOBALS['TYPO3_DB']->sql_insert_id();
+			$this->data=$this->mergedData;
 			$this->isNew=TRUE;
 
 			//Reloading list (may have change because of the new row)
