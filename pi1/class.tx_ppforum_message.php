@@ -100,8 +100,13 @@ class tx_ppforum_message {
 	function mergeData() {
 		if (isset($this->parent->piVars[$this->datakey]) && is_array($this->parent->piVars[$this->datakey])) {
 			$incommingData=$this->parent->piVars[$this->datakey];
-			$isAdmin=$this->forum->userIsAdmin();
-			$isGuard=$this->forum->userIsGuard();
+			if ($this->type=='message') {
+				$isAdmin=$this->topic->forum->userIsAdmin();
+				$isGuard=$this->topic->forum->userIsGuard();
+			} else {
+				$isAdmin=$this->forum->userIsAdmin();
+				$isGuard=$this->forum->userIsGuard();
+			}
 
 			foreach ($this->allowedFields as $key=>$val) {
 				//** Field access check
