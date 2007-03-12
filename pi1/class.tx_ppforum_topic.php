@@ -341,8 +341,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				if (!trim($this->parent->piVars['editpost']['message'])) {
 					$data['errors']['field']['message']='You should enter a message';
 				}
-
-				t3lib_div::debug($data['message']->mergedData, '');
 				$data['message']->mergedData['message']=str_replace("\r",'',$data['message']->mergedData['message']);
 
 				/*$data['message']->data['nosmileys']=$this->parent->piVars[$data['message']->datakey]['nosmileys'];
