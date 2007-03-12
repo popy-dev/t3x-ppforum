@@ -34,7 +34,7 @@ class tx_ppforum_message {
 	var $id=0; //Message uid
 	var $datakey='editpost';  //Used to build forms and to get data in piVars
 	var $type='message'; //Use to dinstinct topics and message object in generic methods
-	var $tablename=''; //Table corresponding to this type
+	var $tablename='tx_ppforum_messages'; //Table corresponding to this type
 	var $isNew=FALSE;
 
 	var $data=array(); //Message/Topic data
@@ -44,8 +44,33 @@ class tx_ppforum_message {
 	var $topic=NULL; //Pointer to parent topic
 	var $parent=NULL; //Pointer to plugin object
 
-	function init($table='messages') {
-		$this->tablename=$this->parent->tables[$table];
+	/**
+	 * List of allowed incomming fields from forms(Other fields will be ignored)
+	 * @access public
+	 * @var array
+	 */
+	var $allowedFields=Array(
+		'message'=>'',
+		'nosmileys'=>'',
+		'parser'=>'',
+		);
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function init() {
+		$null=NULL;
+
+		//Playing hook list
+		$this->parent->st_playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
+			$null,
+			$this
+			);
 	}
 
 	/**
@@ -74,13 +99,39 @@ class tx_ppforum_message {
 	 */
 	function mergeData() {
 		if (isset($this->parent->piVars[$this->datakey]) && is_array($this->parent->piVars[$this->datakey])) {
-			/*foreach (array_keys($this->data) as $key) {
-				if (isset($this->parent->piVars[$this->datakey][$key])) {
-					$this->mergedData[$key]=$this->parent->piVars[$this->datakey][$key];
-				}
-			}*/
+			$incommingData=$this->parent->piVars[$this->datakey];
+			$isAdmin=$this->forum->userIsAdmin();
+			$isGuard=$this->forum->userIsGuard();
 
-			$this->mergedData=array_merge($this->data,$this->parent->piVars[$this->datakey]);
+			foreach ($this->allowedFields as $key=>$val) {
+				//** Field access check
+				$allowed=FALSE;
+				switch ($val){
+				case 'admin': 
+					$allowed=$isAdmin;
+					break;
+				case 'guard': 
+					$allowed=$isGuard;
+					break;
+				default:
+					$allowed=TRUE;
+					break;
+				}
+
+				//** Merging field
+				if (isset($incommingData[$key]) && $allowed) {
+					$this->data[$key]=$incommingData[$key];
+				}
+			}
+
+			//Playing hook list
+			$null=NULL;
+			$this->parent->st_playHooks(
+				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
+				$null,
+				$this
+				);
+
 			//t3lib_div::debug($this->mergedData, '');
 		}
 	}
