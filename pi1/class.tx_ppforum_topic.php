@@ -35,13 +35,24 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	var $processMessage=array(); //Error message storage
 	var $datakey='edit_topic'; //Used to build forms and to get data in piVars
 	var $type='topic'; //Used in generic functions herited from tx_ppforum_message
+	var $tablename='tx_ppforum_topics'; //Table corresponding to this type
 
 	var $forum=NULL; //Pointer on parent forum
 	var $messageList=FALSE;
 
-	function init($table='topics') {
-		parent::init($table);
-	}
+	/**
+	 * List of allowed incomming fields from forms(Other fields will be ignored)
+	 * @access public
+	 * @var array
+	 */
+	var $allowedFields=Array(
+		'title'=>'',
+		'message'=>'',
+		'nosmileys'=>'',
+		'parser'=>'',
+		'pinned'=>'guard',
+		'status'=>'guard',
+		);
 
 	/**
 	 * Loads the topic data from DB
