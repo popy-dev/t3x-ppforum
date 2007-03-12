@@ -125,7 +125,7 @@ class tx_ppforum_message {
 
 				//** Merging field
 				if (isset($incommingData[$key]) && $allowed) {
-					$this->data[$key]=$incommingData[$key];
+					$this->mergedData[$key]=$incommingData[$key];
 				}
 			}
 
@@ -256,7 +256,7 @@ class tx_ppforum_message {
 				return TRUE;
 			} else {
 				//Normal delete
-				$this->data['deleted']=1;
+				$this->mergedData['deleted']=1;
 				if ($forceReload) $this->forceReload['list']=1;
 				return $this->save($forceReload);
 			}
