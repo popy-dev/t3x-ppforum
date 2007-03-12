@@ -154,7 +154,7 @@ class tx_ppforum_smileys {
 	
 		/* Begin */
 		foreach ($this->ressources as $key=>$val) {
-			$list[]='<a href="#" onclick="return ppforum_wrapSelected(\''.htmlspecialchars(addslashes($key)).'\',\'\',false,this,\''.htmlspecialchars(addslashes($datakey)).'\');">'.$val.'</a>';
+			$list[]='<a href="#" onclick="return ppforum_wrapSelected(\''.htmlspecialchars(addslashes($key)).'\',\'\',this,\''.htmlspecialchars(addslashes($datakey)).'\');">'.$val.'</a>';
 		}
 
 		return '<div class="smileys-buttons">'.implode(' ',$list).'</div>';

@@ -66,27 +66,20 @@ function ppforum_getMessageFromToolbar(obj,datakey){
 	return temp;
 }
 
-function ppforum_wrapSelected(starttag,endtag,remain,obj,datakey){
+function ppforum_wrapSelected(starttag,endtag,obj,datakey){
 	var textarea=ppforum_getMessageFromToolbar(obj,datakey);
 
 	var start=textarea.selectionStart;
 
 	if(start==null){
 		//IE, still IE...
-		if(textarea.selRange.text.length){
-			textarea.selRange.text=starttag+textarea.selRange.text+endtag;
-		} else{
-			textarea.selRange.text+=starttag;
-		}
-
+		textarea.selRange.text=starttag+textarea.selRange.text+endtag;
 	} else{
 		var stop=textarea.selectionEnd;
 		var scTop=textarea.scrollTop;
 		text=textarea.value;
 
-		if(start-stop){
-			text=text.substring(0,stop)+endtag+text.substring(stop);
-		}
+		text=text.substring(0,stop)+endtag+text.substring(stop);
 		text=text.substring(0,start)+starttag+text.substring(start);
 
 		textarea.value=text;
