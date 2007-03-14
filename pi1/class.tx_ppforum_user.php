@@ -367,7 +367,7 @@ class tx_ppforum_user {
 				$data['misc']['submit']['right'].=' <a href="'.htmlspecialchars($this->parent->piVars['backUrl']).'">'.$this->parent->pp_getLL('profile.options.back','Return to forum').'</a>';
 			}
 		} else {
-			$obj=$this->parent->getForumObj(-($this->id));
+			$obj=&$this->parent->getForumObj(-($this->id));
 			$data['misc']=$obj->getLink('Test');
 		}
 
@@ -455,7 +455,7 @@ class tx_ppforum_user {
 	 * @return void 
 	 */
 	function displayInboxLink($altId=0) {
-		$obj=$this->parent->getForumObj($altId?-$altId:-$this->id);
+		$obj=&$this->parent->getForumObj($altId?-$altId:-$this->id);
 		return $obj->getTitleLink();
 	}
 

@@ -557,7 +557,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			//Now checking current forum
 			if ($forumId) {
 				//Load forum
-				$forum=$this->getForumObj($forumId);
+				$forum=&$this->getForumObj($forumId);
 
 				if ($forum->id) {
 					//Maybe this forum isn't visible, we need to fall back to the first visible parent
@@ -583,10 +583,13 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			//Check for new topic
 			if ($forumId && !$dataChecked && $this->piVars['edittopic']) {
 				//Load forum
-				$forum=$this->getForumObj($forumId);
+				if (!is_object($forum)) {
+					$forum=&$this->getForumObj($forumId);
+				}
 				
-				$topic=$this->makeInstance('tx_ppforum_topic');
+				$topic=&$this->getTopicObj(0);
 				$topic->forum=&$forum;
+
 				$topic->checkTopicData();
 
 				$topicId=$topic->id;
