@@ -869,8 +869,10 @@ class tx_ppforum_forum {
 	 * @return array 
 	 */
 	function displayNewTopicForm() {
-		$obj=$this->parent->makeInstance('tx_ppforum_topic');
-		$obj->forum=&$this;
+		$obj=&$this->parent->getTopicObj(0);
+		if (!is_object($obj->forum) || $obj->forum->id!=$this->id) {
+			$obj->forum=&$this;
+		}
 		return array(
 			'content'=>'<div class="tool-title">'.$this->parent->pp_getLL('forum.newtopic.title','Open a new Topic',TRUE).'</div>'.$obj->display(),
 			'display'=>(is_array($this->processMessage[$obj->datakey]) && count($this->processMessage[$obj->datakey]))

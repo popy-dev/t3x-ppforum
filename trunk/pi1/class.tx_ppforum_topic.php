@@ -362,7 +362,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					//Saving data for validity check (protection against multi-post)
 					$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/justPosted',$this->parent->piVars['editpost']);
 
-					$this->parent->getMessageObj(0,TRUE);
+					if ($data['mode']=='new') {
+						$this->parent->getMessageObj(0,TRUE);
+					}
 				}
 
 				//Cleaning incomming vars
@@ -482,7 +484,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				}
 
 				$this->mergedData['status']=max(0,min(2,intval($this->mergedData['status'])));
-
 			}
 
 			//Playing hook list : Allows to fill other fields
@@ -497,6 +498,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$this->delete();
 				} else {
 					$this->save();
+
+					if ($data['mode']=='new') {
+						$this->parent->getTopicObj(0,TRUE);
+					}
+					
 					//Saving data for validity check (protection against multi-post)
 					$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/lastTopic',$this->parent->piVars[$this->datakey]);
 				}
@@ -812,10 +818,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function displayReplyForm() {
 		//Build a message object
-		$obj=$this->parent->getMessageObj(0);
+		$obj=&$this->parent->getMessageObj(0);
 
 		//Force the parent topic to this (message functions must it to be set !)
-		$obj->topic=&$this;
+		if (!is_object($obj->topic) || $obj->topic>id!=$this->id) {
+			$obj->topic=&$this;
+		}
 		return array(
 			'content'=>'<div class="tool-title">'.$this->parent->pp_getLL('topic.newpost.title','Reply',TRUE).'</div>'.$obj->display(), //The form
 			'display'=>(is_array($this->processMessage[$obj->datakey]) && count($this->processMessage[$obj->datakey])) //If true, the form will not be hidden
