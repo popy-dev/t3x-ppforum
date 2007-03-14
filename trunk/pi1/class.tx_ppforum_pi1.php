@@ -591,8 +591,11 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 				$topic->forum=&$forum;
 
 				$topic->checkTopicData();
-
+				
 				$topicId=$topic->id;
+
+				// Clearing object cache (because now the topic has an id !)
+				$this->getTopicObj(0,TRUE);
 			}
 
 			unset($topic);
