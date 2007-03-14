@@ -221,12 +221,13 @@ class tx_ppforum_message {
 
 			//Initialize id. Maybe we should load the full row, but for now this will not be usefull
 			$this->id=$this->mergedData['uid']=$GLOBALS['TYPO3_DB']->sql_insert_id();
-			$this->data=$this->mergedData;
 			$this->isNew=TRUE;
 
 			//Reloading list (may have change because of the new row)
 			if ($forceReload) $this->forceReload['list']=1;
 		}
+
+		$this->data=$this->mergedData;
 
 		//Launch the event func
 		if ($this->type=='message') {
