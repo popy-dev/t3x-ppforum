@@ -363,6 +363,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/justPosted',$this->parent->piVars['editpost']);
 
 					if ($data['mode']=='new') {
+						// Clearing object cache (because now the message has an id !)
 						$this->parent->getMessageObj(0,TRUE);
 					}
 				}
@@ -498,10 +499,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$this->delete();
 				} else {
 					$this->save();
-
-					if ($data['mode']=='new') {
-						$this->parent->getTopicObj(0,TRUE);
-					}
 					
 					//Saving data for validity check (protection against multi-post)
 					$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/lastTopic',$this->parent->piVars[$this->datakey]);
