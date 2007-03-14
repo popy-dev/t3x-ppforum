@@ -84,7 +84,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			if ($this->forum->deleteTopic($this->id)) {
 				return TRUE;
 			} else {
-				$this->data['deleted']=1;
+				$this->mergedData['deleted']=1;
 
 				$this->loadMessages();
 
@@ -392,13 +392,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		//If we have no data it's useless to continue
 		if (!is_array($this->parent->piVars[$this->datakey]) || !count($this->parent->piVars[$this->datakey])) return FALSE;
 
-
-		$this->mergeData();
-
 		//If current topic isn't valid AND parent forum too, exit function
 		if (!($this->id || $this->forum->id)) return FALSE;
 
-		//Store errors in forum
+		$this->mergeData();
+
+		//Store errors in forum object
 		$data['errors']=&$this->forum->processMessage[$this->datakey];
 
 		//Checking mode (permissions will be checked later)
@@ -412,7 +411,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Checking data validity
 		if (($data['mode']!='delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/lastTopic')==$this->parent->piVars[$this->datakey])) {
-			$this->parent->piVars[$this->datakey]=array();
+			unset($this->parent->piVars[$this->datakey]);
 			unset($this->parent->piVars['edittopic']);
 			unset($this->parent->piVars['deletetopic']);
 			return FALSE;
@@ -455,6 +454,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (!count($data['errors'])) {
 
 			if ($data['mode']!='delete') {
+				/*
 				if (!trim($this->parent->piVars[$this->datakey]['title'])) {
 					$data['errors']['field']['title']='You should enter a title';
 				} else {
@@ -464,13 +464,25 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$data['errors']['field']['message']='You should enter a message';
 				} else {
 					$this->data['message']=str_replace("\r",'',$this->parent->piVars[$this->datakey]['message']);
-				}				
+				}
 				$this->data['nosmileys']=$this->parent->piVars[$this->datakey]['nosmileys'];
 				$this->data['parser']=$this->parent->piVars[$this->datakey]['parser'];
 				if ($this->forum->userIsGuard()) {
 					$this->data['pinned']=$this->parent->piVars[$this->datakey]['pinned'];
 					$this->data['status']=max(0,min(2,intval($this->parent->piVars[$this->datakey]['status'])));
 				}
+				*/
+
+
+				if (!trim($this->mergedData['title'])) {
+					$data['errors']['field']['title']='You should enter a title';
+				}
+				if (!trim($this->mergedData['message'])) {
+					$data['errors']['field']['message']='You should enter a message';
+				}
+
+				$this->mergedData['status']=max(0,min(2,intval($this->mergedData['status'])));
+
 			}
 
 			//Playing hook list : Allows to fill other fields
