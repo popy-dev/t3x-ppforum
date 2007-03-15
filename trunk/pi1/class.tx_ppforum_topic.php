@@ -217,7 +217,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function getDeleteLink($title='') {
 		if ($this->id) {
-			$addParams=array('deletetopic'=>1,'pointer'=>$this->parent->piVars['pointer']);
+			$addParams=array('deletetopic'=>1,'pointer'=>$this->parent->getVars['pointer']);
 			return $this->getLink($title,$addParams);
 		} else {
 			return '';
@@ -276,15 +276,15 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$data['errors']=&$this->processMessage[$data['message']->datakey];
 
 		//Checking mode (don't check permissions, it wouldbe check later)
-		if (intval($this->parent->piVars['editmessage'])>0) {
+		if (intval($this->parent->getVars['editmessage'])>0) {
 			$data['mode']='edit';
 			unset($data['message']);
-			$data['message']=&$this->parent->getMessageObj($this->parent->piVars['editmessage']);
+			$data['message']=&$this->parent->getMessageObj($this->parent->getVars['editmessage']);
 			$data['message']->mergeData();
-		} elseif (intval($this->parent->piVars['deletemessage'])) {
+		} elseif (intval($this->parent->getVars['deletemessage'])) {
 			$data['mode']='delete';
 			unset($data['message']);
-			$data['message']=&$this->parent->getMessageObj($this->parent->piVars['deletemessage']);
+			$data['message']=&$this->parent->getMessageObj($this->parent->getVars['deletemessage']);
 		} else {
 			//New message : the message object already exists, also it just need a parent topic (current topic)
 			$data['message']->topic=&$this;
@@ -338,7 +338,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (!count($data['errors'])) {
 
 			if ($data['mode']!='delete') {
-				if (!trim($this->parent->piVars['editpost']['message'])) {
+				if (!trim($data['message']->mergedData['message'])) {
 					$data['errors']['field']['message']='You should enter a message';
 				}
 				$data['message']->mergedData['message']=str_replace("\r",'',$data['message']->mergedData['message']);
@@ -370,8 +370,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 				//Cleaning incomming vars
 				$this->parent->piVars[$data['message']->datakey]=array();
-				unset($this->parent->piVars['editmessage']);
-				unset($this->parent->piVars['deletemessage']);
+				unset($this->parent->getVars['editmessage']);
+				unset($this->parent->getVars['deletemessage']);
 			}
 		}
 	}
@@ -406,17 +406,17 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		//Checking mode (permissions will be checked later)
 		if (!$this->id) {
 			//Nothing :)
-		} elseif ($this->parent->piVars['edittopic']) {
+		} elseif ($this->parent->getVars['edittopic']) {
 			$data['mode']='edit';
-		} elseif ($this->parent->piVars['deletetopic']) {
+		} elseif ($this->parent->getVars['deletetopic']) {
 			$data['mode']='delete';
 		}
 
 		//Checking data validity
 		if (($data['mode']!='delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/lastTopic')==$this->parent->piVars[$this->datakey])) {
 			unset($this->parent->piVars[$this->datakey]);
-			unset($this->parent->piVars['edittopic']);
-			unset($this->parent->piVars['deletetopic']);
+			unset($this->parent->getVars['edittopic']);
+			unset($this->parent->getVars['deletetopic']);
 			return FALSE;
 		}
 
@@ -506,8 +506,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 				//Cleaning incomming data
 				$this->parent->piVars[$this->datakey]=array();
-				unset($this->parent->piVars['edittopic']);
-				unset($this->parent->piVars['deletetopic']);
+				unset($this->parent->getVars['edittopic']);
+				unset($this->parent->getVars['deletetopic']);
 			}
 		}
 	}
@@ -533,9 +533,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		if (!intval($this->id)) {
 			$data['mode']='new';
-		} elseif ($this->parent->piVars['edittopic'] && $this->userCanEdit()) {
+		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
 			$data['mode']='edit';
-		} elseif ($this->parent->piVars['deletetopic'] && $this->userCanDelete()) {
+		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
 			$data['mode']='delete';
 		}
 
@@ -545,10 +545,10 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if ($data['mode']!='new') {
 			$this->checkIncommingData();
 
-			if ($this->parent->piVars['clearCache'] && $this->forum->userIsAdmin()) {
+			if ($this->parent->getVars['clearCache'] && $this->forum->userIsAdmin()) {
 				$this->forceReload['forum']=1;
 				$this->event_onUpdateInTopic(FALSE,FALSE);
-				unset($this->parent->piVars['clearCache']);
+				unset($this->parent->getVars['clearCache']);
 			}
 		}
 
@@ -753,10 +753,10 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		if ($this->parent->config['.lightMode']) {
-			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->piVars['lightMode'],'pointer'=>$this->parent->piVars['pointer']));
+			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->getVars['lightMode'],'pointer'=>$this->parent->getVars['pointer']));
 			$data['toolbar']['lightmode-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.$this->parent->pp_getLL('topic.stdMode','Normal Mode',TRUE).'</div>';
 		} else {
-			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->piVars['lightMode'],'pointer'=>$this->parent->piVars['pointer']));
+			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->getVars['lightMode'],'pointer'=>$this->parent->getVars['pointer']));
 			$data['toolbar']['lightmode-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.$this->parent->pp_getLL('topic.lightMode','Light Mode',TRUE).'</div>';
 		}
 
@@ -770,7 +770,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 			$url=$this->getLink(
 				FALSE,
-				array('clearCache'=>1,'pointer'=>$this->parent->piVars['pointer'])
+				array('clearCache'=>1,'pointer'=>$this->parent->getVars['pointer'])
 				);
 			$data['toolbar']['clearcache-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.
 				str_replace(
