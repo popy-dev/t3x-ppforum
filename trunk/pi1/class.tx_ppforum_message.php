@@ -518,7 +518,20 @@ class tx_ppforum_message {
 			}
 		}
 
-		return $content;
+		if ($data['asJs']) {
+			return '
+				<script type="text/javascript">
+					/*<![CDATA[*/
+					<!--
+					// By doing this, old browser with no javascript (and maybe no CSS !) will not display this part
+					//   this is a good thing because this part is useless without javascript !!
+					document.write(\''.addslashes(str_replace(array("\r","\n"),array('',''),$content)).'\');
+					//-->
+					/*]]>*/
+				</script>';
+		} else {
+			return $content;
+		}
 	}
 
 	/**
@@ -605,8 +618,10 @@ class tx_ppforum_message {
 			}
 
 		}
-		$data['right'].='&nbsp;';
+
 		$data['left']['parser-selector'].='</select>&nbsp;';
+		$data['right'].='&nbsp;';
+		$data['asJs']=TRUE;
 
 
 
