@@ -212,7 +212,7 @@ class tx_ppforum_forum {
 			$addParams['forum']=$this->id;
 		}
 		
-		if (!isset($addParams['lightMode'])) $addParams['lightMode']=$this->parent->piVars['lightMode'];
+		if (!isset($addParams['lightMode'])) $addParams['lightMode']=$this->parent->getVars['lightMode'];
 		return $this->parent->pp_linkTP_piVars(
 			$title,
 			$addParams,
@@ -435,9 +435,9 @@ class tx_ppforum_forum {
 		$content.='<div class="top-level-forum">';
 	
 		/* Begin */
-		if ($this->parent->piVars['clearCache'] && $this->userIsAdmin()) {
+		if ($this->parent->getVars['clearCache'] && $this->userIsAdmin()) {
 			$this->event_onUpdateInForum();
-			unset($this->parent->piVars['clearCache']);
+			unset($this->parent->getVars['clearCache']);
 		}
 		$content.=$this->displayHeader();
 		$content.=$this->displayChildList();
@@ -825,7 +825,7 @@ class tx_ppforum_forum {
 
 			$url=$this->getLink(
 				FALSE,
-				array('clearCache'=>1,'pointer'=>$this->parent->piVars['pointer'])
+				array('clearCache'=>1,'pointer'=>$this->parent->getVars['pointer'])
 				);
 			$data['toolbar']['clearcache-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.
 				str_replace(

@@ -93,7 +93,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			$content.=$this->printRootLine();
 			$content.=$this->printUserBar();
 
-			if ($user=intval($this->piVars['editProfile'])) {
+			if ($user=intval($this->getVars['editProfile'])) {
 				$obj=&$this->getUserObj($user);
 				if ($obj->id) {
 					$content.=$obj->displayProfile('edit');
@@ -101,7 +101,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 					$GLOBALS['TSFE']->set_no_cache();
 					$content.='Utilisateur inexistant ->@TODO message d\'erreur';
 				}
-			} elseif ($user=intval($this->piVars['viewProfile'])) {
+			} elseif ($user=intval($this->getVars['viewProfile'])) {
 				$obj=&$this->getUserObj($user);
 				if ($obj->id) {
 					$content.=$obj->displayProfile();
@@ -219,7 +219,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			$this->close();
 		}
 
-		if ($this->piVars['outlineUserInt']) { //If asked, user int will be outlined (on CSS2 compliant browsers)
+		if ($this->getVars['outlineUserInt']) { //If asked, user int will be outlined (on CSS2 compliant browsers)
 			return '<div style="border: 1px blue dotted; padding: 0px; margin: 0px;">'.$content.'</div>';
 		} else {
 			return $content;
@@ -347,7 +347,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'])) {
 			parent::init();
 
-			$this->config['.lightMode']=isset($this->piVars['lightMode'])?($this->piVars['lightMode']?TRUE:FALSE):FALSE;
+			$this->config['.lightMode']=isset($this->getVars['lightMode'])?($this->getVars['lightMode']?TRUE:FALSE):FALSE;
 			if ($this->config['lightMode_def']) {
 				$this->config['.lightMode']=!$this->config['.lightMode'];
 			}
@@ -383,6 +383,10 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			t3lib_div::addSlashesOnArray($piVars);
 			//Just modify POST vars, because they will override GET vars
 			$GLOBALS['HTTP_POST_VARS'][$this->prefixId] = $_POST[$this->prefixId]=$piVars;
+
+			$getVars=$this->getVars;
+			t3lib_div::addSlashesOnArray($getVars);
+			$GLOBALS['HTTP_GET_VARS'][$this->prefixId] = $_GET[$this->prefixId]=$getVars;
 		}
 
 		if (is_array($this->callbackList)) {
@@ -430,14 +434,14 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	function autoDisableCache() {
 		$disable=FALSE;
 
-		$disable=$disable || ($this->piVars['edittopic']);
-		$disable=$disable || ($this->piVars['deletetopic']);
-		$disable=$disable || ($this->piVars['editmessage']);
-		$disable=$disable || ($this->piVars['deletemessage']);
-		$disable=$disable || ($this->piVars['clearCache']);
-		$disable=$disable || ($this->piVars['editProfile']);
-		$disable=$disable || ($this->piVars['viewProfile']);
-		$disable=$disable || (intval($this->piVars['forum'])<0);
+		$disable=$disable || ($this->getVars['edittopic']);
+		$disable=$disable || ($this->getVars['deletetopic']);
+		$disable=$disable || ($this->getVars['editmessage']);
+		$disable=$disable || ($this->getVars['deletemessage']);
+		$disable=$disable || ($this->getVars['clearCache']);
+		$disable=$disable || ($this->getVars['editProfile']);
+		$disable=$disable || ($this->getVars['viewProfile']);
+		$disable=$disable || (intval($this->getVars['forum'])<0);
 
 
 		if ($disable) {
@@ -516,8 +520,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	function getCurrent() {
 		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'])) {
 			/* Declare */
-			$forumId=intval($this->piVars['forum']);
-			$topicId=intval($this->piVars['topic']);
+			$forumId=intval($this->getVars['forum']);
+			$topicId=intval($this->getVars['topic']);
 			$topic=NULL;
 			$forum=NULL;
 			$dataChecked=FALSE;
@@ -534,7 +538,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 					//Check visibility of the topic
 					if ($topic->isVisibleRecursive()) {
 						//Then we can check updates
-						if ($this->piVars['edittopic'] || $this->piVars['deletetopic']) {
+						if ($this->getVars['edittopic'] || $this->getVars['deletetopic']) {
 							$dataChecked=TRUE;
 							$topic->checkTopicData();
 
@@ -581,7 +585,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			}
 
 			//Check for new topic
-			if ($forumId && !$dataChecked && $this->piVars['edittopic']) {
+			if ($forumId && !$dataChecked && $this->getVars['edittopic']) {
 				//Load forum
 				if (!is_object($forum)) {
 					$forum=&$this->getForumObj($forumId);
@@ -605,8 +609,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 				'topic'=>$topicId,
 				'forum'=>$forumId
 				);
-			$this->piVars['topic']=$topicId;
-			$this->piVars['forum']=$forumId;
+			$this->getVars['topic']=$topicId;
+			$this->getVars['forum']=$forumId;
 		}
 
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'];
@@ -747,7 +751,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$content.='Effective USER_INT cObjects : '.($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['USER_INT']+1).'.<br />';
 
 		$content.='<br />';
-		if ($this->piVars['outlineUserInt']) {
+		if ($this->getVars['outlineUserInt']) {
 			$content.=$this->pp_linkTP_keepPiVars('Back',array('outlineUserInt'=>''),TRUE);
 		} else {
 			$content.=$this->pp_linkTP_keepPiVars('Outline USER_INT cObjects !',array('outlineUserInt'=>1),TRUE,FALSE,'#ppforum_stats');
@@ -1508,7 +1512,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$resPerPage=max(1,$resPerPage);
 		$nbPages=intval(($nbChilds-1)/$resPerPage)+1;
 		$maxPageNum=$nbPages-1;
-		$selectedPage=trim($this->piVars['pointer']);
+		$selectedPage=trim($this->getVars['pointer']);
 		$links=array();
 		$startPage=0;
 		$endPage=0;

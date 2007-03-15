@@ -432,9 +432,9 @@ class tx_ppforum_message {
 		//Display will be different regarding the mode
 		if (!intval($this->id)) {
 			$data['mode']='new';
-		} elseif ($this->type=='message' && $this->id==intval($this->parent->piVars['editmessage']) && $this->userCanEdit()) {
+		} elseif ($this->type=='message' && $this->id==intval($this->parent->getVars['editmessage']) && $this->userCanEdit()) {
 			$data['mode']='edit';
-		} elseif ($this->id==intval($this->parent->piVars['deletemessage']) && $this->userCanDelete()) {
+		} elseif ($this->id==intval($this->parent->getVars['deletemessage']) && $this->userCanDelete()) {
 			$data['mode']='delete';
 		}
 
