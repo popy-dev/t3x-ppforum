@@ -453,15 +453,16 @@ class tx_ppforum_message {
 		$addClasses[]='single-message';
 
 		if (in_array($data['mode'],array('view','preview'))) {
-			if ($this->type=='topic' && intval($this->mergedData['status'])==1) {
-				$addClasses[]='hidden-message';
-			}
-			if (($this->type=='message') && $this->mergedData['hidden']) {
+			if ($this->mergedData['hidden']) {
 				$addClasses[]='hidden-message';
 			}
 		}
 
-		$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
+		if ($data['mode']=='preview') {
+			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_preview_'.$this->id.'">';
+		} else {
+			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
+		}
 
 		if (in_array($data['mode'],array('new','edit'))) {
 			//Opening form tag. The second parameter of getEditLink ensures that the "action" url will be different of the edit link
@@ -821,7 +822,7 @@ class tx_ppforum_message {
 
 		$data['left']['toolbar-1']='&nbsp;';
 
-		if (in_array($mode,array('edit','new'))) {
+		if (in_array($mode,array('edit','new','delete'))) {
 			$tmp_id='tmpId_'.md5(microtime());
 			//Prints the 'Submit' button
 			$data['right']['toolbar-2']='<input id="'.htmlspecialchars($tmp_id).'" type="submit" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[submit]" value="'.$this->parent->pp_getLL('message.edit.submit','Submit',TRUE).'" />';
