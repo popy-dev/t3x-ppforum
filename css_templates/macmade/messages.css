@@ -63,11 +63,11 @@
 	background: white;
 }
 
-.tx-ppforum-pi1 .single-message .main-row .user-signature hr.separator {
+.tx-ppforum-pi1 .single-message .main-row .user-signature .separator {
 	border: 1px solid black;
 	width: 20em;
 	margin: 0.5em 0px;
-	_text-align: left;
+	text-align: left;
 }
 
 
