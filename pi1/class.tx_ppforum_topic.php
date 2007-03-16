@@ -365,13 +365,24 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				if ($data['mode']=='delete') {
 					$data['message']->delete();
 				} else {
-					$data['message']->save();
-					//Saving data for validity check (protection against multi-post)
-					$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/justPosted',$this->parent->piVars['editpost']);
+					if (!isset($this->parent->piVars[$data['message']->datakey]['preview'])) {
+						$data['message']->save();
+						//Saving data for validity check (protection against multi-post)
+						$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/justPosted',$this->parent->piVars['editpost']);
 
-					if ($data['mode']=='new') {
-						// Clearing object cache (because now the message has an id !)
-						$this->parent->getMessageObj(0,TRUE);
+						if ($data['mode']=='new') {
+							// Clearing object cache (because now the message has an id !)
+							$this->parent->getMessageObj(0,TRUE);
+						}
+					} else {
+						if (!$data['message']->id) {
+							$this->loadMessages();
+							$this->messageList[]=0;
+							$data['message']->id='preview';
+						} else {
+							t3lib_div::debug($data['message']->mergedData, '');
+						}
+
 					}
 				}
 
@@ -671,7 +682,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			//Using recordRange to limit message list
 			foreach (array_slice($this->messageList,$start,$length) as $message) {
 				$data=array();
-				$data['topic']=&$this->parent->getMessageObj($message);
+				$data['message']=&$this->parent->getMessageObj($message);
 				$data['classes']=array();
 				$data['counter']=$counter;
 
@@ -692,9 +703,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$this
 					);
 
-				$content.=$data['topic']->display($data['classes']);
+				$content.=$data['message']->display($data['classes']);
 
-				unset($data['topic']);
+				unset($data['message']);
 				$counter++;
 			}
 
