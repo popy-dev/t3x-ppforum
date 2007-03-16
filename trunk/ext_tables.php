@@ -67,8 +67,9 @@ $TCA['tx_ppforum_messages'] = Array (
 		'cruser_id' => 'cruser_id',
 		'default_sortby' => 'ORDER BY crdate',	
 		'delete' => 'deleted',	
-		'enablecolumns' => Array (		
-			'disabled' => 'hidden',
+		'enablecolumns' => Array (
+			//*** The hidden col still exists and work, but a hidden message is visible to a guad user
+			//'disabled' => 'hidden',
 		),
 		'dynamicConfigFile' => t3lib_extMgm::extPath($_EXTKEY).'tca.php',
 		'iconfile' => t3lib_extMgm::extRelPath($_EXTKEY).'icon_tx_ppforum_messages.gif',

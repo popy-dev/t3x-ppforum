@@ -94,9 +94,27 @@ $TCA['tx_ppforum_forums'] = Array (
 				'default' => '0'
 			)
 		),
+		'hidetopic' => Array (		
+			'exclude' => 1,
+			'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.hidetopic',		
+			'l10n_mode' => 'exclude',		
+			'config' => Array (
+				'type' => 'check',
+				'default' => '0'
+			)
+		),
+		'hidemessage' => Array (		
+			'exclude' => 1,
+			'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.hidemessage',		
+			'l10n_mode' => 'exclude',		
+			'config' => Array (
+				'type' => 'check',
+				'default' => '0'
+			)
+		),
 	),
 	'types' => Array (
-		'0' => Array('showitem' => 'hidden;;;;1-1-1, sys_language_uid, l18n_parent, title;;;;2-2-2,description, parent, notopic, notoolbar')
+		'0' => Array('showitem' => 'hidden;;;;1-1-1, sys_language_uid, l18n_parent, title;;;;2-2-2,description, parent, notopic, notoolbar, hidetopic, hidemessage')
 	),
 	'palettes' => Array (
 		'1' => Array('showitem' => '')
