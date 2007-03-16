@@ -431,12 +431,19 @@ class tx_ppforum_message {
 		/* Begin */
 		//Checking mode (default : view, others : delete, new, edit)
 		//Display will be different regarding the mode
-		if (!intval($this->id)) {
+		if (!$this->id) {
 			$data['mode']='new';
+		} elseif (!intval($this->id)) {
+			//New message preview
+			$data['mode']='preview';	
+			$this->id=0;
 		} elseif ($this->type=='message' && $this->id==intval($this->parent->getVars['editmessage']) && $this->userCanEdit()) {
 			$data['mode']='edit';
 		} elseif ($this->id==intval($this->parent->getVars['deletemessage']) && $this->userCanDelete()) {
 			$data['mode']='delete';
+		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
+			//Editing preview
+			$data['mode']='preview';	
 		}
 
 		//Loading author
@@ -445,11 +452,13 @@ class tx_ppforum_message {
 		//Anchor & classes :
 		$addClasses[]='single-message';
 
-		if ($this->type=='topic' && intval($this->mergedData['status'])==1) {
-			$addClasses[]='hidden-message';
-		}
-		if (($this->type=='message') && $this->mergedData['hidden']) {
-			$addClasses[]='hidden-message';
+		if (in_array($data['mode'],array('view','preview'))) {
+			if ($this->type=='topic' && intval($this->mergedData['status'])==1) {
+				$addClasses[]='hidden-message';
+			}
+			if (($this->type=='message') && $this->mergedData['hidden']) {
+				$addClasses[]='hidden-message';
+			}
 		}
 
 		$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
@@ -487,6 +496,14 @@ class tx_ppforum_message {
 		//Closes div
 		$content.='</div>';
 
+
+		if (in_array($data['mode'],array('preview'))) {
+			$this->parent->getVars['editmessage']=$this->id;
+
+			$content.=$this->display();
+
+			unset($this->parent->getVars['editmessage']);
+		}
 		unset($data);
 
 		return $content;
@@ -653,7 +670,7 @@ class tx_ppforum_message {
 		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
-		if ($mode=='view') {
+		if (in_array($mode,array('view','preview'))) {
 			if (!$this->parent->config['.lightMode']) $data['left']['author-details']=$this->author->displaySmallProfile();
 			$data['right']['message']='<div class="message">'.$this->processMessage($this->mergedData['message']).'</div>';
 		} elseif ($mode=='delete') {
@@ -667,7 +684,7 @@ class tx_ppforum_message {
 		$this->loadAuthor();
 		if ($this->author->id && !$this->parent->config['.lightMode']) {
 			$profilData=$this->author->getUserPreference('profil');
-			if ($data['mode']=='view' && trim($profilData['signature'])) {
+			if (in_array($data['mode'],array('view','preview')) && trim($profilData['signature'])) {
 				$profilData['signature']=$this->processMessage($profilData['signature'],$profilData['signature_parser']);
 				$data['right']['signature']='<div class="user-signature"><hr class="separator" />'.$profilData['signature'].'</div>';
 			}
@@ -694,6 +711,7 @@ class tx_ppforum_message {
 		if (!in_array($mode,array('edit','new'))) {
 			return '';
 		}
+		$baseName=htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']');
 		$prefId='prefId_'.md5(microtime());
 
 		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
@@ -705,22 +723,16 @@ class tx_ppforum_message {
 			$checked=$profile['def_disableSimeys']?' checked="checked"':'';
 		}
 
-		$data['right']['div']='<input id="'.$prefId.'_nosmileys" type="checkbox" value="1" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[nosmileys]"'.$checked.' /><label for="'.$prefId.'_nosmileys">'.$this->parent->pp_getLL('message.fields.nosmileys','Desactivate smileys',TRUE).'</label>';
+		$data['right']['div']='<input type="hidden" value="" name="'.$baseName.'[nosmileys]" /><input id="'.$prefId.'_nosmileys" type="checkbox" value="1" name="'.$baseName.'[nosmileys]"'.$checked.' /><label for="'.$prefId.'_nosmileys">'.$this->parent->pp_getLL('message.fields.nosmileys','Desactivate smileys',TRUE).'</label>';
 
 		if (($this->type=='topic') && $this->forum->userIsGuard()) {
-			if (isset($this->mergedData['pinned'])) {
-				$checked=$this->mergedData['pinned']?' checked="checked"':'';
+			if (isset($this->mergedData['pinned']) && $this->mergedData['pinned']) {
+				$checked=' checked="checked"';
 			} else {
 				$checked='';
 			}
-			/*
-			if (is_array($this->parent->piVars[$this->datakey]) && count($this->parent->piVars[$this->datakey])) {
-				$checked=$this->parent->piVars[$this->datakey]['pinned']?' checked="checked"':'';
-			} else {
-				$checked=$this->data['pinned']?' checked="checked"':'';
-			}
-			*/
-			$data['right']['div'].='<input id="'.$prefId.'_pinned" type="checkbox" value="1" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[pinned]"'.$checked.' /><label for="'.$prefId.'_pinned">'.$this->parent->pp_getLL('topic.fields.pinned','Pinned',TRUE).'</label>';
+
+			$data['right']['div'].='<input type="hidden" value="" name="'.$baseName.'[pinned]" /><input id="'.$prefId.'_pinned" type="checkbox" value="1" name="'.$baseName.'[pinned]"'.$checked.' /><label for="'.$prefId.'_pinned">'.$this->parent->pp_getLL('topic.fields.pinned','Pinned',TRUE).'</label>';
 
 			if (!$this->parent->config['.lightMode']) {
 				$data['left']['status']=$this->parent->pp_getLL('topic.status','Change state : ',TRUE).'<select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[status]" />';
@@ -730,19 +742,19 @@ class tx_ppforum_message {
 						$selected=' selected="selected"';
 					}
 
-					$data['left']['status'].='<option value="'.((string)intval($key)).'"'.$selected.'>'.$this->parent->pp_getLL('topic.status.'.$val,$val,TRUE).'</option>';
+					$data['left']['status'].='<option value="'.strval(intval($key)).'"'.$selected.'>'.$this->parent->pp_getLL('topic.status.'.$val,$val,TRUE).'</option>';
 				}
 				$data['left']['status'].='</select>';
 			}
 		}
 
 		if (($this->type=='message') && $this->topic->forum->userIsGuard()) {
-			if (isset($this->mergedData['hidden'])) {
-				$checked=$this->mergedData['hidden']?' checked="checked"':'';
+			if (isset($this->mergedData['hidden']) && $this->mergedData['hidden']) {
+				$checked=' checked="checked"';
 			} else {
 				$checked='';
 			}
-			$data['right']['div'].='<input id="'.$prefId.'_hidden" type="checkbox" value="1" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[hidden]"'.$checked.' /><label for="'.$prefId.'_hidden">'.$this->parent->pp_getLL('message.fields.hidden','Hide',TRUE).'</label>';
+			$data['right']['div'].='<input type="hidden" value="" name="'.$baseName.'[hidden]" /><input id="'.$prefId.'_hidden" type="checkbox" value="1" name="'.$baseName.'[hidden]"'.$checked.' /><label for="'.$prefId.'_hidden">'.$this->parent->pp_getLL('message.fields.hidden','Hide',TRUE).'</label>';
 		}
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
@@ -809,7 +821,7 @@ class tx_ppforum_message {
 
 		$data['left']['toolbar-1']='&nbsp;';
 
-		if ($mode!='view') {
+		if (in_array($mode,array('edit','new'))) {
 			$tmp_id='tmpId_'.md5(microtime());
 			//Prints the 'Submit' button
 			$data['right']['toolbar-2']='<input id="'.htmlspecialchars($tmp_id).'" type="submit" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[submit]" value="'.$this->parent->pp_getLL('message.edit.submit','Submit',TRUE).'" />';
@@ -817,9 +829,13 @@ class tx_ppforum_message {
 			if ($this->id) {
 				$data['right']['toolbar-2'].=' <button onclick="document.location=\''.htmlspecialchars($this->getLink()).'\';return false;">'.$this->parent->pp_getLL('message.edit.cancel','Cancel',TRUE).'</button>';
 			}
+
+			if ($mode!='delete') {
+				$data['right']['toolbar-2'].='<input type="submit" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[preview]" value="'.$this->parent->pp_getLL('message.edit.preview','Preview',TRUE).'" />';
+			}
 			$data['right']['toolbar-2'].='<script type="text/javascript">/*<![CDATA[*/<!--'.chr(10).'var temp=document.getElementById(\''.htmlspecialchars($tmp_id).'\');while(temp && temp.nodeName!=\'FORM\') temp=temp.parentNode;var i=0;while(i<temp.elements.length) {temp[i].setAttribute(\'autocomplete\',\'off\');i++;}'.chr(10).'//-->/*]]>*/</script>';			
 
-		} else {
+		} elseif ($mode=='view') {
 			$temp=array();
 			//Prints 'edit' and 'delete' links (regarding permissions)
 			if ($this->userCanEdit()) $temp[]=$this->getEditLink($this->parent->pp_getLL('message.edit','Edit',TRUE));
