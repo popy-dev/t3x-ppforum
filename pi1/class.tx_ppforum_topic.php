@@ -162,7 +162,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return string 
 	 */
 	function getLink($title='',$addParams=array(),$parameter='') {
-		if ($this->id) $addParams['topic']=$this->id;
+		if (intval($this->id)) {
+			$addParams['topic']=$this->id;
+		} else {
+			$addParams['forum']=$this->forum->id;
+			$addParams['edittopic']=1;
+		}
 		if (!trim($parameter)) {
 			$parameter=($this->id && 0)?('#ppforum_topic_'.$this->id):'';
 		}
@@ -190,7 +195,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		} elseif ($this->data['status']==2) {
 			$addText.='(closed) ';
 		}
-		return $addText.$this->getLink($this->parent->htmlspecialchars($this->data['title']));
+		return $addText.$this->getLink($this->parent->htmlspecialchars($this->mergedData['title']));
 	}
 
 	/**
@@ -374,15 +379,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 							// Clearing object cache (because now the message has an id !)
 							$this->parent->getMessageObj(0,TRUE);
 						}
-					} else {
-						if (!$data['message']->id) {
-							$this->loadMessages();
-							$this->messageList[]=0;
-							$data['message']->id='preview';
-						} else {
-							t3lib_div::debug($data['message']->mergedData, '');
-						}
-
+					} elseif (!$data['message']->id) {
+						//Preview mode for new topics
+						$this->loadMessages();
+						$this->messageList[]=0;
+						$data['message']->id='preview';
 					}
 				}
 
@@ -504,10 +505,15 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				if ($data['mode']=='delete') {
 					$this->delete();
 				} else {
-					$this->save();
+					//Preview support
+					if (!isset($this->parent->piVars[$this->datakey]['preview'])) {
+						$this->save();
 					
-					//Saving data for validity check (protection against multi-post)
-					$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/lastTopic',$this->parent->piVars[$this->datakey]);
+						//Saving data for validity check (protection against multi-post)
+						$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/lastTopic',$this->parent->piVars[$this->datakey]);
+					} elseif (!$this->id) {
+						$this->id='preview';
+					}
 				}
 
 				//Cleaning incomming data
@@ -518,35 +524,31 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 	}
 
-
 	/**
-	 * Display topic
 	 *
+	 *
+	 * @param 
 	 * @access public
-	 * @return string 
+	 * @return void 
 	 */
-	function display() {
+	function displaySingle($data) {
 		/* Declare */
-		$content='<div class="topic-details">';
-		$data=array(
-			'conf'=>array(),
-			'mode'=>'view'
-			);
+		$content='';
+		$addClasses=Array('single-message','single-topic');
 	
 		/* Begin */
-		//Loads author
-		$this->loadAuthor();
-
-		if (!intval($this->id)) {
-			$data['mode']='new';
-		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
-			$data['mode']='edit';
-		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
-			$data['mode']='delete';
+		if (in_array($data['mode'],array('view','preview'))) {
+			if (intval($this->mergedData['status'])==1) {
+				$addClasses[]='hidden-message';
+			}
 		}
-
+		
 		//Prints topic anchor
-		$content.='<div class="single-message single-topic" id="ppforum_topic_'.$this->id.'">';
+		if ($data['mode']=='preview') {
+			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_preview_'.$this->id.'">';
+		} else {
+			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_'.$this->id.'">';
+		}
 
 		if ($data['mode']!='new') {
 			$this->checkIncommingData();
@@ -591,6 +593,46 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if ($data['mode']!='view') $content.='</form>';
 		$content.='</div>'; //Anchor tag
 
+		return $content;
+	}
+
+	/**
+	 * Display topic
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function display() {
+		/* Declare */
+		$content='<div class="topic-details">';
+		$data=array(
+			'conf'=>array(),
+			'mode'=>'view'
+			);
+	
+		/* Begin */
+		//Loads author
+		$this->loadAuthor();
+
+		if (!$this->id) {
+			$data['mode']='new';
+		} elseif (!intval($this->id)) {
+			$data['mode']='preview';
+			$this->id=0;
+		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
+			$data['mode']='edit';
+		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
+			$data['mode']='delete';
+		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
+			$data['mode']='preview';
+		}
+
+		$content.=$this->displaySingle($data);
+		if ($data['mode']=='preview') {
+			$data['mode']='edit';
+			$content.=$this->displaySingle($data);
+		}
+
 		if ($this->id) {
 			$this->loadMessages();
 			//Generate mesage-browser
@@ -626,7 +668,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return string 
 	 */
 	function display_titleRow($mode) {
-		if (in_array($mode,array('view','delete'))) {
+		if (in_array($mode,array('view','delete','preview'))) {
 			return $this->getTitleLink();
 		} else {
 			return $this->parent->pp_getLL('topic.title','Title : ',TRUE).' <input value="'.$this->parent->htmlspecialchars($this->mergedData['title'])/*(is_array($this->parent->piVars[$this->datakey])?$this->parent->htmlspecialchars($this->parent->piVars[$this->datakey]['title']):$this->parent->htmlspecialchars($this->data['title']))*/.'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />';
