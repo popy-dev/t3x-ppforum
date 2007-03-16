@@ -23,6 +23,9 @@ CREATE TABLE tx_ppforum_forums (
 	notopic tinyint(4) DEFAULT '0' NOT NULL,
 	notoolbar tinyint(4) DEFAULT '0' NOT NULL,
 
+	hidetopic tinyint(4) DEFAULT '0' NOT NULL,
+	hidemessage tinyint(4) DEFAULT '0' NOT NULL,
+
 	#Access fields
 	readaccess mediumblob NOT NULL,
 	readaccess_mode varchar(10) DEFAULT '' NOT NULL,

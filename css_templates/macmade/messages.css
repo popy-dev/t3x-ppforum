@@ -36,6 +36,11 @@
 	background: #DDDDDD;
 }
 
+.tx-ppforum-pi1 .hidden-message .main-row, .tx-ppforum-pi1 .hidden-message .tools-row {
+	background: #FFFFB0;
+	color: black;
+}
+
 /* Tunning buttons */
 .tx-ppforum-pi1 .single-message .parser-row .right-col .button {
 	margin: -2px 2px;

@@ -343,8 +343,15 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				}
 				$data['message']->mergedData['message']=str_replace("\r",'',$data['message']->mergedData['message']);
 
-				/*$data['message']->data['nosmileys']=$this->parent->piVars[$data['message']->datakey]['nosmileys'];
-				$data['message']->data['parser']=$this->parent->piVars[$data['message']->datakey]['parser'];*/
+				if (!isset($data['message']->mergedData['hidden'])) {
+					if (intval($this->forum->data['hidemessage'])) {
+						$data['message']->mergedData['hidden']=1;
+					} else {
+						$data['message']->mergedData['hidden']=0;
+					}
+				}
+
+
 			}
 
 			//Playing hook list : Allows to fill other fields
@@ -457,26 +464,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (!count($data['errors'])) {
 
 			if ($data['mode']!='delete') {
-				/*
-				if (!trim($this->parent->piVars[$this->datakey]['title'])) {
-					$data['errors']['field']['title']='You should enter a title';
-				} else {
-					$this->data['title']=$this->parent->piVars[$this->datakey]['title'];
-				}
-				if (!trim($this->parent->piVars[$this->datakey]['message'])) {
-					$data['errors']['field']['message']='You should enter a message';
-				} else {
-					$this->data['message']=str_replace("\r",'',$this->parent->piVars[$this->datakey]['message']);
-				}
-				$this->data['nosmileys']=$this->parent->piVars[$this->datakey]['nosmileys'];
-				$this->data['parser']=$this->parent->piVars[$this->datakey]['parser'];
-				if ($this->forum->userIsGuard()) {
-					$this->data['pinned']=$this->parent->piVars[$this->datakey]['pinned'];
-					$this->data['status']=max(0,min(2,intval($this->parent->piVars[$this->datakey]['status'])));
-				}
-				*/
-
-
 				if (!trim($this->mergedData['title'])) {
 					$data['errors']['field']['title']='You should enter a title';
 				}
@@ -484,7 +471,15 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$data['errors']['field']['message']='You should enter a message';
 				}
 
-				$this->mergedData['status']=max(0,min(2,intval($this->mergedData['status'])));
+				if (isset($this->mergedData['status'])) {
+					$this->mergedData['status']=max(0,min(2,intval($this->mergedData['status'])));
+				} else {
+					if (intval($this->forum->data['hidetopic'])) {
+						$this->mergedData['status']=1;
+					} else {
+						$this->mergedData['status']=0;
+					}
+				}
 			}
 
 			//Playing hook list : Allows to fill other fields

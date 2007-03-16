@@ -85,10 +85,20 @@ class tx_ppforum_forum {
 	 * @return void 
 	 */
 	function getLastTopic() {
-		//$this->loadTopicList();
-		//return reset(array_keys($this->topicList));
+		$listIds=$this->parent->getForumTopics($this->id,FALSE,'nopinned');
+		$ok=FALSE;
+		$current=0;
 
-		return reset($this->parent->getForumTopics($this->id,FALSE,'nopinned'));
+		while (!$ok && $current<count($listIds)) {
+			$topic=&$this->parent->getTopicObj($listIds[$current]);
+			if ($topic->isVisible() && $this->topicIsVisible($listIds[$current])) {
+				$ok=TRUE;
+			} else {
+				$current++;
+			}
+		}
+
+		return $listIds[$current];
 	}
 
 	/**

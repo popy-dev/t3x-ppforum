@@ -53,6 +53,7 @@ class tx_ppforum_message {
 		'message'=>'',
 		'nosmileys'=>'',
 		'parser'=>'',
+		'hidden'=>'guard',
 		);
 
 	/**
@@ -443,6 +444,14 @@ class tx_ppforum_message {
 
 		//Anchor & classes :
 		$addClasses[]='single-message';
+
+		if ($this->type=='topic' && intval($this->mergedData['status'])==1) {
+			$addClasses[]='hidden-message';
+		}
+		if (($this->type=='message') && $this->mergedData['hidden']) {
+			$addClasses[]='hidden-message';
+		}
+
 		$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
 
 		if (in_array($data['mode'],array('new','edit'))) {
@@ -588,7 +597,7 @@ class tx_ppforum_message {
 		}
 
 		//Parser selector
-		$data['left']['parser-selector']='<select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[parser]" onchange="ppforum_switchParserToolbar(this,\'parser-toolbar-\'+this.options[this.selectedIndex].value);">';
+		$data['left']['parser-selector']=$this->parent->pp_getLL('message.fields.parser','Parser : ',TRUE).' <select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[parser]" onchange="ppforum_switchParserToolbar(this,\'parser-toolbar-\'+this.options[this.selectedIndex].value);">';
 		$data['right']='';
 
 		foreach (array_keys($this->parent->parsers) as $key) {
@@ -656,7 +665,7 @@ class tx_ppforum_message {
 		}
 
 		$this->loadAuthor();
-		if ($this->author->id) {
+		if ($this->author->id && !$this->parent->config['.lightMode']) {
 			$profilData=$this->author->getUserPreference('profil');
 			if ($data['mode']=='view' && trim($profilData['signature'])) {
 				$profilData['signature']=$this->processMessage($profilData['signature'],$profilData['signature_parser']);
@@ -695,17 +704,7 @@ class tx_ppforum_message {
 			$profile=$this->parent->currentUser->getUserPreference('profil');
 			$checked=$profile['def_disableSimeys']?' checked="checked"':'';
 		}
-/*
-		if ($this->id) {
-			$checked=$this->data['nosmileys']?' checked="checked"':'';
-		} elseif(is_array($this->parent->piVars[$this->datakey]) && count($this->parent->piVars[$this->datakey])) {
-			$checked=$this->parent->piVars[$this->datakey]['nosmileys']?' checked="checked"':'';
-		} else {
-			$profile=$this->parent->currentUser->getUserPreference('profil');
-			$checked=$profile['def_disableSimeys']?' checked="checked"':'';
-			//'def_disableSimeys'
-		}
-		*/
+
 		$data['right']['div']='<input id="'.$prefId.'_nosmileys" type="checkbox" value="1" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[nosmileys]"'.$checked.' /><label for="'.$prefId.'_nosmileys">'.$this->parent->pp_getLL('message.fields.nosmileys','Desactivate smileys',TRUE).'</label>';
 
 		if (($this->type=='topic') && $this->forum->userIsGuard()) {
@@ -735,7 +734,15 @@ class tx_ppforum_message {
 				}
 				$data['left']['status'].='</select>';
 			}
+		}
 
+		if (($this->type=='message') && $this->topic->forum->userIsGuard()) {
+			if (isset($this->mergedData['hidden'])) {
+				$checked=$this->mergedData['hidden']?' checked="checked"':'';
+			} else {
+				$checked='';
+			}
+			$data['right']['div'].='<input id="'.$prefId.'_hidden" type="checkbox" value="1" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[hidden]"'.$checked.' /><label for="'.$prefId.'_hidden">'.$this->parent->pp_getLL('message.fields.hidden','Hide',TRUE).'</label>';
 		}
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
@@ -850,7 +857,9 @@ class tx_ppforum_message {
 		switch ($this->type){
 		case 'message':
 			if ($this->id && !$this->data['deleted']) {
-				$res=TRUE;
+				if (!$this->data['hidden'] || $this->topic->forum->userIsGuard()) {
+					$res=TRUE;
+				}
 			}
 			break;
 		case 'topic': 
