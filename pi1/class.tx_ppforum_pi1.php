@@ -1068,7 +1068,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 					$clearCache
 				):FALSE;
 			if ($res) {
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['FORUM'][$id]=$GLOBALS['TSFE']->sys_page->getRecordOverlay($this->tables['forums'],reset($res),$GLOBALS['TSFE']->sys_language_content,$GLOBALS['TSFE']->sys_language_contentOL);
+				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['FORUM'][$id]=$GLOBALS['TSFE']->sys_page->getRecordOverlay($this->tables['forums'],reset($res),$GLOBALS['TSFE']->sys_language_content);
 			} else {
 				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['FORUM'][$id]=FALSE;
 			}
