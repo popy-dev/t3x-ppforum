@@ -150,7 +150,7 @@ class tx_ppforum_message {
 	 */
 	function loadAuthor($clearCache=FALSE) {
 		if (!is_object($this->author) || $clearCache) {
-			$this->author=&$this->parent->getUserObj($this->data['author']);
+			$this->author=&$this->parent->getUserObj($this->mergedData['author']);
 		}
 	}
 
@@ -178,19 +178,12 @@ class tx_ppforum_message {
 
 		if ($this->id) {
 			//*** Optimistic update :
-			//Loading old data
-			/* ($this->type=='message') {
-				$oldData=$this->parent->getSingleMessage($this->id);
-			} else {
-				$oldData=$this->parent->getSingleTopic($this->id);
-			}*/
-
 			//This part of code is here only for explaination, everything is in the same row (for memory consumming reasons)
 			/*
 			//Calculating diff
 			$diff=array_diff_assoc(
 				$this->data,
-				$oldData
+				$this->data
 				);
 			/**/
 
@@ -207,14 +200,17 @@ class tx_ppforum_message {
 			$this->parent->log('UPDATE');
 		} else {
 			//Initialize some fields
+			/*
 			if ($this->type=='message') {
 				$this->mergedData['topic']=$this->topic->id;
 			} else {
 				$this->mergedData['forum']=$this->forum->id;
 			}
-			$this->mergedData['pid']=$this->parent->config['savepage'];
 			$this->mergedData['author']=$this->parent->getCurrentUser();
 			$this->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
+			*/
+
+			$this->mergedData['pid']=$this->parent->config['savepage'];
 
 			//Insert db row
 			$result=$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->tablename,$this->mergedData);
@@ -443,7 +439,7 @@ class tx_ppforum_message {
 			$data['mode']='delete';
 		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
 			//Editing preview
-			$data['mode']='preview';	
+			$data['mode']='preview';
 		}
 
 		//Loading author
@@ -574,7 +570,7 @@ class tx_ppforum_message {
 		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
-		if ($mode!='new') {
+		if (in_array($mode,array('view','preview','delete'))) {
 			$data['left']['author']=$this->author->displayLight();
 			$data['right']['crdate']=$this->parent->renderDate($this->mergedData['crdate']);
 		}

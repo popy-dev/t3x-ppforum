@@ -343,6 +343,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (!count($data['errors'])) {
 
 			if ($data['mode']!='delete') {
+				//*** Checking fields
 				if (!trim($data['message']->mergedData['message'])) {
 					$data['errors']['field']['message']='You should enter a message';
 				}
@@ -355,8 +356,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 						$data['message']->mergedData['hidden']=0;
 					}
 				}
+			}
 
-
+			if ($data['mode']=='new') {
+				$data['message']->mergedData['topic']=$this->id;
+				$data['message']->mergedData['author']=$this->parent->getCurrentUser();
+				$data['message']->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
 			}
 
 			//Playing hook list : Allows to fill other fields
@@ -492,6 +497,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 						$this->mergedData['status']=0;
 					}
 				}
+			}
+
+			if ($data['mode']=='new') {
+				$this->mergedData['forum']=$this->forum->id;
+				$this->mergedData['author']=$this->parent->getCurrentUser();
+				$this->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
 			}
 
 			//Playing hook list : Allows to fill other fields
