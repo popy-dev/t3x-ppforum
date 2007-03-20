@@ -294,7 +294,7 @@ class tx_ppforum_message {
 		if ($this->forceReload['data']) $this->load($this->id,TRUE);
 
 		//Launch topic event function only if needed (eg: don't enter here when deleting messages from topic::delete)
-		if ($this->forceReload['topic']) $this->topic->event_onUpdateInTopic($this->isNew);
+		if ($this->forceReload['topic']) $this->topic->event_onUpdateInTopic($this->isNew,$this->id);
 
 		//Resets directives
 		$this->forceReload=array();
@@ -502,6 +502,8 @@ class tx_ppforum_message {
 			unset($this->parent->getVars['editmessage']);
 		}
 		unset($data);
+
+		$this->topic->event_onMessageDisplay($this->id);
 
 		return $content;
 	}
@@ -869,14 +871,14 @@ class tx_ppforum_message {
 
 		switch ($this->type){
 		case 'message':
-			if ($this->id && !$this->data['deleted']) {
+			if ($this->id && !$this->mergedData['deleted']) {
 				if (!$this->data['hidden'] || $this->topic->forum->userIsGuard()) {
 					$res=TRUE;
 				}
 			}
 			break;
 		case 'topic': 
-			if ($this->id && !$this->data['deleted']) { //topic is valid
+			if ($this->id && !$this->mergedData['deleted']) { //topic is valid
 				if ($this->data['status']!=1) { //Topic is "normal"
 					$res=TRUE;
 				} elseif ($this->data['status']==1 && $this->forum->userIsGuard()) { //Topic is hidden and user is guard

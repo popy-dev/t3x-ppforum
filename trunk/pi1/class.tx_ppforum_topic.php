@@ -86,7 +86,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			} else {
 				$this->mergedData['deleted']=1;
 
-				$this->loadMessages();
+				$this->loadMessages(TRUE,TRUE);
 
 				//Deleting topic messages
 				foreach ($this->messageList as $messageId) {
@@ -116,12 +116,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onUpdateInTopic($isNewMessage=FALSE,$fromMessage=TRUE) {
+	function event_onUpdateInTopic($isNewMessage=FALSE,$messageId=0) {
 		$null=NULL;
-		if ($fromMessage) {
+		if ($messageId) {
 			$this->save(); //Will re-launch this function !!
 			if ($isNewMessage) {
-				$this->forum->event_onNewPostInTopic($this->id);
+				$this->forum->event_onNewPostInTopic($this->id,$messageId);
 			}
 		} else {
 			//Playing hook list
@@ -142,13 +142,27 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			//In this case, you should use $this->parent->getSingleMessage($this->id,'clearCache');
 			if ($this->forceReload['data']) $this->load($this->id,TRUE);
 
-			if ($this->forceReload['forum']) $this->forum->event_onUpdateInForum();
+			if ($isNewMessage) {
+				$this->forum->event_onNewTopic($this->id);
+			} elseif ($this->forceReload['forum']) {
+				$this->forum->event_onUpdateInForum();
+			}
 
 			//Resets directives
 			$this->forceReload=array();
 		}
 	}
 
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageDisplay($messageId) {
+		$this->forum->event_onMessageDisplay($topicId,$messageId);
+	}
 	/****************************************/
 	/*********** Links functions ************/
 	/****************************************/
@@ -303,7 +317,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->parent->piVars[$data['message']->datakey]=array();
 			unset($this->parent->piVars['editmessage']);
 			unset($this->parent->piVars['deletemessage']);
-			return FALSE;
+
+			$this->parent->getMessageObj(0,TRUE);
+			if ($data['mode']=='new') return FALSE;
 		}
 
 		switch ($data['mode']){
@@ -441,6 +457,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			unset($this->parent->piVars[$this->datakey]);
 			unset($this->parent->getVars['edittopic']);
 			unset($this->parent->getVars['deletetopic']);
+
+			if ($data['mode']=='new') $this->getTopicObj(0,TRUE);
 			return FALSE;
 		}
 
@@ -536,6 +554,73 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 * Display topic
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function display() {
+		/* Declare */
+		$content='<div class="topic-details">';
+		$data=array(
+			'conf'=>array(),
+			'mode'=>'view'
+			);
+	
+		/* Begin */
+		//Loads author
+		$this->loadAuthor();
+
+		if (!$this->id) {
+			$data['mode']='new';
+		} elseif (!intval($this->id)) {
+			$data['mode']='preview';
+			$this->id=0;
+		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
+			$data['mode']='edit';
+		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
+			$data['mode']='delete';
+		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
+			$data['mode']='preview';
+		}
+
+		$content.=$this->displaySingle($data);
+		if ($data['mode']=='preview') {
+			$data['mode']='edit';
+			$content.=$this->displaySingle($data);
+		}
+
+		if ($this->id) {
+			$this->loadMessages();
+			//Generate mesage-browser
+			$tempStr=$this->parent->displayPagination(
+				count($this->messageList),
+				$this->parent->config['display']['maxMessages'],
+				$this,
+				array('message-browser')
+				);
+			//Print it
+			$content.=$tempStr;
+			//Print message list
+			$content.=$this->displayMessages();
+			//Print browser again
+			$content.=$tempStr;
+			unset($tempStr);
+			//Print footer tools
+			$content.=$this->displayTopicTools();
+		}
+
+		$content.='</div>';//Wrapper tag
+
+		unset($data);//Memory optimisation
+
+		$this->forum->event_onTopicDisplay($this->id);
+
+		return $content;
+	}
+
+
+	/**
 	 *
 	 *
 	 * @param 
@@ -607,70 +692,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		return $content;
 	}
 
-	/**
-	 * Display topic
-	 *
-	 * @access public
-	 * @return string 
-	 */
-	function display() {
-		/* Declare */
-		$content='<div class="topic-details">';
-		$data=array(
-			'conf'=>array(),
-			'mode'=>'view'
-			);
-	
-		/* Begin */
-		//Loads author
-		$this->loadAuthor();
-
-		if (!$this->id) {
-			$data['mode']='new';
-		} elseif (!intval($this->id)) {
-			$data['mode']='preview';
-			$this->id=0;
-		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
-			$data['mode']='edit';
-		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
-			$data['mode']='delete';
-		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
-			$data['mode']='preview';
-		}
-
-		$content.=$this->displaySingle($data);
-		if ($data['mode']=='preview') {
-			$data['mode']='edit';
-			$content.=$this->displaySingle($data);
-		}
-
-		if ($this->id) {
-			$this->loadMessages();
-			//Generate mesage-browser
-			$tempStr=$this->parent->displayPagination(
-				count($this->messageList),
-				$this->parent->config['display']['maxMessages'],
-				$this,
-				array('message-browser')
-				);
-			//Print it
-			$content.=$tempStr;
-			//Print message list
-			$content.=$this->displayMessages();
-			//Print browser again
-			$content.=$tempStr;
-			unset($tempStr);
-			//Print footer tools
-			$content.=$this->displayTopicTools();
-		}
-
-		$content.='</div>';//Wrapper tag
-
-		unset($data);//Memory optimisation
-
-		return $content;
-	}
-	
 	/**
 	 * Displays title part
 	 *
@@ -1026,14 +1047,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return void 
 	 */
-	function loadMessages($clearCache=FALSE) {
+	function loadMessages($clearCache=FALSE,$noCheck=FALSE) {
 		if (!is_array($this->messageList) || $clearCache) {
 			//Init
 			$this->messageList=Array();
 			//Get raw list
 			foreach ($this->parent->getTopicMessages($this->id,$clearCache) as $messageId) {
 				//Additional check
-				if ($this->messageIsVisible($messageId)) {
+				if ($noCheck || $this->messageIsVisible($messageId)) {
 					$this->messageList[]=$messageId;
 				}
 			}
