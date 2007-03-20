@@ -41,7 +41,8 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	var $forum=NULL; //Pointer to parent forum object
 
 	var $options=Array(
-		'unsetForumId'=>FALSE,
+		'unsetForumId'=>TRUE,
+		'keepCurrentForumId'=>FALSE,
 		);
 
 	/**
@@ -177,14 +178,9 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function messageIsVisible($messageId,$userId=0) {
 		if ($userId) {
 			$user=$this->parent->getUserObj($userId);
-			$temp=$user->getUserPreference('pmdata/deletedMessageList');
+			return $user->pmIsVisible($messageId,'message');
 		} else {
-			$temp=$this->parent->getUserPreference('pmdata/deletedMessageList');
-		}
-		if (is_array($temp)) {
-			return !in_array($messageId,$temp);
-		} else {
-			return TRUE;
+			return $this->parent->currentUser->pmIsVisible($messageId,'message');
 		}
 	}
 
@@ -220,14 +216,9 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function topicIsVisible($topicId,$userId=0) {
 		if ($userId) {
 			$user=$this->parent->getUserObj($userId);
-			$temp=$user->getUserPreference('pmdata/deletedTopicList');
+			return $user->pmIsVisible($topicId,'topic');
 		} else {
-			$temp=$this->parent->getUserPreference('pmdata/deletedTopicList');
-		}
-		if (is_array($temp)) {
-			return !in_array($topicId,$temp);
-		} else {
-			return TRUE;
+			return $this->parent->currentUser->pmIsVisible($topicId,'topic');
 		}
 	}
 
@@ -253,6 +244,26 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		return FALSE;
 	}
 
+	/**
+	 * Launched when a topic is inserted
+	 *
+	 *
+	 * @param int $topicId = topic uid
+	 * @access public
+	 * @return void 
+	 */
+	function event_onNewTopic($topicId) {
+		if ($this->parent->currentUser->id==$this->userId) {
+			$topic=&$this->parent->getTopicObj($topicId);
+			$topic->loadAuthor();
+			
+			$topic->author->registerNewPm($topicId,'topic');
+		} else {
+			$this->user->registerNewPm($topicId,'topic');
+		}
+
+		parent::event_onNewTopic($topicId);
+	}
 
 	/**
 	 *
@@ -261,28 +272,47 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onNewPostInTopic($topicId) {
-		if ($this->parent->currentUser->id==$this->userId) {
+	function event_onNewPostInTopic($topicId,$messageId=0) {
+		if ($this->parent->currentUser->id == $this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
 			$topic->loadAuthor();
-			$temp=$topic->author->getUserPreference('pmdata/deletedTopicList');
-			if (is_array($temp)) {
-				$temp=array_diff($temp,array($topicId));
-				$topic->author->setUserPreference('pmdata/deletedTopicList',$temp);
-			}
-			$temp=$topic->author->getUserPreference('pmdata/newMessages');
-			$topic->author->setUserPreference('pmdata/newMessages',$temp+1);
+
+			$topic->author->unDeletePm($topicId,'topic');
+			$topic->author->registerNewPm($messageId,'message');
+
 		} else {
-			$temp=$this->user->getUserPreference('pmdata/deletedTopicList');
-			if (is_array($temp)) {
-				$temp=array_diff($temp,array($topicId));
-				$this->user->setUserPreference('pmdata/deletedTopicList',$temp);
-			}
-			$temp=$this->user->getUserPreference('pmdata/newMessages');
-			$this->user->setUserPreference('pmdata/newMessages',$temp+1);
+			$this->user->unDeletePm($topicId,'topic');
+			$this->user->registerNewPm($messageId,'message');
 		}
 
 	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onTopicDisplay($topicId) {
+		$this->parent->currentUser->viewPm($topicId,'topic');
+
+		parent::event_onTopicDisplay($topicId);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageDisplay($topicId,$messageId) {
+		$this->parent->currentUser->viewPm($messageId,'message');
+
+		parent::event_onMessageDisplay($topicId,$messageId);
+	}
+
 
 	/**
 	 * Return TRUE if the message has been deleted here (see tx_ppforum_message->delete, tx_ppforum_topic->deleteMessage)
@@ -293,26 +323,27 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 */
 	function deleteMessage($messageId) {
 		$message=&$this->parent->getMessageObj($messageId);
-		if ($this->parent->currentUser->id==-$this->id) {
+		if ($this->parent->currentUser->id == $this->userId) {
 			$message->loadAuthor();
-			$theOtherUser=$message->author->id;
+
+			//** Real delete if other user has already deleted this message
+			if (!$message->author->pmIsVisible($messageId,'message') || !$message->topic->isVisible()) {
+				$message->author->clearPmData($messageId,'message');
+				return FALSE;
+			}
 		} else {
-			$theOtherUser=$this->user->id;
+			//** Real delete if other user has already deleted this message
+			if (!$this->user->pmIsVisible($messageId,'message') || !$message->topic->isVisible()) {
+				$this->user->clearPmData($messageId,'message');
+				return FALSE;
+			}
 		}
 
-		if (!$this->messageIsVisible($messageId,$theOtherUser)) {
-			return FALSE;
-		} else {
-			$messageList=$this->parent->getUserPreference('pmdata/deletedMessageList');
-			if (!is_array($messageList)) {
-				$messageList=Array($messageId);
-			} else {
-				$messageList[]=$messageId;
-			}
-			$this->parent->setUserPreference('pmdata/deletedMessageList',$messageList);
-			$message->topic->loadMessages(TRUE);
-			return TRUE;
-		}
+		//** user-delete
+		$this->parent->currentUser->deletePm($messageId,'message');
+		$message->topic->loadMessages(TRUE);
+
+		return TRUE;
 	}
 
 	/**
@@ -324,26 +355,30 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 */
 	function deleteTopic($topicId) {
 		$topic=&$this->parent->getTopicObj($topicId);
-		if ($this->parent->currentUser->id==$this->userId) {
+		if ($this->parent->currentUser->id == $this->userId) {
 			$topic->loadAuthor();
-			$theOtherUser=$topic->author->id;
-		} else {
-			$theOtherUser=$this->user->id;
-		}
 
-		if (!$this->topicIsVisible($topicId,$theOtherUser)) {
-			return FALSE;
-		} else {
-			$topicList=$this->parent->getUserPreference('pmdata/deletedTopicList');
-			if (!is_array($topicList)) {
-				$topicList=Array($topicId);
-			} else {
-				$topicList[]=$topicId;
+			//** Real delete if other user has already deleted this message
+			if (!$topic->author->pmIsVisible($topicId,'topic')) {
+				$topic->author->unDeletePm($topicId,'topic');
+				return FALSE;
 			}
-			$this->parent->setUserPreference('pmdata/deletedTopicList',$topicList);
-			$this->loadTopicList(TRUE);
+		} else {
+			//** Real delete if other user has already deleted this message
+			if (!$this->user->pmIsVisible($topicId,'topic')) {
+				$this->user->unDeletePm($topicId,'topic');
+				return FALSE;
+			}
 		}
 
+		$this->parent->currentUser->deletePm($topicId,'topic');
+
+		//** Unread message should not be counted there !
+		$topic->loadMessages();
+		foreach ($topic->messageList as $messageId) {
+			$this->parent->currentUser->viewPm($messageId,'message');
+		}
+		$this->loadTopicList(TRUE);
 		return TRUE;
 	}
 
@@ -356,8 +391,8 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function getTitleLink() {
 		if ($this->userId==$this->parent->currentUser->id) {
 			$title=$this->parent->pp_getLL('inbox.self.title','Inbox');
-			if ($temp=intval($this->user->getUserPreference('pmdata/newMessages'))) {
-				$title.=' ('.$temp.')';
+			if ($temp=$this->user->countNewPms()) {
+				$title.=' ['.$temp.']';
 			}
 			return $this->getLink($title);
 		} else {

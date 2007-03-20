@@ -92,3 +92,16 @@ CREATE TABLE tx_ppforum_messages (
 	PRIMARY KEY (uid),
 	KEY parent (pid)
 );
+
+
+#
+# Table structure for table 'tx_ppforum_userpms'
+#
+CREATE TABLE `tx_ppforum_userpms` (
+  `rel_id` int(11) NOT NULL default '0',
+  `rel_table` varchar(10) NOT NULL default '',
+  `rel_type` varchar(10) NOT NULL default '',
+  `user_id` int(11) NOT NULL default '0',
+  PRIMARY KEY  (`rel_id`,`rel_table`,`rel_type`),
+  KEY `usertype` (`user_id`,`rel_type`)
+);

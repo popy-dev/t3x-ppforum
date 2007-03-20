@@ -250,9 +250,14 @@ class tx_ppforum_forum {
 	 * @return string 
 	 */
 	function getTopicLink($title='',$addParams=array(),$parameter='') {
-		if (!isset($addParams['forum']) && $this->options['unsetForumId']) {
-			$addParams['forum']='';
+		if (!isset($addParams['forum'])) {
+			if ($this->options['keepCurrentForumId']) {
+				$addParams['forum']=$this->parent->getCurrentForum();
+			} elseif ($this->options['unsetForumId']) {
+				$addParams['forum']='';
+			}
 		}
+
 		return $this->getLink(
 			$title,
 			$addParams, //overrule piVars
@@ -406,6 +411,26 @@ class tx_ppforum_forum {
 		return $res;
 	}
 
+
+	/**
+	 * Launched when a topic is inserted
+	 *
+	 *
+	 * @param int $topicId = topic uid
+	 * @access public
+	 * @return void 
+	 */
+	function event_onNewTopic($topicId) {
+		$null=NULL;
+		$this->parent->st_playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onNewTopic'],
+			$null,
+			$this
+			);
+
+		$this->event_onUpdateInForum();
+	}
+
 	/**
 	 * Launched when a forum (or a topic in this forum) is modified
 	 *
@@ -414,7 +439,11 @@ class tx_ppforum_forum {
 	 * @return void 
 	 */
 	function event_onUpdateInForum() {
+		/* Declare */
+		$null=NULL;
 		$paramKey=array();
+
+		/* Begin */
 		if ($this->id) {
 			$paramKey=array('forum'=>intval($this->id));
 		}
@@ -423,7 +452,7 @@ class tx_ppforum_forum {
 
 		$this->parent->st_playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onUpdateInForum'],
-			$forum,
+			$null,
 			$this
 			);
 
@@ -994,7 +1023,15 @@ class tx_ppforum_forum {
 		return $res;
 	}
 
-
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onNewPostInTopic($topicId,$messageId) {
+	}
 
 	/**
 	 *
@@ -1003,7 +1040,17 @@ class tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onNewPostInTopic($topicId) {
+	function event_onTopicDisplay($topicId) {
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageDisplay($topicId,$messageId) {
 	}
 
 	/**

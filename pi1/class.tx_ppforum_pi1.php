@@ -1330,49 +1330,6 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	}
 
 	/****************************************/
-	/******** Cache/Events management *******/
-	/****************************************/
-
-	/**
-	 * Launched when a message is created/modified
-	 * OBSOLETE
-	 *
-	 * @param int $messageId = message's uid
-	 * @access public
-	 * @return void 
-	 */
-	function event_onUpdateInMessage($messageId) {
-		$message=&$this->getMessageObj($messageId,TRUE);
-		$message->event_onUpdateInMessage();
-	}
-
-	/**
-	 * Launched when a topic (or a message in this topic) is modified
-	 * OBSOLETE
-	 *
-	 * @param int $topicId = topic's uid
-	 * @access public
-	 * @return void 
-	 */
-	function event_onUpdateInTopic($topicId) {
-		$topic=&$this->getTopicObj($topicId,TRUE);
-		$topic->event_onUpdateInTopic();
-	}
-
-	/**
-	 * Launched when a forum (or a topic in this forum) is modified
-	 * OBSOLETE
-	 *
-	 * @param int $forumId = forum's uid
-	 * @access public
-	 * @return void 
-	 */
-	function event_onUpdateInForum($forumId) {
-		$forum=&$this->getSingleForum($forumId,TRUE);
-		$forum->event_onUpdateInForum();
-	}
-
-	/****************************************/
 	/*************** Div funcs **************/
 	/****************************************/
 
@@ -1385,7 +1342,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return object 
 	 */
 	function &makeInstance($className) {
-		$obj=t3lib_div::makeInstance($className);
+		$obj=&t3lib_div::makeInstance($className);
 		$obj->parent=&$this;
 		if (method_exists($obj,'init')) {
 			$obj->init();

@@ -49,6 +49,7 @@ class tx_ppforum_user {
 			if (!is_array($this->uc)) {
 				$this->uc=Array();
 			}
+
 		}
 		return $this->id;
 	}
@@ -75,16 +76,19 @@ class tx_ppforum_user {
 		//Updating tstamp field
 		$this->data['tstamp']=$GLOBALS['SIM_EXEC_TIME'];
 
-		//
-		if ($this->ucSave) {
-			$this->data['uc']=serialize($this->uc);
-		}
-		$this->ucSave=FALSE;
 
 		if ($this->id) {
 			//*** Optimistic update :
 			//Loading old data
 			$oldData=$this->parent->getSingleUser($this->id);
+
+			//*** Updating uc
+			if ($this->ucSave) {
+				$oldUc=unserialize($oldData['uc']);
+				$this->uc=$this->mergeUc($oldUc,$this->uc);
+				$this->data['uc']=serialize($this->uc);
+			}
+			$this->ucSave=FALSE;
 
 			//Updating db row
 			$result=$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
@@ -104,6 +108,34 @@ class tx_ppforum_user {
 		return $result?$this->id:FALSE;
 	}
 
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function mergeUc($old,$new,$isRoot=TRUE) {
+		foreach ($new as $key=>$val) {
+			if (!$isRoot || substr($key,0,8)=='ppforum/') {
+				if (is_array($val) && strtolower(substr($key,-4))=='list') {
+					if (is_array($old[$key])) {
+						$old[$key]=array_unique(array_merge($old[$key],$val));
+					} else {
+						$old[$key]=$val;
+					}
+				} elseif (is_array($val)) {
+					$old[$key]=$this->mergeUc($old[$key],$val,FALSE);
+				} else {
+					$old[$key]=$val;
+				}
+			} else {
+				$old[$key]=$this->parent->arrayMergeRecursive($old[$key],$val,TRUE);
+			}
+		}
+
+		return $old;
+	}
 
 	/**
 	 *
@@ -148,6 +180,107 @@ class tx_ppforum_user {
 				$this->parent->registerCloseFunction('save',$this);
 				$this->ucSave=TRUE;
 			}
+		}
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function registerNewPm($id,$table) {
+		$GLOBALS['TYPO3_DB']->exec_INSERTquery('tx_ppforum_userpms',array('rel_id'=>$id,'rel_table'=>$table,'rel_type'=>'new','user_id'=>$this->id));
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function viewPm($id,$table) {
+		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
+			'tx_ppforum_userpms',
+			'rel_id='.strval(intval($id)).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms').' AND rel_type=\'new\' AND user_id='.strval($this->id)
+			);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function clearPmData($id,$table) {
+		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
+			'tx_ppforum_userpms',
+			'rel_id='.strval(intval($id)).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms')
+			);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function deletePm($id,$table) {
+		$GLOBALS['TYPO3_DB']->exec_INSERTquery('tx_ppforum_userpms',array('rel_id'=>$id,'rel_table'=>$table,'rel_type'=>'delete','user_id'=>$this->id));
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function unDeletePm($id,$table) {
+		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
+			'tx_ppforum_userpms',
+			'rel_id='.strval($id).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id='.strval($this->id)
+			);
+	}
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function pmIsVisible($id,$table) {
+		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+			'rel_id',
+			'tx_ppforum_userpms',
+			'rel_id='.strval($id).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id='.strval($this->id)
+			);
+
+		return !(is_array($tabRes) && count($tabRes));
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function countNewPms() {
+		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+			'count(*)',
+			'tx_ppforum_userpms',
+			'rel_type=\'new\' AND user_id='.strval($this->id)
+			);
+
+		if (is_array($tabRes) && count($tabRes)) {
+			return intval(reset(reset($tabRes)));
+		} else {
+			return 0;
 		}
 	}
 
