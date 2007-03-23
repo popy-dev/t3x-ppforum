@@ -136,7 +136,8 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			$data['conf']['topic-with']=$data['topic']->author->displayLight();
 		}
 
-		$data['conf']['topic-title']=$data['topic']->getTitleLink();
+		$newPms=$this->parent->currentUser->countNewPms($data['topic']->id);
+		$data['conf']['topic-title']=$data['topic']->getTitleLink().($newPms?(' ['.$newPms.']'):'');
 		$data['conf']['topic-posts']=$data['counters']['posts'];
 		$data['conf']['topic-author']=$data['topic']->author->displayLight();
 
@@ -278,11 +279,11 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			$topic->loadAuthor();
 
 			$topic->author->unDeletePm($topicId,'topic');
-			$topic->author->registerNewPm($messageId,'message');
+			$topic->author->registerNewPm($messageId,'message',$topicId);
 
 		} else {
 			$this->user->unDeletePm($topicId,'topic');
-			$this->user->registerNewPm($messageId,'message');
+			$this->user->registerNewPm($messageId,'message',$topicId);
 		}
 
 	}

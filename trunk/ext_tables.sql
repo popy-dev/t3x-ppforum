@@ -102,6 +102,7 @@ CREATE TABLE `tx_ppforum_userpms` (
   `rel_table` varchar(10) NOT NULL default '',
   `rel_type` varchar(10) NOT NULL default '',
   `user_id` int(11) NOT NULL default '0',
+  `parent` int(11) NOT NULL default '0',
   PRIMARY KEY  (`rel_id`,`rel_table`,`rel_type`),
   KEY `usertype` (`user_id`,`rel_type`)
 );
