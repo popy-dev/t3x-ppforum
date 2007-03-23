@@ -190,8 +190,8 @@ class tx_ppforum_user {
 	 * @access public
 	 * @return void 
 	 */
-	function registerNewPm($id,$table) {
-		$GLOBALS['TYPO3_DB']->exec_INSERTquery('tx_ppforum_userpms',array('rel_id'=>$id,'rel_table'=>$table,'rel_type'=>'new','user_id'=>$this->id));
+	function registerNewPm($id,$table,$parent=0) {
+		$GLOBALS['TYPO3_DB']->exec_INSERTquery('tx_ppforum_userpms',array('rel_id'=>$id,'rel_table'=>$table,'rel_type'=>'new','user_id'=>$this->id,'parent'=>$parent));
 	}
 
 	/**
@@ -270,11 +270,12 @@ class tx_ppforum_user {
 	 * @access public
 	 * @return void 
 	 */
-	function countNewPms() {
+	function countNewPms($inTopic=0) {
+		$addWhere=$inTopic?' AND rel_table=\'message\' AND parent='.strval($inTopic):'';
 		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'count(*)',
 			'tx_ppforum_userpms',
-			'rel_type=\'new\' AND user_id='.strval($this->id)
+			'rel_type=\'new\' AND user_id='.strval($this->id).$addWhere
 			);
 
 		if (is_array($tabRes) && count($tabRes)) {
