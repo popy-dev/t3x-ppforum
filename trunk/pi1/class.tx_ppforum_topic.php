@@ -175,7 +175,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title='',$addParams=array(),$parameter='') {
+	function getLink($title=FALSE,$addParams=array(),$parameter='') {
 		if (intval($this->id)) {
 			$addParams['topic']=$this->id;
 		} else {
@@ -219,7 +219,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getEditLink($title='') {
+	function getEditLink($title=FALSE) {
 		$addParams=array('edittopic'=>1);
 		if (!$this->id) {
 			$addParams['forum']=$this->forum->id;
@@ -234,7 +234,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getDeleteLink($title='') {
+	function getDeleteLink($title=FALSE) {
 		if ($this->id) {
 			$addParams=array('deletetopic'=>1,'pointer'=>$this->parent->getVars['pointer']);
 			return $this->getLink($title,$addParams);
@@ -658,7 +658,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Openning form tag
 		if (in_array($data['mode'],array('new','edit'))) {
-			$content.='<form method="post" action="'.htmlspecialchars($this->getEditLink()).'" class="topic-edit">';
+			$content.='<form method="post" action="'.htmlspecialchars($this->getEditLink(FALSE)).'" class="topic-edit">';
 		} elseif ($data['mode']=='delete') {
 			$content.='<form method="post" action="'.htmlspecialchars($this->getDeleteLink()).'" class="topic-delete">';
 		}
