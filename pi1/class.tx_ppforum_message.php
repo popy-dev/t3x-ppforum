@@ -312,7 +312,7 @@ class tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title='',$addParams=array()) {
+	function getLink($title=FALSE,$addParams=array()) {
 		$addParams['pointer']=$this->getPageNum();
 
 		return $this->topic->getMessageLink(
@@ -330,7 +330,7 @@ class tx_ppforum_message {
 	 * @access public
 	 * @return string
 	 */
-	function getEditLink($title='',$forceReload=FALSE) {
+	function getEditLink($title=FALSE,$forceReload=FALSE) {
 		$addParams=array('editmessage'=>-1);
 		if ($this->id) {
 			$addParams['forceReload']=$forceReload;
@@ -462,7 +462,7 @@ class tx_ppforum_message {
 
 		if (in_array($data['mode'],array('new','edit'))) {
 			//Opening form tag. The second parameter of getEditLink ensures that the "action" url will be different of the edit link
-			$content.='<form method="post" action="'.htmlspecialchars($this->getEditLink('',TRUE)).'" class="message-edit">';
+			$content.='<form method="post" action="'.htmlspecialchars($this->getEditLink(FALSE,TRUE)).'" class="message-edit">';
 		} elseif ($data['mode']=='delete') {
 			$content.='<form method="post" action="'.htmlspecialchars($this->getDeleteLink()).'" class="message-delete">';
 		}
