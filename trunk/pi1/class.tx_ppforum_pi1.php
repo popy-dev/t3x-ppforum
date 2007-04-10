@@ -348,7 +348,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			parent::init();
 
 			$this->config['.lightMode']=isset($this->getVars['lightMode'])?($this->getVars['lightMode']?TRUE:FALSE):FALSE;
-			if ($this->config['lightMode_def']) {
+			if ($this->config['display']['lightMode_def']) {
 				$this->config['.lightMode']=!$this->config['.lightMode'];
 			}
 
@@ -1380,7 +1380,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			break;
 		}
 		$addWhere.=' AND '.$this->tables[$tablename].'.pid IN ('.$this->config['pidFullList'].')';
-		$addWhere.=$this->cObj->enableFields($this->tables[$tablename]);
+		$addWhere.=$this->cObj->enableFields($this->tables[$tablename], ($tablename == 'messages')?1:0);
 		return $addWhere;
 	}
 
