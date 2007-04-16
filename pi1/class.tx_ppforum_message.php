@@ -346,7 +346,7 @@ class tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getDeleteLink($title='') {
+	function getDeleteLink($title = false) {
 		if ($this->id) {
 			$addParams=array('deletemessage'=>$this->id);
 			return $this->getLink($title,$addParams);

@@ -160,10 +160,10 @@ foreach (array('read','write','guard','admin') as $access) {
 }
 
 //Restriction fields
-$tmpAddColumns.=',--div--;;;;4-4-4';
-foreach (array('newtopic','edit','delete') as $name) {
-	$tmpAddColumns.=','.$name.'_restrict';
-	$TCA['tx_ppforum_forums']['columns'][$name.'_restrict']=Array (		
+$tmpAddColumns .= ',--div--;;;;4-4-4';
+foreach (array('newtopic','reply','edit','delete') as $name) {
+	$tmpAddColumns .= ','.$name.'_restrict';
+	$TCA['tx_ppforum_forums']['columns'][$name.'_restrict'] = Array (		
 		'exclude' => 1,		
 		'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.'.$name.'_restrict',		
 		'l10n_mode' => 'exclude',		
@@ -181,7 +181,7 @@ foreach (array('newtopic','edit','delete') as $name) {
 	);
 }
 //Adding columns
-$TCA['tx_ppforum_forums']['types']['0']['showitem'].=$tmpAddColumns;
+$TCA['tx_ppforum_forums']['types']['0']['showitem'] .= $tmpAddColumns;
 //Clearing vars (GLOBALS array is aleady big !)
 unset($access);
 unset($name);
