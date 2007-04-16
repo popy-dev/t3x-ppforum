@@ -136,7 +136,7 @@ class tx_ppforum_forum {
 				$this->forum->readRestricts();
 			}
 
-			foreach (array('newtopic','edit','delete') as $name) {
+			foreach (array('newtopic','reply','edit','delete') as $name) {
 				$this->readSingleRestrict($name);
 			}
 		}
@@ -354,10 +354,12 @@ class tx_ppforum_forum {
 	 */
 	function userCanReplyInForum($dontCheckWriteAccess=FALSE) {
 		if ($dontCheckWriteAccess) {
-			$res=TRUE;
+			$res = true;
 		} else {
-			$res=$this->userCanWriteInForum();
+			$res = $this->userCanWriteInForum();
 		}
+
+		$res = $res && $this->access['restrict']['reply'];
 	
 		//Plays hook list : Allows to change the result
 		$this->parent->st_playHooks(

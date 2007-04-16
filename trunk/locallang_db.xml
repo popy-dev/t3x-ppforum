@@ -24,7 +24,8 @@
 			<label index="tx_ppforum_forums.adminaccess">Admin access</label>
 			<label index="tx_ppforum_forums.adminaccess_mode">Admin access mode</label>
 			<!-- Restrict fields -->
-			<label index="tx_ppforum_forums.newtopic">Allow posting new topics to :</label>
+			<label index="tx_ppforum_forums.newtopic_restrict">Allow posting new topics to :</label>
+			<label index="tx_ppforum_forums.reply_restrict">Allow "reply" to :</label>
 			<label index="tx_ppforum_forums.edit_restrict">Allow editing messages/topics to :</label>
 			<label index="tx_ppforum_forums.delete_restrict">Allow deleting messages/topics to :</label>
 			<!-- List-Item labels -->
@@ -89,7 +90,8 @@
 			<label index="tx_ppforum_forums.adminaccess">Administrateurs</label>
 			<label index="tx_ppforum_forums.adminaccess_mode">Mode de définition des Administrateurs</label>
 			<!-- Restrict fields -->
-			<label index="tx_ppforum_forums.newtopic_restrict">Autoriser la création de nouveaux messages à :</label>
+			<label index="tx_ppforum_forums.newtopic_restrict">Autoriser la création de nouveaux topic à :</label>
+			<label index="tx_ppforum_forums.reply_restrict">Autoriser la création de nouveaux messages (réponses) à :</label>
 			<label index="tx_ppforum_forums.edit_restrict">Autoriser l'édition de messages/topics à :</label>
 			<label index="tx_ppforum_forums.delete_restrict">Autoriser la suppression de messages/topics à :</label>
 			<!-- List-Item labels -->

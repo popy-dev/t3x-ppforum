@@ -38,6 +38,7 @@ CREATE TABLE tx_ppforum_forums (
 
 	#Restrict fields
 	newtopic_restrict varchar(10) DEFAULT '' NOT NULL,
+	reply_restrict varchar(10) DEFAULT '' NOT NULL,
 	edit_restrict varchar(10) DEFAULT '' NOT NULL,
 	delete_restrict varchar(10) DEFAULT '' NOT NULL,
 	
