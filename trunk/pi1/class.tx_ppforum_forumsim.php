@@ -69,10 +69,10 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function display() {
+	/*function display() {
 		$this->user->setUserPreference('pmdata/newMessages',0);
 		return parent::display();
-	}
+	}*/
 
 	/**
 	 *

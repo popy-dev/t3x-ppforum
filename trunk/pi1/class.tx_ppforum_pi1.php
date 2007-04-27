@@ -1498,10 +1498,10 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		}
 
 		if ($selectedPage>1) {
-			$links[]='<a href="'.htmlspecialchars($ref->getLink('',array('pointer'=>0))).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
+			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>0))).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
 		}
 		if ($selectedPage>0) {
-			$links[]='<a href="'.htmlspecialchars($ref->getLink('',array('pointer'=>$selectedPage-1))).'" title="'.$this->pp_getLL('messages.pointer.goToPrev_title','Back to previous page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToPrev','<',TRUE).'</a>';
+			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$selectedPage-1))).'" title="'.$this->pp_getLL('messages.pointer.goToPrev_title','Back to previous page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToPrev','<',TRUE).'</a>';
 		}
 
 		if ($startPage) {
@@ -1510,7 +1510,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 
 		for ($i=$startPage;$i<$endPage+1;$i++) {
 			if ($i!=$selectedPage) {
-				$links[]='<a href="'.htmlspecialchars($ref->getLink('',array('pointer'=>$i))).'" title="'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage_title','Jump to page ###pagenum###',TRUE)).'">'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage','###pagenum###',TRUE)).'</a>';
+				$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$i))).'" title="'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage_title','Jump to page ###pagenum###',TRUE)).'">'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage','###pagenum###',TRUE)).'</a>';
 			} else {
 				$links[]=str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage','###pagenum###',TRUE));
 			}
@@ -1521,10 +1521,11 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		}
 
 		if ($selectedPage<$maxPageNum) {
-			$links[]='<a href="'.htmlspecialchars($ref->getLink('',array('pointer'=>$selectedPage+1))).'" title="'.$this->pp_getLL('messages.pointer.goToNext_title','Next page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToNext','>',TRUE).'</a>';
+			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$selectedPage+1))).'" title="'.$this->pp_getLL('messages.pointer.goToNext_title','Next page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToNext','>',TRUE).'</a>';
 		}
 		if ($selectedPage<$maxPageNum-1) {
-			$links[]='<a href="'.htmlspecialchars($ref->getLink('',array('pointer'=>'last'))).'" title="'.$this->pp_getLL('messages.pointer.goToLast_title','Last page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToLast','>>',TRUE).'</a>';
+			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>'last'))).'" title="'.$this->pp_getLL('messages.pointer.goToLast_title','Last page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToLast','>>',TRUE).'</a>';
+			t3lib_div::debug(end($links), '');
 		}
 		
 		$addClasses[]='browser';
