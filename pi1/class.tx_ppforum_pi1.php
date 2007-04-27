@@ -1525,7 +1525,6 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		}
 		if ($selectedPage<$maxPageNum-1) {
 			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>'last'))).'" title="'.$this->pp_getLL('messages.pointer.goToLast_title','Last page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToLast','>>',TRUE).'</a>';
-			t3lib_div::debug(end($links), '');
 		}
 		
 		$addClasses[]='browser';
