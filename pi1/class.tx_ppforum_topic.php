@@ -568,6 +568,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			);
 	
 		/* Begin */
+		if ($this->forum->id < 0) {
+			$GLOBALS['TSFE']->set_no_cache();
+		}
 		//Loads author
 		$this->loadAuthor();
 
