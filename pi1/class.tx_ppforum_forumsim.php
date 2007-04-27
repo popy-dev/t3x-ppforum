@@ -424,6 +424,17 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param bool $dontCheckWriteAccess = TRUE if no need to check write access before (maybe it has already been done)
+	 * @access public
+	 * @return bool 
+	 */
+	function userCanReplyInForum($dontCheckWriteAccess = false) {
+		return $dontCheckWriteAccess || $this->userCanWriteInForum();
+	}
+
+	/**
 	 * Access check : Check if current user can create a new topic
 	 *
 	 * @access public

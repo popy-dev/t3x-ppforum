@@ -350,7 +350,7 @@ class tx_ppforum_forum {
 	 *
 	 * @param bool $dontCheckWriteAccess = TRUE if no need to check write access before (maybe it has already been done)
 	 * @access public
-	 * @return void 
+	 * @return bool 
 	 */
 	function userCanReplyInForum($dontCheckWriteAccess=FALSE) {
 		if ($dontCheckWriteAccess) {
