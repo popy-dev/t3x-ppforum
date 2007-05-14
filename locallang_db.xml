@@ -62,6 +62,7 @@
 			<label index="flexform.tab_display.pageRange">Max amount of page-links to display</label>
 			<label index="flexform.tab_display.csstemplate">Css template</label>
 			<label index="flexform.tab_display.csstemplate.macmade">Macmade's Template</label>
+			<label index="flexform.tab_display.csstemplate.green">A green Template</label>
 			<label index="flexform.tab_display.lightMode_def">Enable light mode by default</label>
 			<label index="flexform.tab_display.printStats">Print performance statistics</label>
 
@@ -129,6 +130,7 @@
 			<label index="flexform.tab_display.lightMode_def">Mode "light" activé par défaut</label>
 			<label index="flexform.tab_display.csstemplate">Gabarit Css</label>
 			<label index="flexform.tab_display.csstemplate.macmade">Gabarit Macmade</label>
+			<label index="flexform.tab_display.csstemplate.green">Gabarit Vert</label>
 			<label index="flexform.tab_display.printStats">Affiche les statistiques</label>
 
 			<label index="flexform.tab_image">Avatars</label>
