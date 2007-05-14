@@ -1068,8 +1068,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->messageList=Array();
 			//Get raw list
 			foreach ($this->parent->getTopicMessages($this->id,$clearCache) as $messageId) {
+				$temp = &$this->parent->getMessageObj($messageId);
 				//Additional check
-				if ($noCheck || $this->messageIsVisible($messageId)) {
+				if ($noCheck || ($temp->isVisible() && $this->messageIsVisible($messageId))) {
 					$this->messageList[]=$messageId;
 				}
 			}
