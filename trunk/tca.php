@@ -24,7 +24,7 @@ $TCA['tx_ppforum_forums'] = Array (
 				'foreign_table' => 'sys_language',
 				'foreign_table_where' => 'ORDER BY sys_language.title',
 				'items' => Array(
-					Array('LLL:EXT:lang/locallang_general.php:LGL.allLanguages',-1),
+					//Array('LLL:EXT:lang/locallang_general.php:LGL.allLanguages',-1),
 					Array('LLL:EXT:lang/locallang_general.php:LGL.default_value',0)
 				)
 			)

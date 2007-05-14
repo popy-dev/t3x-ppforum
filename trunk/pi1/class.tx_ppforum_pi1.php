@@ -955,7 +955,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$res=$this->doCachedQuery(Array(
 					'select'=>'uid',
 					'from'=>$this->tables['forums'],
-					'where'=>'parent='.intval($id).$this->getEnableFields('forums'),
+					//'where'=>'parent='.intval($id).$this->getEnableFields('forums'),
+					'where'=>'parent='.intval($id).$this->pp_getEnableFields($this->tables['forums']),
 					'orderby'=>$this->getOrdering('forums'),
 					'indexField'=>'uid'
 				),
@@ -984,7 +985,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			$res=$this->doCachedQuery(Array(
 						'select'=>'uid',
 						'from'=>$this->tables['topics'],
-						'where'=>'forum='.intval($id).$this->getEnableFields('topics'),
+						//'where'=>'forum='.intval($id).$this->getEnableFields('topics'),
+						'where'=>'forum='.intval($id).$this->pp_getEnableFields($this->tables['topics']),
 						'orderby'=>$this->getOrdering('topics',$options)
 					),
 					$clearCache
@@ -1016,7 +1018,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$res=$this->doCachedQuery(Array(
 					'select'=>'uid',
 					'from'=>$this->tables['topics'],
-					'where'=>$query.$this->getEnableFields('topics'),
+					//'where'=>$query.$this->getEnableFields('topics'),
+					'where'=>$query.$this->pp_getEnableFields($this->tables['topics']),
 					'orderby'=>$this->getOrdering('topics',$options)
 				),
 				$clearCache
@@ -1059,6 +1062,15 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function getSingleForum($id,$clearCache=FALSE) {
+		$data = $this->pp_getRecord($id, $this->tables['forums']);
+		$GLOBALS['TSFE']->sys_page->getRecordOverlay(
+			$this->tables['forums'],
+			$data,
+			$GLOBALS['TSFE']->sys_language_content
+		);
+
+		return $data;
+
 		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['FORUM'][$id]) || $clearCache) {
 			$res=intval($id)?$this->doCachedQuery(Array(
 						'select'=>'*',
@@ -1133,7 +1145,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$res=intval($id)?$this->doCachedQuery(Array(
 					'select'=>'uid',
 					'from'=>$this->tables['messages'],
-					'where'=>'topic='.intval($id).$this->getEnableFields('messages'),
+					//'where'=>'topic='.intval($id).$this->getEnableFields('messages'),
+					'where'=>'topic='.intval($id).$this->pp_getEnableFields($this->tables['messages']),
 					'orderby'=>$this->getOrdering('messages'),
 					'indexField'=>'uid'
 				),
@@ -1155,6 +1168,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function getSingleTopic($id,$clearCache=FALSE) {
+		return $this->pp_getRecord($id, $this->tables['topics']);
+
 		$res=intval($id)?$this->doCachedQuery(Array(
 					'select'=>'*',
 					'from'=>$this->tables['topics'],
@@ -1206,6 +1221,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function getSingleMessage($id,$clearCache=FALSE) {
+		return $this->pp_getRecord($id, $this->tables['messages']);
+
 		$res=intval($id)?$this->doCachedQuery(Array(
 					'select'=>'*',
 					'from'=>$this->tables['messages'],
@@ -1296,6 +1313,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return array/boolean 
 	 */
 	function getSingleUser($id,$clearCache=FALSE) {
+		return $this->pp_getRecord($id, $this->tables['users']);
+
 		$res=intval($id)?$this->doCachedQuery(Array(
 					'select'=>'*',
 					'from'=>$this->tables['users'],
@@ -1371,6 +1390,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return string
 	 */
 	function getEnableFields($tablename) {
+		t3lib_div::debug(t3lib_div::debug_trail(), 'debug_trail()');
+		return $this->pp_getEnableFields($this->tables[$tablename]);
 		/* Declare */
 		$addWhere='';
 	
@@ -1384,6 +1405,36 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$addWhere.=$this->cObj->enableFields($this->tables[$tablename], ($tablename == 'messages')?1:0);
 		return $addWhere;
 	}
+
+	/**
+	 * Build WHERE statement wich filter from deleted/hidden/not visible records
+	 * Used by getRecord : feel free to redefine this function !!
+	 * 
+	 * @param string $table = table name
+	 * @param bool $show_hidden = if true, will not filter out hidden records
+	 * @access public
+	 * @return string
+	 */
+	function pp_getEnableFields($table, $unused = false) {
+		/* Declare */
+		$addWhere='';
+		$show_hidden = 0;
+	
+		/* Begin */
+		if ($table == $this->tables['forums']) {
+			$addWhere .= ' AND '.$table.'.sys_language_uid = 0';
+		}
+
+		if ($table == $this->tables['messages']) {
+			$show_hidden = 1;
+		}
+
+		$addWhere .= parent::pp_getEnableFields($table, $show_hidden);
+
+		return $addWhere;
+	}
+
+
 
 	/**
 	 * Build the "ORDER BY" clause (without ORDER BY) for the given table
