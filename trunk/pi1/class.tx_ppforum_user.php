@@ -22,6 +22,9 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
+
 
 /**
  * Class 'tx_ppforum_user' for the 'pp_forum' extension.
@@ -30,20 +33,19 @@
  * @package TYPO3
  * @subpackage tx_ppforum
  */
-class tx_ppforum_user {
-	var $id=0;
-	var $data=array();
+class tx_ppforum_user extends tx_ppforum_base {
 	var $ucSave=FALSE;
 
 	/**
 	 *
 	 *
 	 * @param 
+	 * @param boolean $clearCache = if TRUE, cached data will be overrided
 	 * @access public
 	 * @return void 
 	 */
-	function load($id,$clearCache=FALSE) {
-		if ($this->data=$this->parent->getSingleUser($id,$clearCache)) {
+	function load($id, $clearCache = false) {
+		if (parent::load($id, $clearCache)) {
 			$this->id=intval($id);
 			$this->uc=unserialize($this->data['uc']);
 			if (!is_array($this->uc)) {
@@ -332,13 +334,13 @@ class tx_ppforum_user {
 		$nbMessages=intval(reset(reset(tx_pplib::doCachedQuery(
 			array(
 				'select'=>'count(uid) AS nb',
-				'from'=>$this->parent->tables['messages'],
+				'from'=>$this->parent->tables['message'],
 				'where'=>'author='.intval($this->id)
 				)
 			))))+intval(reset(reset(tx_pplib::doCachedQuery(
 			array(
 				'select'=>'count(uid) AS nb',
-				'from'=>$this->parent->tables['topics'],
+				'from'=>$this->parent->tables['topic'],
 				'where'=>'author='.intval($this->id)
 				)
 			))));

@@ -22,6 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_forum.php');
 
 /**
  * Class 'tx_ppforum_forum' for the 'pp_forum' extension.
@@ -49,15 +50,15 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * Loads the forum data from DB
 	 *
 	 * @param int $id = Forum uid
-	 * @param boolean $clearCache = @see tx_pplib::do_cachedQuery
+	 * @param boolean $clearCache = if TRUE, cached data will be overrided
 	 * @access public
 	 * @return int = loaded uid
 	 */
-	function load($id,$clearCache=FALSE) {
+	function load($id, $clearCache = false) {
 		if ($id) {
-			$this->id=intval($id);
-			$this->userId=-$id;
-			$this->user=&$this->parent->getUserObj($this->userId);
+			$this->id = intval($id);
+			$this->userId = -$id;
+			$this->user = &$this->parent->getUserObj($this->userId, $clearCache);
 		}
 		return $this->id;
 	}

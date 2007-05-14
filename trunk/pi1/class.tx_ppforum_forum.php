@@ -22,6 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
 
 /**
  * Class 'tx_ppforum_forum' for the 'pp_forum' extension.
@@ -30,17 +31,14 @@
  * @package	TYPO3
  * @subpackage	tx_ppforum
  */
-class tx_ppforum_forum {
-	var $id=0; //The forum uid
-	var $data=array(); //The forum data
+class tx_ppforum_forum extends tx_ppforum_base {
 	var $processMessage=array(); //Error message storage
 
-	var $parent=NULL; //Pointer to the plugin object
-	var $forum=NULL; //Pointer to parent forum object
+	var $forum = null; //Pointer to parent forum object
 
 	var $options=Array(
-		'unsetForumId'=>TRUE,
-		);
+		'unsetForumId' => true,
+	);
 
 	/**
 	 * Loads the forum data from DB
@@ -50,10 +48,10 @@ class tx_ppforum_forum {
 	 * @access public
 	 * @return int = loaded uid
 	 */
-	function load($id,$clearCache=FALSE) {
-		if ($id && ($this->data=$this->parent->getSingleForum($id,$clearCache))) {
-			$this->id=intval($id);
-			$this->forum=&$this->parent->getForumObj($this->data['parent']);
+	function load($id, $clearCache = false) {
+		if (parent::load($id, $clearCache)) {
+			$this->id = intval($id);
+			$this->forum = &$this->parent->getForumObj($this->data['parent']);
 		}
 		return $this->id;
 	}
@@ -287,7 +285,7 @@ class tx_ppforum_forum {
 				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['newposts']+=$tmp['newposts'];
 			}
 
-			$obj=$this->parent->makeInstance('tx_ppforum_topic');
+			$obj = $this->parent->getTopicObj(0);
 			foreach ($this->parent->getForumTopics($forumId,$clearCache) as $topic) {
 				$tmp=$obj->getCounters($topic,$clearCache);
 				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['topics']++;

@@ -22,6 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
 
 /**
  * Class 'tx_ppforum_topic' for the 'pp_forum' extension.
@@ -34,8 +35,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	var $id=0; //Topic uid
 	var $processMessage=array(); //Error message storage
 	var $datakey='edit_topic'; //Used to build forms and to get data in piVars
-	var $type='topic'; //Used in generic functions herited from tx_ppforum_message
-	var $tablename='tx_ppforum_topics'; //Table corresponding to this type
+//	var $type='topic'; //Used in generic functions herited from tx_ppforum_message
+//	var $tablename='tx_ppforum_topics'; //Table corresponding to this type
 
 	var $forum=NULL; //Pointer on parent forum
 	var $messageList=FALSE;
@@ -58,16 +59,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * Loads the topic data from DB
 	 *
 	 * @param int $id = Topic uid
-	 * @param boolean $clearCache = @see tx_pplib::do_cachedQuery
+	 * @param boolean $clearCache = if TRUE, cached data will be overrided
 	 * @access public
 	 * @return int = loaded uid
 	 */
-	function load($id) {
-		$this->tablename=$this->parent->tables['topics'];
-		if ($this->data=$this->parent->getSingleTopic($id)) {
-			$this->id=intval($id);
-			$this->forum=&$this->parent->getForumObj($this->data['forum']);
-			$this->mergedData=$this->data;			
+	function load($id, $clearCache = false) {
+		if (parent::load($id, $clearCache)) {
+			$this->forum = &$this->parent->getForumObj($this->data['forum']);
 		}
 		return $this->id;
 	}

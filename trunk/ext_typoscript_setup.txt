@@ -56,6 +56,17 @@ plugin.tx_ppforum_pi1 {
     }
 	}
 
+  //** Data object classes
+  recordObjects {
+    message = tx_ppforum_message
+    topic = tx_ppforum_topic
+    forum = tx_ppforum_forum
+    forumsim = tx_ppforum_forumsim
+    user = tx_ppforum_user
+  }
+
+
+
   javascript=FILE
   javascript.file=EXT:pp_forum/res/pp_forum.js
 
@@ -103,6 +114,8 @@ config.pp_rsslatestcontent.external.pp_forum_pi1=tx_ppforum_pi1->rss_getList
 config.pp_rsslatestcontent.external.pp_forum_pi1 {
   config.pidList.field=pages
   config.recursive=5000
+
+  recordObjects < plugin.tx_ppforum_pi1.recordObjects
 }
 
 // pp_searchengine integration
