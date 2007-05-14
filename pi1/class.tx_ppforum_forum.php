@@ -217,12 +217,12 @@ class tx_ppforum_forum {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title='',$addParams=Array(),$parameter='') {
+	function getLink($title='', $addParams=Array(), $parameter = null) {
 		if (!isset($addParams['forum'])) {
-			$addParams['forum']=$this->id;
+			$addParams['forum'] = $this->id;
 		}
 		
-		if (!isset($addParams['lightMode'])) $addParams['lightMode']=$this->parent->getVars['lightMode'];
+		if (!isset($addParams['lightMode'])) $addParams['lightMode'] = $this->parent->getVars['lightMode'];
 		return $this->parent->pp_linkTP_piVars(
 			$title,
 			$addParams,
@@ -238,7 +238,7 @@ class tx_ppforum_forum {
 	 * @return string 
 	 */
 	function getTitleLink() {
-		return $this->getLink($this->parent->htmlspecialchars($this->data['title']));
+		return $this->getLink(tx_pplib_div::htmlspecialchars($this->data['title']));
 	}
 
 	/**
@@ -249,7 +249,7 @@ class tx_ppforum_forum {
 	 * @access public
 	 * @return string 
 	 */
-	function getTopicLink($title='',$addParams=array(),$parameter='') {
+	function getTopicLink($title='', $addParams=array(), $parameter = null) {
 		if (!isset($addParams['forum'])) {
 			if ($this->options['keepCurrentForumId']) {
 				$addParams['forum']=$this->parent->getCurrentForum();
@@ -299,7 +299,7 @@ class tx_ppforum_forum {
 				'counters'=>&$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId],
 				'forum'=>$forumId
 				);
-			$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['getCounters'],$data,$this);
+			tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['getCounters'],$data,$this);
 		}
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId];
 	}
@@ -316,7 +316,7 @@ class tx_ppforum_forum {
 		$res=$this->access['write'];
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userCanWriteInForum'],
 			$res,
 			$this
@@ -336,7 +336,7 @@ class tx_ppforum_forum {
 		$res=$res && !$this->data['notopic'] && $this->access['restrict']['newtopic'];
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userCanPostInForum'],
 			$res,
 			$this
@@ -362,7 +362,7 @@ class tx_ppforum_forum {
 		$res = $res && $this->access['restrict']['reply'];
 	
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userCanReplyInForum'],
 			$res,
 			$this
@@ -382,7 +382,7 @@ class tx_ppforum_forum {
 		$res=$this->access['guard'];
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsGuard'],
 			$res,
 			$this
@@ -404,7 +404,7 @@ class tx_ppforum_forum {
 		$res=$this->access['admin'];
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsAdmin'],
 			$res,
 			$this
@@ -424,7 +424,7 @@ class tx_ppforum_forum {
 	 */
 	function event_onNewTopic($topicId) {
 		$null=NULL;
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onNewTopic'],
 			$null,
 			$this
@@ -452,7 +452,7 @@ class tx_ppforum_forum {
 
 		$this->parent->clearHashList($paramKey);
 
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onUpdateInForum'],
 			$null,
 			$this
@@ -498,7 +498,7 @@ class tx_ppforum_forum {
 	function displayHeader() {
 		$content='<h2 class="forum-title">'.$this->getTitleLink().'</h2>';
 		if (trim($this->data['description'])) {
-			$content.='<div class="forum-description">'.$this->parent->htmlspecialchars($this->data['description']).'</div>';
+			$content.='<div class="forum-description">'.tx_pplib_div::htmlspecialchars($this->data['description']).'</div>';
 		}
 
 		return $content;
@@ -553,7 +553,7 @@ class tx_ppforum_forum {
 				if ($counter==$nbTopics-1) $data['classes'][]='row-last';
 
 				//Play a hook list : allows to add more classes to the child row
-				$this->parent->st_playHooks(
+				tx_pplib_div::playHooks(
 					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayChildList:classes'],
 					$data,
 					$this
@@ -592,7 +592,7 @@ class tx_ppforum_forum {
 
 		/* Begin */
 		//Allows to add some columns
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayChildListHead'],
 			$data,
 			$this
@@ -658,11 +658,12 @@ class tx_ppforum_forum {
 			$data['cols']['child-lastmessage'].=
 				$this->parent->pp_getLL('message.postedin',' in ',TRUE).$data['lastTopic']->getTitleLink();
 			
-			if ($data['lastMessage']->id) $data['cols']['child-lastmessage'].=' '.$data['lastMessage']->getLink('-&gt;');
+			if ($data['lastMessage']->id) $data['cols']['child-lastmessage'] .= ' - ' . $data['lastMessage']->getLink($this->parent->pp_getLL('topic.viewLastMessage','(View last message)'));
+//				' '.$data['lastMessage']->getLink('-&gt;');
 		}
 
 		//Allow to add/modify/sort/delete columns
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displaySingleChild'],
 			$data,
 			$this
@@ -715,7 +716,7 @@ class tx_ppforum_forum {
 				if (!$counter) $data['classes'][]='row-first';
 				if ($counter==$nbTopics-1) $data['classes'][]='row-last';
 
-				$this->parent->st_playHooks(
+				tx_pplib_div::playHooks(
 					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayTopicList:classes'],
 					$data,
 					$this
@@ -750,7 +751,7 @@ class tx_ppforum_forum {
 			);
 		$content='<tr class="topic-list-head">';
 		/* Begin */
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayTopicListHead'],
 			$data,
 			$this
@@ -791,19 +792,17 @@ class tx_ppforum_forum {
 		$data['conf']['topic-author']=$data['topic']->author->displayLight();
 
 		$data['conf']['topic-lastmessage']='';
-		if ($messageId=$topic->getLastMessage()) {
-			$data['lastMessage']=&$this->parent->getMessageObj($messageId);
+		if ($messageId = $topic->getLastMessage()) {
+			$data['lastMessage'] = &$this->parent->getMessageObj($messageId);
 			$data['lastMessage']->loadAuthor();
 		}
 		if ($data['lastMessage']->id) {
-			$data['conf']['topic-lastmessage']=$this->parent->pp_getLL('message.postedby','By ',TRUE).
-				$data['lastMessage']->author->displayLight().
-				' '.$this->parent->pp_getLL('message.postedwhen','The ',TRUE).
-				$this->parent->renderDate($data['lastMessage']->data['crdate']).' '.
-				$data['lastMessage']->getLink('-&gt;');
+			$data['conf']['topic-lastmessage'] = $this->parent->pp_getLL('message.postedby','By ') .	$data['lastMessage']->author->displayLight().
+				' '.$this->parent->pp_getLL('message.postedwhen','The ') . $this->parent->renderDate($data['lastMessage']->data['crdate']) .
+				' ' .	$data['lastMessage']->getLink($this->parent->pp_getLL('topic.viewLastMessage','(View last message)'));
 		}
 
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displaySingleTopic'],
 			$data,
 			$this
@@ -878,7 +877,7 @@ class tx_ppforum_forum {
 		
 		}
 
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['_displayForumTools'],
 			$data,
 			$this
