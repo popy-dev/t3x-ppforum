@@ -43,10 +43,10 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	var $prefixId = 'tx_ppforum_pi1';		// Same as class name
 	var $scriptRelPath = 'pi1/class.tx_ppforum_pi1.php';	// Path to this script relative to the extension dir.
 	var $extKey = 'pp_forum';	// The extension key.
-	var $currentUser=NULL;
-	var $tables=Array('forums'=>'tx_ppforum_forums','topics'=>'tx_ppforum_topics','messages'=>'tx_ppforum_messages','users'=>'fe_users');
-	var $callbackList=Array();
-	var $intPartList=Array();
+	var $currentUser = NULL;
+	var $tables = Array('forums' => 'tx_ppforum_forums','topics' => 'tx_ppforum_topics','messages' => 'tx_ppforum_messages','users' => 'fe_users');
+	var $callbackList = Array();
+	var $intPartList = Array();
 
 
 	/****************************************/
@@ -63,14 +63,14 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 */
 	function main($content,$conf)	{
 		//*** Basic init
-		$this->conf=$conf;
+		$this->conf = $conf;
 		$this->init();
 		$this->loadHashList(TRUE);
 
-		$printRest=TRUE;
+		$printRest = TRUE;
 
 		//Hook list : if a hook reurn something and switch $printRest to true, the plugin will return this content instead of the normal content
-		$hookRes=$this->st_playHooks(
+		$hookRes = tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_pi1']['main:alternateRendering'],
 			$printRest,
 			$this
@@ -90,71 +90,71 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 
 			$this->getCurrent();
 
-			$content.=$this->printRootLine();
-			$content.=$this->printUserBar();
+			$content .= $this->printRootLine();
+			$content .= $this->printUserBar();
 
-			if ($user=intval($this->getVars['editProfile'])) {
-				$obj=&$this->getUserObj($user);
+			if ($user = intval($this->getVars['editProfile'])) {
+				$obj = &$this->getUserObj($user);
 				if ($obj->id) {
-					$content.=$obj->displayProfile('edit');
+					$content .= $obj->displayProfile('edit');
 				} else {
 					$GLOBALS['TSFE']->set_no_cache();
-					$content.='Utilisateur inexistant ->@TODO message d\'erreur';
+					$content .= 'Utilisateur inexistant ->@TODO message d\'erreur';
 				}
-			} elseif ($user=intval($this->getVars['viewProfile'])) {
-				$obj=&$this->getUserObj($user);
+			} elseif ($user = intval($this->getVars['viewProfile'])) {
+				$obj = &$this->getUserObj($user);
 				if ($obj->id) {
-					$content.=$obj->displayProfile();
+					$content .= $obj->displayProfile();
 				} else {
 					$GLOBALS['TSFE']->set_no_cache();
-					$content.='Utilisateur inexistant ->@TODO message d\'erreur';
+					$content .= 'Utilisateur inexistant ->@TODO message d\'erreur';
 				}
-			} elseif ($topic=$this->getCurrentTopic()) {
-				$obj=&$this->getTopicObj($topic);
+			} elseif ($topic = $this->getCurrentTopic()) {
+				$obj = &$this->getTopicObj($topic);
 				if ($obj->id) {
-					$this->storeHash(array('topic'=>$topic));
-					$content.=$obj->display();
+					$this->storeHash(array('topic' => $topic));
+					$content .= $obj->display();
 				} else {
 					$GLOBALS['TSFE']->set_no_cache();
-					$content.='Topic inexistant ->@TODO message d\'erreur';
+					$content .= 'Topic inexistant ->@TODO message d\'erreur';
 				}
-			} elseif ($forum=$this->getCurrentForum()) {
-				$obj=&$this->getForumObj($forum);
+			} elseif ($forum = $this->getCurrentForum()) {
+				$obj = &$this->getForumObj($forum);
 				if ($obj->id) {
-					$this->storeHash(array('forum'=>$forum));
-					$content.=$obj->display();
+					$this->storeHash(array('forum' => $forum));
+					$content .= $obj->display();
 				} else {
-					$content.='Forum inexistant ->@TODO message d\'erreur';
+					$content .= 'Forum inexistant ->@TODO message d\'erreur';
 					$GLOBALS['TSFE']->set_no_cache();
 				}
 			} else {
-				foreach ($this->getForumChilds() as $key=>$forum) {
-					$obj[$key]=&$this->getForumObj($forum);
+				foreach ($this->getForumChilds() as $key => $forum) {
+					$obj[$key] = &$this->getForumObj($forum);
 					if ($obj[$key]->id && $obj[$key]->isVisible()) {
-						$content.=$obj[$key]->display();
+						$content .= $obj[$key]->display();
 					}
 				}
 				$this->storeHash(array());
 			}
 
-			$content.=$this->printRootLine();
+			$content .= $this->printRootLine();
 
 			if ($this->config['display']['printStats']) {
-				$content.=$this->printStats();
+				$content .= $this->printStats();
 			}
 
 		}
 		
-		$lConf=Array(
-			'cmd'=>'self',
-			'cmd.'=>array(
-				'method'=>'handleIntParts',
-				'parts.'=>$this->intPartList
+		$lConf = Array(
+			'cmd' => 'self',
+			'cmd.' => array(
+				'method' => 'handleIntParts',
+				'parts.' => $this->intPartList
 				)
 			);
 
-		$content.=$this->callINTPlugin($lConf,TRUE);
-		$this->intPartList=Array();
+		$content .= $this->callINTPlugin($lConf,TRUE);
+		$this->intPartList = Array();
 
 
 		$this->saveHashList(TRUE);
@@ -172,16 +172,16 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @access public
 	 * @return string 
 	 */
-	function mainCallback($content,$conf,$dontInit=FALSE) {
+	function mainCallback($content,$conf,$dontInit = FALSE) {
 		/* Declare */
-		$this->conf=$conf;
-		$this->_disableINTCallback=TRUE;
+		$this->conf = $conf;
+		$this->_disableINTCallback = TRUE;
 		$this->internalLogs['userIntPlugins']++;
 		$this->internalLogs['allUserIntPlugins']++;
 
 		/* Begin */
 		if (isset($this->conf['meta']['called'])) {
-			$this->internalLogs['allUserIntPlugins']+=intval($this->conf['meta']['called']);
+			$this->internalLogs['allUserIntPlugins'] += intval($this->conf['meta']['called']);
 		}
 
 		if (!$dontInit) {
@@ -191,26 +191,26 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		case 'callObj': //Asked to build an object
 			switch ($this->conf['cmd.']['object']){
 			case 'forum':
-				$theObj=&$this->getForumObj($this->conf['cmd.']['uid']);
+				$theObj = &$this->getForumObj($this->conf['cmd.']['uid']);
 				break;
 			case 'user': 
-				$theObj=&$this->getUserObj($this->conf['cmd.']['uid']);
+				$theObj = &$this->getUserObj($this->conf['cmd.']['uid']);
 				break;
 			case 'topic': 
-				$theObj=&$this->getTopicObj($this->conf['cmd.']['uid']);
+				$theObj = &$this->getTopicObj($this->conf['cmd.']['uid']);
 				break;
 			case 'message': 
-				$theObj=&$this->getMessageObj($this->conf['cmd.']['uid']);
+				$theObj = &$this->getMessageObj($this->conf['cmd.']['uid']);
 				break;
 			}
-			//$theObj->parent=&$this;//Force backref to this
-			if (method_exists($theObj,$method=$this->conf['cmd.']['method'])) {
-				$content.=$theObj->$method($this->conf['cmd.']); //Call the specified method
+			//$theObj->parent = &$this;//Force backref to this
+			if (method_exists($theObj,$method = $this->conf['cmd.']['method'])) {
+				$content .= $theObj->$method($this->conf['cmd.']); //Call the specified method
 			}
 			break;
 		case 'self':
-			if (method_exists($this,$method=$this->conf['cmd.']['method'])) {
-				$content.=$this->$method($this->conf['cmd.']);
+			if (method_exists($this,$method = $this->conf['cmd.']['method'])) {
+				$content .= $this->$method($this->conf['cmd.']);
 			}
 			break;
 		}
@@ -238,10 +238,10 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 */
 	function rss_getList($conf,&$ref) {
 		/* Declare */
-		$this->conf=$conf;
-		$this->conf['parsers.']=$GLOBALS['TSFE']->tmpl->setup['plugin.']['tx_ppforum_pi1.']['parsers.'];
-		$mergedList=array();
-		$finalList=array();
+		$this->conf = $conf;
+		$this->conf['parsers.'] = $GLOBALS['TSFE']->tmpl->setup['plugin.']['tx_ppforum_pi1.']['parsers.'];
+		$mergedList = array();
+		$finalList = array();
 	
 		/* Begin */
 		$this->init();
@@ -250,11 +250,11 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$this->saveHashList(TRUE);
 
 		//Force altdPageId when links will be build
-		$this->_displayPage=reset(explode(',',$this->config['pidList']));
-		//$page=$ref->getPage();
+		$this->_displayPage = reset(explode(',',$this->config['pidList']));
+		//$page = $ref->getPage();
 
 		//Get latest message list
-		$messages=$this->doCachedQuery(
+		$messages = $this->doCachedQuery(
 			array(
 				'select' => 'uid,crdate',
 				'from'   => $this->tables['messages'],
@@ -265,7 +265,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			);
 
 		//Get latest topic list
-		$topics=$this->doCachedQuery(
+		$topics = $this->doCachedQuery(
 			array(
 				'select' => 'uid,crdate',
 				'from'   => $this->tables['topics'],
@@ -277,40 +277,40 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 
 		//Merge them
 		foreach ($messages as $val) {
-			$mergedList['message:'.$val['uid']]=$val['crdate'];
+			$mergedList['message:'.$val['uid']] = $val['crdate'];
 		}
 		foreach ($topics as $val) {
-			$mergedList['topic:'.$val['uid']]=$val['crdate'];
+			$mergedList['topic:'.$val['uid']] = $val['crdate'];
 		}
 
 		//Sorting
 		natsort($mergedList);
 
 		//Reverse order and re-apply limitation
-		$mergedList=array_reverse($mergedList);
+		$mergedList = array_reverse($mergedList);
 
-		$counter=0;
+		$counter = 0;
 		
-		$nbrows=max(intval($ref->feed['select_key']),5);
+		$nbrows = max(intval($ref->feed['select_key']),5);
 
 		//Then we build the result array
 		foreach (array_keys($mergedList) as $key) {
 			//Get back type and uid
-			list($type,$uid)=explode(':',$key);
+			list($type,$uid) = explode(':',$key);
 			//Init item
-			$result=array();
+			$result = array();
 
 			//Build objects
-			if ($type=='message') {
-				$obj=&$this->getMessageObj($uid);
+			if ($type == 'message') {
+				$obj = &$this->getMessageObj($uid);
 				if ($obj->topic->forum->id<0) {
 					continue;
 				}
 				$obj->loadAuthor();
-				$result['title']=$obj->topic->data['title'].' ('.htmlspecialchars(strip_tags($obj->author->displayLight())).')';
+				$result['title'] = $obj->topic->data['title'].' ('.htmlspecialchars(strip_tags($obj->author->displayLight())).')';
 			} else {
-				$obj=&$this->getTopicObj($uid);
-				$result['title']=$obj->data['title'];
+				$obj = &$this->getTopicObj($uid);
+				$result['title'] = $obj->data['title'];
 			}
 
 			if (!$obj->isVisibleRecursive()) {
@@ -318,16 +318,16 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			}
 
 			//Build item
-			$result['pubDate']=date('r',$obj->data['tstamp']);
-			$result['guid']=htmlspecialchars($ref->siteUrl.$obj->getLink());
-			$result['link']=htmlspecialchars($ref->siteUrl.$obj->getLink());
-			$result['description']=htmlspecialchars($obj->processMessage($obj->data['message']));
+			$result['pubDate'] = date('r',$obj->data['tstamp']);
+			$result['guid'] = htmlspecialchars($ref->siteUrl.$obj->getLink());
+			$result['link'] = htmlspecialchars($ref->siteUrl.$obj->getLink());
+			$result['description'] = htmlspecialchars($obj->processMessage($obj->data['message']));
 			
 			//Push it to list
-			$finalList[]=$result;
+			$finalList[] = $result;
 
 			$counter++;
-			if ($counter>=$nbrows) {
+			if ($counter >= $nbrows) {
 				break;
 			}
 		}
@@ -342,28 +342,29 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function init() {
-		$this->startTime=microtime();
+		$this->startTime = microtime();
 
 		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'])) {
 			parent::init();
 
-			$this->config['.lightMode']=isset($this->getVars['lightMode'])?($this->getVars['lightMode']?TRUE:FALSE):FALSE;
+			$this->config['.lightMode'] = isset($this->getVars['lightMode'])?($this->getVars['lightMode']?TRUE:FALSE):FALSE;
 			if ($this->config['display']['lightMode_def']) {
-				$this->config['.lightMode']=!$this->config['.lightMode'];
+				$this->config['.lightMode'] = !$this->config['.lightMode'];
 			}
 
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS']=$this->config;
+			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'] = $this->config;
 		} else {
-			$this->config=$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'];
+			$this->config = $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'];
 
 			//Force locallang reloading
-			$this->config['LOCAL_LANG']='';
+			$this->config['LOCAL_LANG'] = '';
 			$this->pp_loadLL();
 		}
 
-		$this->currentUser=&$this->getUserObj($this->getCurrentUser());
+		$this->currentUser = &$this->getUserObj($this->getCurrentUser());
 		$this->autoDisableCache();
-		$this->smileys=&$this->makeInstance('tx_ppforum_smileys');
+		$this->smileys = &$this->makeInstance('tx_ppforum_smileys');
+		$this->_displayPage = $GLOBALS['TSFE']->id;
 	}
 
 	/**
@@ -374,28 +375,28 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function close() {
-		$this->pp_saveLL();
+		//$this->pp_saveLL();
 
 		//If user has submited data, some piVars keys should have changed
 		//  So we need to report it in the GET/POST vars (because the USER_INT objects will reload piVars from them !)
 		if ($GLOBALS['TSFE']->no_cache && !$this->_disableINTCallback && is_array($this->piVars)) {
-			$piVars=$this->piVars;
+			$piVars = $this->piVars;
 			t3lib_div::addSlashesOnArray($piVars);
 			//Just modify POST vars, because they will override GET vars
-			$GLOBALS['HTTP_POST_VARS'][$this->prefixId] = $_POST[$this->prefixId]=$piVars;
+			$GLOBALS['HTTP_POST_VARS'][$this->prefixId] = $_POST[$this->prefixId] = $piVars;
 
-			$getVars=$this->getVars;
+			$getVars = $this->getVars;
 			t3lib_div::addSlashesOnArray($getVars);
-			$GLOBALS['HTTP_GET_VARS'][$this->prefixId] = $_GET[$this->prefixId]=$getVars;
+			$GLOBALS['HTTP_GET_VARS'][$this->prefixId] = $_GET[$this->prefixId] = $getVars;
 		}
 
 		if (is_array($this->callbackList)) {
-			$count=count($this->callbackList);
-			for ($i=0;$i<$count;$i++) {
+			$count = count($this->callbackList);
+			for ($i = 0;$i<$count;$i++) {
 				call_user_func($this->callbackList[$i]);
 			}
 		}
-		$this->callbackList=array();
+		$this->callbackList = array();
 
 		//Cache stats
 		$this->pushStats();
@@ -409,20 +410,20 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 */
 	function pushStats() {
 		/* Declare */
-		list($startM,$startS)=explode(' ',$this->startTime);
-		list($stopM,$stopS)=explode(' ',$this->startTime=microtime());
+		list($startM,$startS) = explode(' ',$this->startTime);
+		list($stopM,$stopS) = explode(' ',$this->startTime = microtime());
 	
 		/* Begin */
 		//Calculating exec time
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['EXEC_TIME']+=(($stopS-$startS)+($stopM-$startM));
+		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['EXEC_TIME'] += (($stopS-$startS)+($stopM-$startM));
 
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['QUERYS']+=$this->internalLogs['querys'];
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['REALQUERYS']+=$this->internalLogs['realQuerys'];
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['USER_INT']+=$this->internalLogs['userIntPlugins'];
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['ALL_USER_INT']+=$this->internalLogs['allUserIntPlugins'];
+		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['QUERYS'] += $this->internalLogs['querys'];
+		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['REALQUERYS'] += $this->internalLogs['realQuerys'];
+		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['USER_INT'] += $this->internalLogs['userIntPlugins'];
+		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['ALL_USER_INT'] += $this->internalLogs['allUserIntPlugins'];
 
 		//Reseting log array
-		$this->internalLogs=Array();
+		$this->internalLogs = Array();
 	}
 
 	/**
@@ -432,16 +433,16 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function autoDisableCache() {
-		$disable=FALSE;
+		$disable = FALSE;
 
-		$disable=$disable || ($this->getVars['edittopic']);
-		$disable=$disable || ($this->getVars['deletetopic']);
-		$disable=$disable || ($this->getVars['editmessage']);
-		$disable=$disable || ($this->getVars['deletemessage']);
-		$disable=$disable || ($this->getVars['clearCache']);
-		$disable=$disable || ($this->getVars['editProfile']);
-		$disable=$disable || ($this->getVars['viewProfile']);
-		$disable=$disable || (intval($this->getVars['forum'])<0);
+		$disable = $disable || ($this->getVars['edittopic']);
+		$disable = $disable || ($this->getVars['deletetopic']);
+		$disable = $disable || ($this->getVars['editmessage']);
+		$disable = $disable || ($this->getVars['deletemessage']);
+		$disable = $disable || ($this->getVars['clearCache']);
+		$disable = $disable || ($this->getVars['editProfile']);
+		$disable = $disable || ($this->getVars['viewProfile']);
+		$disable = $disable || (intval($this->getVars['forum'])<0);
 
 
 		if ($disable) {
@@ -459,29 +460,29 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		if (!is_array($this->parsers) || !count($this->parsers)) { //Check if parsers are already loaded
 			//Parsers may have been loaded by another instance !
 			if (is_array($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS']) && count($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'])) {
-				$this->parsers=&$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'];
+				$this->parsers = &$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'];
 
 				//We just need to update parent pointer
 				foreach (array_keys($this->parsers) as $key) {
-					$this->parsers[$key]->parent=&$this;
+					$this->parsers[$key]->parent = &$this;
 				}
 			} else {
 				//We have to load the full list
 				global $TYPO3_CONF_VARS; //-> XCLASS will not works if we don't do this
-				if (!is_array($this->conf['parsers.'])) $this->conf['parsers.']=array();
+				if (!is_array($this->conf['parsers.'])) $this->conf['parsers.'] = array();
 
 				//Default parser
-				$this->parsers['0']['label']=$this->pp_getLL('parsers.default','Default',TRUE);
+				$this->parsers['0']['label'] = $this->pp_getLL('parsers.default','Default',TRUE);
 
-				foreach ($this->conf['parsers.'] as $key=>$val) {
+				foreach ($this->conf['parsers.'] as $key => $val) {
 					if (!strpos($key,'.')) {
 
 						//Get parser label
-						$this->parsers[$key]['label']=$GLOBALS['TSFE']->sL($val);
-						if (!trim($this->parsers[$key]['label'])) $this->parsers[$key]['label']=$key;
+						$this->parsers[$key]['label'] = $GLOBALS['TSFE']->sL($val);
+						if (!trim($this->parsers[$key]['label'])) $this->parsers[$key]['label'] = $key;
 
 						//Get parser label
-						$this->parsers[$key]['conf']=$this->conf['parsers.'][$key.'.'];
+						$this->parsers[$key]['conf'] = $this->conf['parsers.'][$key.'.'];
 
 						//If needed, include a php file
 						if (trim($this->parsers[$key]['conf']['includeLib'])) {
@@ -489,7 +490,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 						}
 
 						//Builds the object
-						$this->parsers[$key]['object']=$this->makeInstance($this->parsers[$key]['conf']['object']);
+						$this->parsers[$key]['object'] = $this->makeInstance($this->parsers[$key]['conf']['object']);
 
 						//Checks parser validity
 						if (!is_object($this->parsers[$key]['object']) || !method_exists($this->parsers[$key]['object'],$this->parsers[$key]['conf']['messageParser'])) {
@@ -497,7 +498,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 							unset($this->parsers[$key]);
 						} else {
 							//Init parser conf (makes easy to configure parser via Typoscript !)
-							$this->parsers[$key]['object']->conf=$this->parsers[$key]['conf'];
+							$this->parsers[$key]['object']->conf = $this->parsers[$key]['conf'];
 						}
 					}
 
@@ -505,7 +506,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 				}
 				
 				//Here we have a clean parser list, so cache it
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS']=&$this->parsers;
+				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'] = &$this->parsers;
 			}
 		}
 	}
@@ -520,40 +521,40 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	function getCurrent() {
 		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'])) {
 			/* Declare */
-			$forumId=intval($this->getVars['forum']);
-			$topicId=intval($this->getVars['topic']);
-			$topic=NULL;
-			$forum=NULL;
-			$dataChecked=FALSE;
+			$forumId = intval($this->getVars['forum']);
+			$topicId = intval($this->getVars['topic']);
+			$topic = NULL;
+			$forum = NULL;
+			$dataChecked = FALSE;
 		
 			/* Begin */
 			if ($topicId) {
 				//Load topic
-				$topic=&$this->getTopicObj($topicId);
+				$topic = &$this->getTopicObj($topicId);
 
 				if ($topic->id && is_object($topic->forum) && $topic->forum->id) {
 					//For now, we have a valid topic, so we keep its parent forum
-					$forumId=$topic->forum->id;
+					$forumId = $topic->forum->id;
 
 					//Check visibility of the topic
 					if ($topic->isVisibleRecursive()) {
 						//Then we can check updates
 						if ($this->getVars['edittopic'] || $this->getVars['deletetopic']) {
-							$dataChecked=TRUE;
+							$dataChecked = TRUE;
 							$topic->checkTopicData();
 
 							if (!$topic->isVisibleRecursive()) {
-								$topicId=0;
+								$topicId = 0;
 							}
 						}
 					} else {
-						$topicId=0;
+						$topicId = 0;
 					}
 
 
 				} else {
 					//Unable to load topic, we can do nothing there
-					$topicId=0;
+					$topicId = 0;
 				}
 			}
 
@@ -561,23 +562,23 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			//Now checking current forum
 			if ($forumId) {
 				//Load forum
-				$forum=&$this->getForumObj($forumId);
+				$forum = &$this->getForumObj($forumId);
 
 				if ($forum->id) {
 					//Maybe this forum isn't visible, we need to fall back to the first visible parent
 					while (is_object($forum) && !$forum->isVisible()) {
-						$forum=&$forum->forum;
+						$forum = &$forum->forum;
 						//If we come hre, it means that the given "forum" GET var is NOT valid, but if user has try to post in this forum
 						//We don't want this new topic to appear on first visible forum
-						$dataChecked=TRUE;
+						$dataChecked = TRUE;
 					}
 
 					if (is_object($forum)) {
 						//We have a valid parent
-						$forumId=$forum->id;
+						$forumId = $forum->id;
 					} else {
 						//No visible parent : fall back to root
-						$forumId=0;
+						$forumId = 0;
 					}
 				} else {
 					//Unable to load forum, we can do nothing there
@@ -588,15 +589,15 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			if ($forumId && !$dataChecked && $this->getVars['edittopic']) {
 				//Load forum
 				if (!is_object($forum)) {
-					$forum=&$this->getForumObj($forumId);
+					$forum = &$this->getForumObj($forumId);
 				}
 				
-				$topic=&$this->getTopicObj(0);
-				$topic->forum=&$forum;
+				$topic = &$this->getTopicObj(0);
+				$topic->forum = &$forum;
 
 				$topic->checkTopicData();
 				
-				$topicId=$topic->id;
+				$topicId = $topic->id;
 
 				if (intval($topic->id)) {
 					// Clearing object cache (because now the topic has an id !)
@@ -607,12 +608,12 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			unset($topic);
 			unset($forum);
 
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT']=Array(
-				'topic'=>$topicId,
-				'forum'=>$forumId
+			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'] = Array(
+				'topic' => $topicId,
+				'forum' => $forumId
 				);
-			$this->getVars['topic']=$topicId;
-			$this->getVars['forum']=$forumId;
+			$this->getVars['topic'] = $topicId;
+			$this->getVars['forum'] = $forumId;
 		}
 
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'];
@@ -629,53 +630,53 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	function doSearch($content,$conf) {
 		/* Declare */
 		global $PP_SEARCHENGINE_PI1;
-		$this->conf=$conf;
+		$this->conf = $conf;
 		$this->init();
-		$this->smileys->disable=TRUE;
-		$swords=$conf['searchParams.']['sword'];
-		$tablesConf=Array(
-			$this->tables['topics']=>Array(
-				'fieldList'=>'title,message',
-				'addWhere'=>' AND forum>0'.$this->getEnableFields('topics'),
-				'noWordCount'=>TRUE,
+		$this->smileys->disable = TRUE;
+		$swords = $conf['searchParams.']['sword'];
+		$tablesConf = Array(
+			$this->tables['topics'] => Array(
+				'fieldList' => 'title,message',
+				'addWhere' => ' AND forum>0'.$this->getEnableFields('topics'),
+				'noWordCount' => TRUE,
 				),
-			$this->tables['messages']=>Array(
-				'fieldList'=>'message',
-				'addWhere'=>$this->getEnableFields('messages'),
-				'noWordCount'=>TRUE,
+			$this->tables['messages'] => Array(
+				'fieldList' => 'message',
+				'addWhere' => $this->getEnableFields('messages'),
+				'noWordCount' => TRUE,
 				),
 			);
-		$finalResult=Array();
-		$this->_displayPage=$this->cObj->data['pid'];
-		$this->_addParams=t3lib_div::explodeUrl2Array($conf['searchParams.']['addParams'],TRUE);
+		$finalResult = Array();
+		$this->_displayPage = $this->cObj->data['pid'];
+		$this->_addParams = t3lib_div::explodeUrl2Array($conf['searchParams.']['addParams'],TRUE);
 	
 		/* Begin */
-		$result=$PP_SEARCHENGINE_PI1->searchInTables($tablesConf,$swords);
+		$result = $PP_SEARCHENGINE_PI1->searchInTables($tablesConf,$swords);
 
 		foreach (array_keys($tablesConf) as $table) {
 			foreach ($result[$table] as $singleRes) {
-				$uid=$singleRes['uid'];
-				$tRes=Array();
+				$uid = $singleRes['uid'];
+				$tRes = Array();
 
 				switch ($table){
 				case $this->tables['topics']:
-					$obj=&$this->getTopicObj($uid);
-					$title=$tRes['title']=$obj->data['title'];
-					$theResKey='t'.$uid;
+					$obj = &$this->getTopicObj($uid);
+					$title = $tRes['title'] = $obj->data['title'];
+					$theResKey = 't'.$uid;
 					break;
 				case $this->tables['messages']: 
-					$obj=&$this->getMessageObj($uid);
+					$obj = &$this->getMessageObj($uid);
 					//Checking PM
 					if ($obj->topic->forum->id<0) {
 						continue;
 					}
-					$tRes['title']=$obj->topic->data['title'];
-					$title='';
+					$tRes['title'] = $obj->topic->data['title'];
+					$title = '';
 
 					if ($this->config['mergeSearchResults']) {
-						$theResKey='t'.$obj->topic->id;
+						$theResKey = 't'.$obj->topic->id;
 					} else {
-						$theResKey='m'.$uid;
+						$theResKey = 'm'.$uid;
 					}
 					break;
 				}
@@ -684,23 +685,23 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 					continue;
 				}
 
-				$tRes['description']=html_entity_decode(strip_tags($obj->processMessage($obj->data['message'])));
-				$tRes['link']=$obj->getLink();
+				$tRes['description'] = html_entity_decode(strip_tags($obj->processMessage($obj->data['message'])));
+				$tRes['link'] = $obj->getLink();
 
-				list($tRes['words'],$tRes['count'])=$PP_SEARCHENGINE_PI1->calculatePertinence(
+				list($tRes['words'],$tRes['count']) = $PP_SEARCHENGINE_PI1->calculatePertinence(
 					array($title,$tRes['description']),
 					$swords
 					);
 
 
 				if (isset($finalResult[$theResKey])) {
-					$finalResult[$theResKey]['words']=array_merge($tRes['words'],$finalResult[$theResKey]['words']);
-					$finalResult[$theResKey]['pertinence']=$PP_SEARCHENGINE_PI1->countRealSwords(array_unique($finalResult[$theResKey]['words']));
-					$finalResult[$theResKey]['count']+=$tRes['count'];
+					$finalResult[$theResKey]['words'] = array_merge($tRes['words'],$finalResult[$theResKey]['words']);
+					$finalResult[$theResKey]['pertinence'] = $PP_SEARCHENGINE_PI1->countRealSwords(array_unique($finalResult[$theResKey]['words']));
+					$finalResult[$theResKey]['count'] += $tRes['count'];
 					$finalResult[$theResKey]['others']++;
 				} else {
-					$tRes['pertinence']=$PP_SEARCHENGINE_PI1->countRealSwords(array_unique($tRes['words']));
-					$finalResult[$theResKey]=$tRes;
+					$tRes['pertinence'] = $PP_SEARCHENGINE_PI1->countRealSwords(array_unique($tRes['words']));
+					$finalResult[$theResKey] = $tRes;
 				}
 			}
 		}
@@ -709,7 +710,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			unset($finalResult[$key]['words']);
 
 			if (isset($finalResult[$key]['others']) && intval($finalResult[$key]['others'])) {
-				$finalResult[$key]['title'].=' ('.intval($finalResult[$key]['others']).')';
+				$finalResult[$key]['title'] .= ' ('.intval($finalResult[$key]['others']).')';
 			}
 		}
 
@@ -730,7 +731,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function printStats() {
-		return $this->callINTpart(array('cmd'=>'self','cmd.'=>array('method'=>'_printStats')));
+		return $this->callINTpart(array('cmd' => 'self','cmd.' => array('method' => '_printStats')));
 	}
 
 	/**
@@ -788,11 +789,11 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		
 			/* Begin */
 			foreach (array_keys($rootLine) as $key) {
-				$root[]=$rootLine[$key]->getTitleLink();
+				$root[] = $rootLine[$key]->getTitleLink();
 			}
-			if ($topic=$this->getCurrentTopic()) {
-				$obj=&$this->getTopicObj($topic);
-				$root[]=$obj->getTitleLink();
+			if ($topic = $this->getCurrentTopic()) {
+				$obj = &$this->getTopicObj($topic);
+				$root[] = $obj->getTitleLink();
 			}
 			$content.='<li>'.implode(' &gt; </li><li>',$root).'</li>';
 
@@ -861,12 +862,12 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 */
 	function checkCssTemplate() {
 		/* Declare */
-		$cssTemplate=$this->config['display']['csstemplate'];
+		$cssTemplate = $this->config['display']['csstemplate'];
 	
 		/* Begin */
 		if (!$this->conf['csstemplates.'][$cssTemplate]) {
 			//*** Switching to default
-			$cssTemplate='macmade';
+			$cssTemplate = 'macmade';
 		}
 
 		$this->st_addCss(
@@ -1447,12 +1448,21 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @access public
 	 * @return string 
 	 */
-	function pp_linkTP($str,$addParams=array(),$cache=1,$altPageId=0) {
-		if ($this->_displayPage && !intval($altPageId)) {
-			$altPageId=$this->_displayPage.$altPageId;
+	function pp_linkTP($str, $addParams = array(), $cache = 1, $altPageId = null) {
+		
+		if (is_null($parameter) && $this->_displayPage) {
+			$parameter = $this->_displayPage;
 		}
+		
+		//** Become obsolete
+		/*
+		if ($this->_displayPage && !intval($altPageId)) {
+			$altPageId = $this->_displayPage.$altPageId;
+		}
+		*/
+
 		if (is_array($this->_addParams) && count($this->_addParams)) {
-			$addParams=t3lib_div::array_merge_recursive_overrule($this->_addParams,$addParams);
+			$addParams = t3lib_div::array_merge_recursive_overrule($this->_addParams,$addParams);
 		}
 
 		return parent::pp_linkTP($str,$addParams,$cache,$altPageId);
