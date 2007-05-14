@@ -155,6 +155,10 @@
 										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:flexform.tab_display.csstemplate.macmade</numIndex>
 										<numIndex index="1">macmade</numIndex>
 									</numIndex>
+									<numIndex index="1" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:flexform.tab_display.csstemplate.green</numIndex>
+										<numIndex index="1">green</numIndex>
+									</numIndex>
 								</items>
 								<default>macmade</default>
 							</config>
