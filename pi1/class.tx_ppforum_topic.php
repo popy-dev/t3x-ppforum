@@ -125,7 +125,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 		} else {
 			//Playing hook list
-			$this->parent->st_playHooks(
+			tx_pplib_div::playHooks(
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['event_onUpdateInTopic'],
 				$null,
 				$this
@@ -175,15 +175,17 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title=FALSE,$addParams=array(),$parameter='') {
+	function getLink($title = false, $addParams=array(), $parameter = null) {
+		//** Anchor
+		if (is_null($parameter) && $this->id) {
+			//$parameter = $this->parent->_displayPage . '#ppforum_topic_'.$this->id;
+		}
+
 		if (intval($this->id)) {
-			$addParams['topic']=$this->id;
+			$addParams['topic'] = $this->id;
 		} else {
 			$addParams['forum']=$this->forum->id;
 			$addParams['edittopic']=1;
-		}
-		if (!trim($parameter)) {
-			$parameter=($this->id && 0)?('#ppforum_topic_'.$this->id):'';
 		}
 
 		return $this->forum->getTopicLink(
@@ -209,7 +211,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		} elseif ($this->data['status']==2) {
 			$addText.='(closed) ';
 		}
-		return $addText.$this->getLink($this->parent->htmlspecialchars($this->mergedData['title']));
+		return $addText . $this->getLink(tx_pplib_div::htmlspecialchars($this->mergedData['title']));
 	}
 
 	/**
@@ -261,7 +263,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				'counters'=>&$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId],
 				'topic'=>$topicId
 				);
-			$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['getCounters'],$data,$this);
+			tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['getCounters'],$data,$this);
 		}
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId];
 	}
@@ -344,7 +346,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Playing hook list : Allows to make additional validity/access check
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkIncommingData:checkValidityAndAccess'],
 			$data,
 			$this
@@ -381,7 +383,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			//Playing hook list : Allows to fill other fields
-			$this->parent->st_playHooks(
+			tx_pplib_div::playHooks(
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkIncommingData:checkAndFetch'],
 				$data,
 				$this
@@ -485,7 +487,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 		
 		//Playing hook list : Allows to make additional validity/access check
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkTopicData:checkValidityAndAccess'],
 			$data,
 			$this
@@ -524,7 +526,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			//Playing hook list : Allows to fill other fields
-			$this->parent->st_playHooks(
+			tx_pplib_div::playHooks(
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkTopicData:checkAndFetch'],
 				$data,
 				$this
@@ -561,7 +563,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function display() {
 		/* Declare */
-		$content='<div class="topic-details">';
+		$content='
+	<div class="topic-details">';
 		$data=array(
 			'conf'=>array(),
 			'mode'=>'view'
@@ -575,45 +578,46 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$this->loadAuthor();
 
 		if (!$this->id) {
-			$data['mode']='new';
+			$data['mode'] = 'new';
 		} elseif (!intval($this->id)) {
-			$data['mode']='preview';
+			$data['mode'] = 'preview';
 			$this->id=0;
 		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
-			$data['mode']='edit';
+			$data['mode'] = 'edit';
 		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
-			$data['mode']='delete';
+			$data['mode'] = 'delete';
 		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
-			$data['mode']='preview';
+			$data['mode'] = 'preview';
 		}
 
 		$content.=$this->displaySingle($data);
-		if ($data['mode']=='preview') {
-			$data['mode']='edit';
-			$content.=$this->displaySingle($data);
+		if ($data['mode'] == 'preview') {
+			$data['mode'] = 'edit';
+			$content .= $this->displaySingle($data);
 		}
 
 		if ($this->id) {
 			$this->loadMessages();
 			//Generate mesage-browser
-			$tempStr=$this->parent->displayPagination(
+			$tempStr = $this->parent->displayPagination(
 				count($this->messageList),
 				$this->parent->config['display']['maxMessages'],
 				$this,
 				array('message-browser')
 				);
 			//Print it
-			$content.=$tempStr;
+			$content .= $tempStr;
 			//Print message list
-			$content.=$this->displayMessages();
+			$content .= $this->displayMessages();
 			//Print browser again
-			$content.=$tempStr;
+			$content .= $tempStr;
 			unset($tempStr);
 			//Print footer tools
 			$content.=$this->displayTopicTools();
 		}
 
-		$content.='</div>';//Wrapper tag
+		$content.='
+	</div>';//Wrapper tag
 
 		unset($data);//Memory optimisation
 
@@ -644,9 +648,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		
 		//Prints topic anchor
 		if ($data['mode']=='preview') {
-			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_preview_'.$this->id.'">';
+			$content.='
+	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_preview_'.$this->id.'">';
 		} else {
-			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_'.$this->id.'">';
+			$content.='
+	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_'.$this->id.'">';
 		}
 
 		if ($data['mode']!='new') {
@@ -661,21 +667,23 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Openning form tag
 		if (in_array($data['mode'],array('new','edit'))) {
-			$content.='<form method="post" action="'.htmlspecialchars($this->getEditLink(false)).'" class="topic-edit">';
+			$content.='
+	<form method="post" action="'.htmlspecialchars($this->getEditLink(false)).'" class="topic-edit">';
 		} elseif ($data['mode']=='delete') {
-			$content.='<form method="post" action="'.htmlspecialchars($this->getDeleteLink(false)).'" class="topic-delete">';
+			$content.='
+	<form method="post" action="'.htmlspecialchars($this->getDeleteLink(false)).'" class="topic-delete">';
 		}
 
 		//Building standard parts
-		$data['conf']['title-row']=$this->display_titleRow($data['mode']);
-		$data['conf']['head-row']=$this->display_headRow($data['mode']);
-		$data['conf']['parser-row']=$this->display_parserRow($data['mode']);
-		$data['conf']['main-row']=$this->display_mainRow($data['mode']);
-		$data['conf']['options-row']=$this->display_optionsRow($data['mode']);
-		$data['conf']['tools-row']=$this->display_toolsRow($data['mode']);
+		$data['conf']['title-row'] = $this->display_titleRow($data['mode']);
+		$data['conf']['head-row'] = $this->display_headRow($data['mode']);
+		$data['conf']['parser-row'] = $this->display_parserRow($data['mode']);
+		$data['conf']['main-row'] = $this->display_mainRow($data['mode']);
+		$data['conf']['options-row'] = $this->display_optionsRow($data['mode']);
+		$data['conf']['tools-row'] = $this->display_toolsRow($data['mode']);
 
 		//Playing hooks : Allows to manipulate parts (add, sort, etc)
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['display'],
 			$data,
 			$this
@@ -684,13 +692,17 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		//Printing parts
 		foreach ($data['conf'] as $key=>$val) {
 			if (trim($val)) {
-				$content.='<div class="row '.htmlspecialchars($key).'">'.$val.'</div>';
+				$content.='
+		<div class="row '.htmlspecialchars($key).'">'.$val.'
+		</div>';
 			}
 		}
 
 		//Closing tags
-		if ($data['mode']!='view') $content.='</form>';
-		$content.='</div>'; //Anchor tag
+		if ($data['mode']!='view') $content.='
+	</form>';
+		$content.='
+	</div>'; //Anchor tag
 
 		return $content;
 	}
@@ -706,7 +718,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (in_array($mode,array('view','delete','preview'))) {
 			return $this->getTitleLink();
 		} else {
-			return $this->parent->pp_getLL('topic.title','Title : ',TRUE).' <input value="'.$this->parent->htmlspecialchars($this->mergedData['title'])/*(is_array($this->parent->piVars[$this->datakey])?$this->parent->htmlspecialchars($this->parent->piVars[$this->datakey]['title']):$this->parent->htmlspecialchars($this->data['title']))*/.'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />';
+			return $this->parent->pp_getLL('topic.title','Title : ',TRUE).' <input value="'.tx_pplib_div::htmlspecialchars($this->mergedData['title']).'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />';
 		}
 	}
 
@@ -774,7 +786,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				if ($counter==$length-1) $data['classes'][]='row-last';
 
 				//Play a hook list : allows to add more classes to the child row
-				$this->parent->st_playHooks(
+				tx_pplib_div::playHooks(
 					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['displayMessages:classes'],
 					$data,
 					$this
@@ -865,7 +877,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['_displayTopicTools'],
 			$data,
 			$this
@@ -932,7 +944,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanWriteInTopic'],
 			$res,
 			$this
@@ -958,7 +970,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanReplyInTopic'],
 			$res,
 			$this
@@ -1007,7 +1019,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanEditTopic($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanReplyInTopic'],
 			$res,
 			$this
@@ -1030,7 +1042,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanDeleteTopic($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanDelete'],
 			$res,
 			$this
@@ -1086,7 +1098,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->messageIsVisible($messageId);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['messageIsVisible'],
 			$res,
 			$this
@@ -1107,7 +1119,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanEditMessage($messageId,$res);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanEditMessage'],
 			$res,
 			$this
@@ -1128,7 +1140,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanDeleteMessage($messageId,$res);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanDeleteMessage'],
 			$res,
 			$this
@@ -1151,7 +1163,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			);
 
 		//Plays hook list : don't forget to set the $res value to TRUE is your hook deletes the message, otherwise it ill done a second time !
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['deleteMessage'],
 			$data,
 			$this
