@@ -67,7 +67,7 @@ class tx_ppforum_message {
 		$null=NULL;
 
 		//Playing hook list
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
 			$null,
 			$this
@@ -132,7 +132,7 @@ class tx_ppforum_message {
 
 			//Playing hook list
 			$null=NULL;
-			$this->parent->st_playHooks(
+			tx_pplib_div::playHooks(
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
 				$null,
 				$this
@@ -167,7 +167,7 @@ class tx_ppforum_message {
 
 		/* Begin */
 		//Plays hook list : Allow to change some field before saving
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['save'],
 			$null,
 			$this
@@ -279,7 +279,7 @@ class tx_ppforum_message {
 	
 		/* Begin */
 		//Playing hook list
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['event_onUpdateInMessage'],
 			$null,
 			$this
@@ -312,13 +312,21 @@ class tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title=FALSE,$addParams=array()) {
-		$addParams['pointer']=$this->getPageNum();
+	function getLink($title=FALSE,$addParams=array(), $parameter = null) {
+		//** Message anchor
+		if (is_null($parameter) && $this->id) {
+			$parameter = $this->parent->_displayPage . '#ppforum_message_'.$this->id;
+		}
+
+		//** Page pointer
+		if ($pointer = $this->getPageNum()) {
+			$addParams['pointer'] = $pointer;
+		}
 
 		return $this->topic->getMessageLink(
 			$title,
 			$addParams, //overrule piVars
-			$this->id?('#ppforum_message_'.$this->id):0 // Message anchor
+			$parameter
 			);
 	}
 
@@ -330,13 +338,13 @@ class tx_ppforum_message {
 	 * @access public
 	 * @return string
 	 */
-	function getEditLink($title=FALSE,$forceReload=FALSE) {
-		$addParams=array('editmessage'=>-1);
+	function getEditLink($title = false, $forceReload = false) {
+		$addParams = array('editmessage' => -1);
 		if ($this->id) {
-			$addParams['forceReload']=$forceReload;
-			$addParams['editmessage']=$this->id;
+			$addParams['forceReload'] = $forceReload;
+			$addParams['editmessage'] = $this->id;
 		}
-		return $this->getLink($title,$addParams);
+		return $this->getLink($title, $addParams);
 	}
 
 	/**
@@ -348,8 +356,8 @@ class tx_ppforum_message {
 	 */
 	function getDeleteLink($title = false) {
 		if ($this->id) {
-			$addParams=array('deletemessage'=>$this->id);
-			return $this->getLink($title,$addParams);
+			$addParams = array('deletemessage' => $this->id);
+			return $this->getLink($title, $addParams);
 		} else {
 			return '';
 		}
@@ -393,7 +401,7 @@ class tx_ppforum_message {
 			$parserArr['object']->caller=&$this;
 			$text=$parserArr['object']->$method($text);
 		} else {
-			$text=$this->parent->htmlspecialchars($text);
+			$text=tx_pplib_div::htmlspecialchars($text);
 //			$text=str_replace("\r",'',$text);
 			$text=ereg_replace("\n[\n[:space:]]+",'</p><p>',$text);
 			$text='<p>'.nl2br($text).'</p>';
@@ -455,9 +463,11 @@ class tx_ppforum_message {
 		}
 
 		if ($data['mode']=='preview') {
-			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_preview_'.$this->id.'">';
+			$content.='
+	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_preview_'.$this->id.'">';
 		} else {
-			$content.='<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
+			$content.='
+	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
 		}
 
 		if (in_array($data['mode'],array('new','edit'))) {
@@ -475,7 +485,7 @@ class tx_ppforum_message {
 		$data['conf']['tools-row']=$this->display_toolsRow($data['mode']);
 		
 		//Playing hooks : Allows to manipulate parts (add, sort, etc)
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display'],
 			$data,
 			$this
@@ -484,14 +494,17 @@ class tx_ppforum_message {
 		//Printing parts
 		foreach ($data['conf'] as $key=>$val) {
 			if (trim($val)) {
-				$content.='<div class="row '.htmlspecialchars($key).'">'.$val.'</div>';
+				$content.='
+		<div class="row '.htmlspecialchars($key).'">'.$val.'
+		</div>';
 			}
 		}
 
 		//Closes form
 		if ($data['mode']=='edit' || $data['mode']=='new') $content.='</form>';
 		//Closes div
-		$content.='</div>';
+		$content.='
+	</div>';
 
 
 		if (in_array($data['mode'],array('preview'))) {
@@ -529,34 +542,44 @@ class tx_ppforum_message {
 			//Browses columnls
 			foreach (array('left','right') as $part) {
 				if (isset($data[$part])) {
-					$content.='
-					<div class="col '.$part.'-col">';
-
 					if (is_array($data[$part])) {
-						$content.=implode(' ',$data[$part]);
+						$partContent = implode(' ',$data[$part]);
 					} else {
-						$content.=$data[$part];
+						$partContent = $data[$part];
 					}
-					$content.='
-					</div>';
+					$content .= '
+			<div class="col '.$part.'-col">
+				'.$partContent.'
+			</div>';
 				}
 			}
 		}
 
 		if ($data['asJs']) {
-			return '
-				<script type="text/javascript">
-					/*<![CDATA[*/
-					<!--
-					// By doing this, old browser with no javascript (and maybe no CSS !) will not display this part
-					//   this is a good thing because this part is useless without javascript !!
-					document.write(\''.addslashes(str_replace(array("\r","\n"),array('',''),$content)).'\');
-					//-->
-					/*]]>*/
-				</script>';
+			return $this->wrapForNoJs($content);
 		} else {
 			return $content;
 		}
+	}
+
+	/**
+	 * Ensure that the content will not be printed if user-agent don't execute javascript
+	 * 
+	 * @param string $content = the content
+	 * @access public
+	 * @return string 
+	 */
+	function wrapForNoJs($content) {
+		return '
+<script type="text/javascript">
+	/*<![CDATA[*/
+	<!--
+	// By doing this, old browser with no javascript (and maybe no CSS !) will not display this part
+	//   this is a good thing because this part is useless without javascript !!
+	document.write(\''.addslashes(str_replace(array("\r","\n"),array('',''),$content)).'\');
+	//-->
+	/*]]>*/
+</script>';
 	}
 
 	/**
@@ -572,13 +595,13 @@ class tx_ppforum_message {
 		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
-		if (in_array($mode,array('view','preview','delete'))) {
-			$data['left']['author']=$this->author->displayLight();
-			$data['right']['crdate']=$this->parent->renderDate($this->mergedData['crdate']);
+		if (in_array($mode,array('view','preview','delete', 'edit'))) {
+			$data['left']['author'] = $this->author->displayLight();
+			$data['right']['crdate'] = $this->parent->renderDate($this->mergedData['crdate']);
 		}
 		
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_headRow'],$data,$this);
+		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_headRow'],$data,$this);
 
 		return $this->display_stdPart($data);
 	}
@@ -586,7 +609,7 @@ class tx_ppforum_message {
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param string $mode = display mode (new, view, edit, delete, etc...)
 	 * @access public
 	 * @return void 
 	 */
@@ -644,14 +667,13 @@ class tx_ppforum_message {
 
 		}
 
-		$data['left']['parser-selector'].='</select>&nbsp;';
-		$data['right'].='&nbsp;';
-		$data['asJs']=TRUE;
-
+		$data['left']['parser-selector'] .= '</select>&nbsp;';
+		$data['right'] = $this->wrapForNoJs($data['right']);
+		$data['right'] .= '&nbsp;';
 
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_parserRow'],$data,$this);
+		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_parserRow'],$data,$this);
 
 		return $this->display_stdPart($data);
 	}
@@ -666,18 +688,18 @@ class tx_ppforum_message {
 	function display_mainRow($mode) {
 		/* Declare */
 		$content='';
-		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
+		$data = array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
 		if (in_array($mode,array('view','preview'))) {
 			if (!$this->parent->config['.lightMode']) $data['left']['author-details']=$this->author->displaySmallProfile();
 			$data['right']['message']='<div class="message">'.$this->processMessage($this->mergedData['message']).'</div>';
-		} elseif ($mode=='delete') {
+		} elseif ($mode == 'delete') {
 			$data['right']['message']=$this->parent->pp_getLL('message.confirmDelete','Are you sure to delete this message ?',TRUE);
 		} else {
 			$tmp_id='fieldId_'.md5(microtime());
-			$data['left']['smileys']=$this->parent->smileys->displaySmileysTools($this->datakey);
-			$data['right']['message']='<label for="'.$tmp_id.'">'.$this->parent->pp_getLL('message.message','Enter your message here :',TRUE).'</label><br /><textarea id="'.$tmp_id.'" onmouseout="if (document.selection){this.selRange=document.selection.createRange().duplicate();}" cols="50" rows="10" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[message]">'.$this->parent->htmlspecialchars($this->mergedData['message'])/*(is_array($this->parent->piVars[$this->datakey])?$this->parent->htmlspecialchars($this->parent->piVars[$this->datakey]['message']):$this->parent->htmlspecialchars($this->data['message']))*/.'</textarea>';
+			$data['left']['smileys'] = $this->wrapForNoJs($this->parent->smileys->displaySmileysTools($this->datakey));
+			$data['right']['message']='<label for="'.$tmp_id.'">'.$this->parent->pp_getLL('message.message','Enter your message here :',TRUE).'</label><br /><textarea id="'.$tmp_id.'" onmouseout="if (document.selection){this.selRange=document.selection.createRange().duplicate();}" cols="50" rows="10" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[message]">'.tx_pplib_div::htmlspecialchars($this->mergedData['message'])/*(is_array($this->parent->piVars[$this->datakey])?tx_pplib_div::htmlspecialchars($this->parent->piVars[$this->datakey]['message']):tx_pplib_div::htmlspecialchars($this->data['message']))*/.'</textarea>';
 		}
 
 		$this->loadAuthor();
@@ -690,7 +712,7 @@ class tx_ppforum_message {
 		}
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_mainRow'],$data,$this);
+		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_mainRow'],$data,$this);
 
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
@@ -757,7 +779,7 @@ class tx_ppforum_message {
 		}
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_optionRow'],$data,$this);
+		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_optionRow'],$data,$this);
 
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
@@ -845,7 +867,7 @@ class tx_ppforum_message {
 
 					
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['_display_toolsRow'],$data,$this);
+		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['_display_toolsRow'],$data,$this);
 
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
@@ -889,7 +911,7 @@ class tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['isVisible'],
 			$res,
 			$this
@@ -918,7 +940,7 @@ class tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['isVisibleRecursive'],
 			$res,
 			$this
@@ -953,7 +975,7 @@ class tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['getBasicWriteAccess'],
 			$res,
 			$this
@@ -974,7 +996,7 @@ class tx_ppforum_message {
 		$res=$this->topic->userCanEditMessage($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['userCanEdit'],
 			$res,
 			$this
@@ -995,7 +1017,7 @@ class tx_ppforum_message {
 		$res=$this->topic->userCanDeleteMessage($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['userCanDelete'],
 			$res,
 			$this
