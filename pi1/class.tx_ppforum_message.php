@@ -22,6 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
 
 /**
  * Class 'tx_ppforum_message' for the 'pp_forum' extension.
@@ -30,19 +31,14 @@
  * @package	TYPO3
  * @subpackage	tx_ppforum
  */
-class tx_ppforum_message {
-	var $id=0; //Message uid
+class tx_ppforum_message extends tx_ppforum_base {
 	var $datakey='editpost';  //Used to build forms and to get data in piVars
-	var $type='message'; //Use to dinstinct topics and message object in generic methods
-	var $tablename='tx_ppforum_messages'; //Table corresponding to this type
 	var $isNew=FALSE;
 
-	var $data=array(); //Message/Topic data
 	var $mergedData=Array(); //Message/Topic data merged with POST data
 	var $forceReload=array(); //Event handler directives
 
 	var $topic=NULL; //Pointer to parent topic
-	var $parent=NULL; //Pointer to plugin object
 
 	/**
 	 * List of allowed incomming fields from forms(Other fields will be ignored)
@@ -50,43 +46,26 @@ class tx_ppforum_message {
 	 * @var array
 	 */
 	var $allowedFields=Array(
-		'message'=>'',
-		'nosmileys'=>'',
-		'parser'=>'',
-		'hidden'=>'guard',
-		);
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function init() {
-		$null=NULL;
-
-		//Playing hook list
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
-			$null,
-			$this
-			);
-	}
+		'message' => '',
+		'nosmileys' => '',
+		'parser' => '',
+		'hidden' => 'guard',
+	);
 
 	/**
 	 * Loads the message data from DB
 	 *
 	 * @param int $id = Message uid
-	 * @param boolean $clearCache = @see tx_pplib::do_cachedQuery
+	 * @param boolean $clearCache = if TRUE, cached data will be overrided
 	 * @access public
 	 * @return int = loaded uid
 	 */
-	function load($id,$clearCache=FALSE) {
-		if ($this->data=$this->parent->getSingleMessage($id,$clearCache)) {
-			$this->id=intval($id);
-			$this->topic=&$this->parent->getTopicObj($this->data['topic']);
-			$this->mergedData=$this->data;			
+	function load($id, $clearCache = false) {
+		if (parent::load($id, $clearCache)) {
+			if ($this->type == 'message') {
+				$this->topic = &$this->parent->getTopicObj($this->data['topic']);
+			}
+			$this->mergedData = $this->data;			
 		}
 		return $this->id;
 	}
