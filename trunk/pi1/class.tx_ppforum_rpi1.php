@@ -508,10 +508,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$disable = $disable || ($this->getVars['editmessage']);
 		$disable = $disable || ($this->getVars['deletemessage']);
 		$disable = $disable || ($this->getVars['clearCache']);
-		//$disable = $disable || ($this->getVars['editProfile']);
-		//$disable = $disable || ($this->getVars['viewProfile']);
-		$disable = $disable || (intval($this->getVars['forum'])<0);
-
 
 		if ($disable) {
 			$GLOBALS['TSFE']->set_no_cache();
