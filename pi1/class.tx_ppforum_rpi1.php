@@ -39,19 +39,64 @@ require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib2.php');
  * @package	TYPO3
  * @subpackage	tx_ppforum
  */
-class tx_ppforum_pi1 extends tx_pplib2 {
-	var $prefixId = 'tx_ppforum_pi1';		// Same as class name
-	var $scriptRelPath = 'pi1/class.tx_ppforum_pi1.php';	// Path to this script relative to the extension dir.
-	var $extKey = 'pp_forum';	// The extension key.
-	var $currentUser = NULL;
-	var $tables = Array('forum' => 'tx_ppforum_forums','topic' => 'tx_ppforum_topics','message' => 'tx_ppforum_messages','user' => 'fe_users');
-	var $callbackList = Array();
-	var $intPartList = Array();
-
+class tx_ppforum_rpi1 extends tx_pplib2 {
 	/**
-	 * 
+	 * backReference to the mother cObj object (set at call time by cObj itself)
+	 * @access public
+	 * @var &object
+	 */
+	var $cObj = null;
+	/**
+	 * Should be same as classname of the plugin, used for CSS classes, variables
 	 * @access public
 	 * @var string
+	 */
+	var $prefixId = 'tx_ppforum_pi1';
+	/**
+	 * Path to the plugin class script relative to extension directory, eg. 'pi1/class.tx_newfaq_pi1.php'
+	 * @access public
+	 * @var string
+	 */
+	var $scriptRelPath = 'pi1/class.tx_ppforum_pi1.php';
+	/**
+	 * The plugin's extension key
+	 * @access public
+	 * @var string
+	 */
+	var $extKey = 'pp_forum';
+	/**
+	 * "Current user" object (tx_ppforum_user instance)
+	 * @access public
+	 * @var object
+	 */
+	var $currentUser = null;
+	/**
+	 * tablename shortcut list
+	 * @access public
+	 * @var array
+	 */
+	var $tables = Array(
+		'forum'   => 'tx_ppforum_forums',
+		'topic'   => 'tx_ppforum_topics',
+		'message' => 'tx_ppforum_messages',
+		'user'    => 'fe_users',
+	);
+	/**
+	 * List of callable vars wich will be called before plugin end
+	 * @access public
+	 * @var array
+	 */
+	var $callbackList = Array();
+	/**
+	 * No-cached parts
+	 * @access public
+	 * @var array
+	 */
+	var $intPartList = Array();
+	/**
+	 * The plugin's record uid
+	 * @access public
+	 * @var int
 	 */
 	var $pluginId = 0;
 
@@ -60,7 +105,6 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	/************* Main funcs ***************/
 	/****************************************/
 
-
 	/**
 	 * The main method of the PlugIn
 	 *
@@ -68,7 +112,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @param	array		$conf: The PlugIn configuration
 	 * @return	The content that is displayed on the website
 	 */
-	function main($content,$conf)	{
+	function main($conf)	{
 		//*** Basic init
 		$this->conf = $conf;
 		$this->init();
@@ -174,26 +218,23 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * Function called by every USER_INT parts
 	 *   It make a peace of loading (restoring env) and launch another method
 	 *
-	 * @param	string		$content: The PlugIn content
 	 * @param	array		$conf: The PlugIn configuration
 	 * @access public
 	 * @return string 
 	 */
-	function mainCallback($content,$conf,$dontInit = FALSE) {
+	function mainCallback($conf, $dontInit = false) {
 		/* Declare */
-		$this->conf = $conf;
-		$this->_disableINTCallback = TRUE;
+		$this->_disableINTCallback = true;
 		$this->internalLogs['userIntPlugins']++;
 		$this->internalLogs['allUserIntPlugins']++;
 
 		/* Begin */
+		$this->init($conf, $dontInit);
+
 		if (isset($this->conf['meta']['called'])) {
 			$this->internalLogs['allUserIntPlugins'] += intval($this->conf['meta']['called']);
 		}
 
-		if (!$dontInit) {
-			$this->init(); //Init plugin
-		}
 		switch ($this->conf['cmd']){
 		case 'callObj': //Asked to build an object
 			switch ($this->conf['cmd.']['object']){
@@ -350,11 +391,26 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function init() {
-		$this->pluginId = intval($this->cObj->data['uid']);
-		$this->startTime = microtime();
+	function init($conf = array(), $keepMicrotime = false) {
+		if (!$keepMicrotime || !$this->startTime) {
+			$this->startTime = microtime();
+		}
+		
+		//*** Load given conf
+		if (!is_array($this->conf) || !count($this->conf)) {
+			$this->conf = $conf;
+		} else {
+			//** Ensure that cmd & cmd. will be totally overriden
+			unset($this->conf['cmd']);
+			unset($this->conf['cmd.']);
 
-		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'])) {
+			$this->conf = t3lib_div::array_merge_recursive_overrule($this->conf, $conf);
+		}
+		
+		//** Check if object is not yet initialized
+		if (!$this->pluginId) {
+			$this->pluginId = intval($this->cObj->data['uid']);
+
 			parent::init();
 
 			$this->config['.lightMode'] = isset($this->getVars['lightMode'])?($this->getVars['lightMode']?TRUE:FALSE):FALSE;
@@ -362,19 +418,11 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 				$this->config['.lightMode'] = !$this->config['.lightMode'];
 			}
 
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'] = $this->config;
-		} else {
-			$this->config = $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['INIT_VARS'];
-
-			//Force locallang reloading
-			$this->config['LOCAL_LANG'] = '';
-			$this->pp_loadLL();
+			$this->currentUser = &$this->getUserObj($this->getCurrentUser());
+			$this->autoDisableCache();
+			$this->smileys = &$this->pp_makeInstance('tx_ppforum_smileys');
+			$this->_displayPage = $GLOBALS['TSFE']->id;
 		}
-
-		$this->currentUser = &$this->getUserObj($this->getCurrentUser());
-		$this->autoDisableCache();
-		$this->smileys = &$this->pp_makeInstance('tx_ppforum_smileys');
-		$this->_displayPage = $GLOBALS['TSFE']->id;
 	}
 
 	/**
@@ -389,7 +437,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 
 		//If user has submited data, some piVars keys should have changed
 		//  So we need to report it in the GET/POST vars (because the USER_INT objects will reload piVars from them !)
-		if ($GLOBALS['TSFE']->no_cache && !$this->_disableINTCallback && is_array($this->piVars)) {
+		/*if ($GLOBALS['TSFE']->no_cache && !$this->_disableINTCallback && is_array($this->piVars)) {
 			$piVars = $this->piVars;
 			t3lib_div::addSlashesOnArray($piVars);
 			//Just modify POST vars, because they will override GET vars
@@ -398,7 +446,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 			$getVars = $this->getVars;
 			t3lib_div::addSlashesOnArray($getVars);
 			$GLOBALS['HTTP_GET_VARS'][$this->prefixId] = $_GET[$this->prefixId] = $getVars;
-		}
+		}*/
 
 		if (is_array($this->callbackList)) {
 			$count = count($this->callbackList);
@@ -425,15 +473,10 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	
 		/* Begin */
 		//Calculating exec time
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['EXEC_TIME'] += (($stopS-$startS)+($stopM-$startM));
-
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['QUERYS'] += $this->internalLogs['querys'];
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['REALQUERYS'] += $this->internalLogs['realQuerys'];
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['USER_INT'] += $this->internalLogs['userIntPlugins'];
-		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['ALL_USER_INT'] += $this->internalLogs['allUserIntPlugins'];
-
-		//Reseting log array
-		$this->internalLogs = Array();
+		$this->exec_time += (
+			(intval($stopS) - intval($startS)) +
+			(floatval($stopM) - floatval($startM))
+		);
 	}
 
 	/**
@@ -637,7 +680,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @access public
 	 * @return array 
 	 */
-	function doSearch($content,$conf) {
+	function doSearch($conf) {
 		/* Declare */
 		global $PP_SEARCHENGINE_PI1;
 		$this->conf = $conf;
@@ -757,13 +800,13 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		$this->pushStats();
 
 		$content='<div class="stats" id="ppforum_stats">';
-		$content.='Eclapsed time : '.intval($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['EXEC_TIME']*1000).'ms.<br />';
+		$content.='Eclapsed time : '.intval($this->exec_time * 1000).'ms.<br />';
 
-		$content.='Total querys : '.((string)intval($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['QUERYS'])).'.<br />';
-		$content.='Real querys : '.((string)intval($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['REALQUERYS'])).'.<br />';
+		$content.='Total querys : '.tx_pplib_div::strintval($this->internalLogs['querys']).'.<br />';
+		$content.='Real querys : '.tx_pplib_div::strintval($this->internalLogs['realQuerys']).'.<br />';
 		$content.='<br />';
-		$content.='Called USER_INT cObjects : '.($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['ALL_USER_INT']+1).'.<br />';
-		$content.='Effective USER_INT cObjects : '.($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['USER_INT']+1).'.<br />';
+		$content.='Called USER_INT cObjects : '.tx_pplib_div::strintval($this->internalLogs['allUserIntPlugins']).'.<br />';
+		$content.='Effective USER_INT cObjects : '.tx_pplib_div::strintval($this->internalLogs['userIntPlugins']).'.<br />';
 
 		$content.='<br />';
 		if ($this->getVars['outlineUserInt']) {
@@ -774,19 +817,17 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 		} else {
 			$content .= $this->pp_linkTP_keepPiVars(
 				'Outline USER_INT cObjects !',
-				array('outlineUserInt'=>1),
-				TRUE,
-				'#ppforum_stats'
+				array('outlineUserInt'=>1)
 			);
 		}
 
 		$content.='</div>';
-
+/*
 		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['EXEC_TIME']=0;
 		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['QUERYS']=0;
 		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['REALQUERYS']=0;
 		$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['STATS']['USER_INT']=0;
-
+*/
 		return $content;
 	}
 
@@ -1487,26 +1528,20 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 * @return string 
 	 */
 	function callINTPlugin($conf) {
-		$lConf=$this->conf;
-		//Cleaning conf
-		unset($lConf['cmd']);
-		unset($lConf['cmd.']);
-		//Merging conf
-		$conf=$this->arrayMergeRecursive($lConf,$conf,TRUE);
 		//Forcing userFunc propretie
 		$conf['userFunc']='tx_ppforum_pi1->mainCallback';
 		//Ensure that a INT part can't call another INT part
 		if ($this->_disableINTCallback) {
-			//t3lib_div::debug($conf, '');
-			//Checking cache
-			if (!is_object($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['USER_INT_PI'][$this->cObj->data['uid']])) {
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['USER_INT_PI'][$this->cObj->data['uid']]=t3lib_div::makeInstance('tx_ppforum_pi1');
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['USER_INT_PI'][$this->cObj->data['uid']]->cObj=&$this->cObj;
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['USER_INT_PI'][$this->cObj->data['uid']]->_disableINTCallback=TRUE;
-			}
 			$this->internalLogs['userIntPlugins']--; //Because this is not a real USER_INT and it will increase the counter
-			return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['USER_INT_PI'][$this->cObj->data['uid']]->mainCallback('',$conf);
+			return $this->mainCallback($conf, true);
 		} else {
+			$lConf=$this->conf;
+			//Cleaning conf
+			unset($lConf['cmd']);
+			unset($lConf['cmd.']);
+
+			//Merging conf
+			$conf = $this->arrayMergeRecursive($lConf,$conf,TRUE);
 			return $this->cObj->cObjGetSingle('USER_INT',$conf);
 		}
 	}
@@ -1521,7 +1556,7 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	 */
 	function callINTpart($conf) {
 		/* Declare */
-		$key=md5(serialize($conf));
+		$key = md5(serialize($conf));
 	
 		/* Begin */
 		if ($this->_disableINTCallback) {
@@ -1533,8 +1568,8 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 				$this->intPartList[$key]['meta']['called']++;
 			} else {
 				//First call
-				$conf['meta']['called']=0;
-				$this->intPartList[$key]=$conf;
+				$conf['meta']['called'] = 0;
+				$this->intPartList[$key] = $conf;
 			}
 
 			return '<!-- tx_ppforum_pi1:INTPART_'.$key.'-->';
@@ -1556,46 +1591,17 @@ class tx_ppforum_pi1 extends tx_pplib2 {
 	
 		/* Begin */
 		if (isset($this->conf['cmd.']['parts.']) && is_array($this->conf['cmd.']['parts.']) && count($this->conf['cmd.']['parts.'])) {
-			$data=$this->conf['cmd.']['parts.'];
+			$data = $this->conf['cmd.']['parts.'];
 
-			$replace=array();
-			foreach ($data as $key=>$val) {
-				//Unsetting useless conf
-				unset($this->conf['cmd.']);
-
-				//Merging conf
-				$val=$this->arrayMergeRecursive($this->conf,$val,TRUE);
-				//Forcing userFunc propretie (useless did you say ?)
-				$conf['userFunc']='tx_ppforum_pi1->mainCallback';
-
-				$replace['<!-- tx_ppforum_pi1:INTPART_'.$key.'-->']=$this->mainCallback('',$val,TRUE);
-				//$replace[0][]='<!-- tx_ppforum_pi1:INTPART_'.$key.'-->';
-				//$replace[1][]=$this->mainCallback('',$val,TRUE);
-				//t3lib_div::debug($this->internalLogs, $this->degub_intPart($val));
+			$replace = array();
+			foreach ($data as $key => $val) {
+				$replace['<!-- tx_ppforum_pi1:INTPART_'.$key.'-->'] = $this->mainCallback($val);
 			}
 
-			$TSFE->content=$this->fastMarkerArray($replace,$TSFE->content);
-			//$TSFE->content=str_replace($replace[0],$replace[1],$TSFE->content);
+			$TSFE->content = $this->fastMarkerArray($replace, $TSFE->content);
 		}
 
 		return '';
-	}
-
-	function degub_intPart($conf) {
-		switch ($conf['cmd']){
-		case 'callObj': 
-			$title=$conf['cmd.']['object'].'_'.$conf['cmd.']['uid'];
-			break;
-		default:
-			$title='this';
-			break;
-		}
-
-		$title.='->';
-		$title.=$conf['cmd.']['method'];
-		$title.=' ('.strval(1+$conf['meta']['called']).')';
-
-		return $title;
 	}
 
 }
