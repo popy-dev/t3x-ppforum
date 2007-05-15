@@ -26,19 +26,47 @@ require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
 
 /**
  * Class 'tx_ppforum_message' for the 'pp_forum' extension.
+ * 'message' record object
  *
- * @author	Popy <popy.dev@gmail.com>
- * @package	TYPO3
- * @subpackage	tx_ppforum
+ * @author Popy <popy.dev@gmail.com>
+ * @package TYPO3
+ * @subpackage tx_ppforum
  */
 class tx_ppforum_message extends tx_ppforum_base {
-	var $datakey='editpost';  //Used to build forms and to get data in piVars
-	var $isNew=FALSE;
+	/**
+	 * Used to build forms and to get data in piVars
+	 * @access public
+	 * @var string
+	 */
+	var $datakey = 'editpost';
 
-	var $mergedData=Array(); //Message/Topic data merged with POST data
-	var $forceReload=array(); //Event handler directives
+	/**
+	 * True if the message has been inserted during this process
+	 * @access public
+	 * @var boolean
+	 */
+	var $isNew = false;
 
-	var $topic=NULL; //Pointer to parent topic
+	/**
+	 * Message/Topic data merged with POST data (only allowed fields)
+	 * @access public
+	 * @var array
+	 */
+	var $mergedData = Array(); //Message/Topic data merged with POST data
+
+	/**
+	 * Event handler directives
+	 * @access public
+	 * @var array
+	 */
+	var $forceReload = Array();
+
+	/**
+	 * Pointer to parent topic
+	 * @access public
+	 * @var object
+	 */
+	var $topic = null;
 
 	/**
 	 * List of allowed incomming fields from forms(Other fields will be ignored)
@@ -62,8 +90,12 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function load($id, $clearCache = false) {
 		if (parent::load($id, $clearCache)) {
+			//** Load topic
 			if ($this->type == 'message') {
-				$this->topic = &$this->parent->getTopicObj($this->data['topic']);
+				$this->topic = &$this->parent->getRecordObject(
+					intval($this->data['topic']),
+					'topic'
+				);
 			}
 			$this->mergedData = $this->data;			
 		}
@@ -81,43 +113,41 @@ class tx_ppforum_message extends tx_ppforum_base {
 		if (isset($this->parent->piVars[$this->datakey]) && is_array($this->parent->piVars[$this->datakey])) {
 			$incommingData=$this->parent->piVars[$this->datakey];
 			if ($this->type=='message') {
-				$isAdmin=$this->topic->forum->userIsAdmin();
-				$isGuard=$this->topic->forum->userIsGuard();
+				$isAdmin = $this->topic->forum->userIsAdmin();
+				$isGuard = $this->topic->forum->userIsGuard();
 			} else {
-				$isAdmin=$this->forum->userIsAdmin();
-				$isGuard=$this->forum->userIsGuard();
+				$isAdmin = $this->forum->userIsAdmin();
+				$isGuard = $this->forum->userIsGuard();
 			}
 
 			foreach ($this->allowedFields as $key=>$val) {
 				//** Field access check
-				$allowed=FALSE;
+				$allowed = false;
 				switch ($val){
 				case 'admin': 
-					$allowed=$isAdmin;
+					$allowed = $isAdmin;
 					break;
 				case 'guard': 
-					$allowed=$isGuard;
+					$allowed = $isGuard;
 					break;
 				default:
-					$allowed=TRUE;
+					$allowed = true;
 					break;
 				}
 
 				//** Merging field
 				if (isset($incommingData[$key]) && $allowed) {
-					$this->mergedData[$key]=$incommingData[$key];
+					$this->mergedData[$key] = $incommingData[$key];
 				}
 			}
 
 			//Playing hook list
-			$null=NULL;
+			$null = null;
 			tx_pplib_div::playHooks(
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
 				$null,
 				$this
 				);
-
-			//t3lib_div::debug($this->mergedData, '');
 		}
 	}
 
