@@ -32,13 +32,42 @@ require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
  * @subpackage	tx_ppforum
  */
 class tx_ppforum_forum extends tx_ppforum_base {
-	var $processMessage=array(); //Error message storage
+	/**
+	 * Error message storage
+	 * @access public
+	 * @var array
+	 */
+	var $processMessage = array();
 
-	var $forum = null; //Pointer to parent forum object
+	/**
+	 * Pointer to parent forum object
+	 * @access public
+	 * @var object
+	 */
+	var $forum = null;
 
-	var $options=Array(
+	/**
+	 * Misc options
+	 * @access public
+	 * @var array
+	 */
+	var $options = Array(
 		'unsetForumId' => true,
 	);
+
+	/**
+	 * userIsGuard() cache
+	 * @access private
+	 * @var boolean
+	 */
+	var $userIsGuard = null;
+
+	/**
+	 * userIsAdmin() cache
+	 * @access private
+	 * @var boolean
+	 */
+	var $userIsAdmin = null;
 
 	/**
 	 * Loads the forum data from DB
@@ -216,7 +245,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return string 
 	 */
 	function getLink($title='', $addParams=Array(), $parameter = null) {
-		if (!isset($addParams['forum'])) {
+		if (!isset($addParams['forum']) && $this->id) {
 			$addParams['forum'] = $this->id;
 		}
 		
@@ -375,18 +404,21 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return boolean 
 	 */
 	function userIsGuard() {
-		//Load basic access
-		$this->readAccess();
-		$res=$this->access['guard'];
+		// Check cached result
+		if (is_null($this->userIsGuard)) {
+			//Load basic access
+			$this->readAccess();
+			$this->userIsGuard = $this->access['guard'] ? true : false;
 
-		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsGuard'],
-			$res,
-			$this
+			//Plays hook list : Allows to change the result
+			tx_pplib_div::playHooks(
+				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsGuard'],
+				$this->userIsGuard,
+				$this
 			);
+		}
 		
-		return $res;
+		return $this->userIsGuard;
 	}
 
 
@@ -397,18 +429,22 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return boolean 
 	 */
 	function userIsAdmin() {
-		//Load basic access
-		$this->readAccess();
-		$res=$this->access['admin'];
+		// Check cached result
+		if (is_null($this->userIsAdmin)) {
+			//Load basic access
+			$this->readAccess();
+			$this->userIsAdmin = $this->access['admin'];
 
-		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsAdmin'],
-			$res,
-			$this
+			//Plays hook list : Allows to change the result
+			tx_pplib_div::playHooks(
+				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsAdmin'],
+				$this->userIsAdmin,
+				$this
 			);
+			
+		}
 		
-		return $res;
+		return $this->userIsAdmin;
 	}
 
 
@@ -421,7 +457,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function event_onNewTopic($topicId) {
-		$null=NULL;
+		$null = null;
 		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onNewTopic'],
 			$null,

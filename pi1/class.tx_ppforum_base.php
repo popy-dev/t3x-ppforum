@@ -67,24 +67,6 @@ class tx_ppforum_base {
 	var $type = '';
 
 	/**
-	 * Init function : called after constructor
-	 *
-	 * @access public
-	 * @return void 
-	 */
-	function init() {
-		$this->tablename = $this->parent->tables[$this->type];
-		$null=NULL;
-
-		//Playing hook list
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
-			$null,
-			$this
-			);
-	}
-
-	/**
 	 * Loads the record's data from DB
 	 *
 	 * @param int $id = Record's uid
@@ -93,6 +75,8 @@ class tx_ppforum_base {
 	 * @return int = loaded uid
 	 */
 	function load($id, $clearCache = false) {
+		$this->tablename = $this->parent->tables[$this->type];
+
 		if ($id && $this->data = $this->parent->pp_getRecord($id, $this->tablename, $clearCache)) {
 			$this->id = intval($id);
 		} else {

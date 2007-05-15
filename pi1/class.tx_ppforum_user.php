@@ -34,7 +34,7 @@ require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php
  * @subpackage tx_ppforum
  */
 class tx_ppforum_user extends tx_ppforum_base {
-	var $ucSave=FALSE;
+	var $ucSave = FALSE;
 
 	/**
 	 *
@@ -453,6 +453,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function displayProfile($mode='') {
+		$mode = is_array($mode) ? $mode['mode'] : $mode;
 
 		if ($this->id==1 && $mode=='edit') {
 			return $this->displayProfile_form($mode);

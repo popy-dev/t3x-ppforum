@@ -113,12 +113,13 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return	The content that is displayed on the website
 	 */
 	function main($conf)	{
-		//*** Basic init
-		$this->conf = $conf;
-		$this->init();
-		$this->loadHashList(TRUE);
+		$content = '';
 
-		$printRest = TRUE;
+		//*** Basic init
+		$this->init($conf);
+		$this->loadHashList(true);
+
+		$printRest = true;
 
 		//Hook list : if a hook reurn something and switch $printRest to true, the plugin will return this content instead of the normal content
 		$hookRes = tx_pplib_div::playHooks(
@@ -130,9 +131,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if (!$printRest) {
 			//Looking for first available content
 			foreach ($hookRes as $content) {
-				if (strlen($content)) {
-					break;
-				}
+				if (strlen($content)) break;
 			}
 		} else {
 			//Normal rendering
@@ -143,8 +142,24 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 			$content .= $this->printRootLine();
 			$content .= $this->printUserBar();
+			
+			$editProfile = isset($this->getVars['editProfile']) ? intval($this->getVars['editProfile']) : false;
+			$viewProfile = isset($this->getVars['viewProfile']) ? intval($this->getVars['viewProfile']) : false;
 
-			if ($user = intval($this->getVars['editProfile'])) {
+			if ($editProfile || $viewProfile) {
+				$lConf = Array(
+					'cmd'  => 'callObj',
+					'cmd.' => Array(
+						'object' => 'user',
+						'uid'    => ($editProfile ? $editProfile : $viewProfile),
+						'method' => 'displayProfile',
+						'mode'   => $editProfile ? 'edit' : 'view',
+					)
+				);
+
+				$content .= $this->callINTPlugin($lConf);
+
+				/*
 				$obj = &$this->getUserObj($user);
 				if ($obj->id) {
 					$content .= $obj->displayProfile('edit');
@@ -152,14 +167,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					$GLOBALS['TSFE']->set_no_cache();
 					$content .= 'Utilisateur inexistant ->@TODO message d\'erreur';
 				}
-			} elseif ($user = intval($this->getVars['viewProfile'])) {
-				$obj = &$this->getUserObj($user);
-				if ($obj->id) {
-					$content .= $obj->displayProfile();
-				} else {
-					$GLOBALS['TSFE']->set_no_cache();
-					$content .= 'Utilisateur inexistant ->@TODO message d\'erreur';
-				}
+				*/
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj($topic);
 				if ($obj->id) {
@@ -201,8 +209,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'cmd.' => array(
 				'method' => 'handleIntParts',
 				'parts.' => $this->intPartList
-				)
-			);
+			)
+		);
 
 		$content .= $this->callINTPlugin($lConf,TRUE);
 		$this->intPartList = Array();
@@ -770,7 +778,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		return $finalResult;
-		//t3lib_div::debug($result, '$result');
 	}
 
 	/****************************************/
@@ -1257,12 +1264,13 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 	/**
 	 * Get a record object
+	 * Objects are cached : every record object is also unique during the whole page generation
 	 * 
 	 * @param int $id = the row uid
 	 * @param string $type = the object type
 	 * @param boolean $clearCache = if TRUE, cached object will be overrided
 	 * @access public
-	 * @return object 
+	 * @return object / null if object cannot be build
 	 */
 	function &getRecordObject($id, $type, $clearCache = false) {
 		/* Declare */
@@ -1271,7 +1279,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$className = false;
 
 		/* Begin */
-		//*** Special case :
+		//*** Special case : negative forum id means forumsim object
 		if ($type == 'forum' && $id < 0) $classKey = 'forumsim';
 
 		//*** Determine classname
@@ -1280,16 +1288,15 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if ($clearCache || !isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey])) {
 			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey] = null;
 
-			// if a valid class is found, build object and init it
+			//** if a valid class is found, build object and init it
 			if (trim($className)) {
+				//* Instanciate object
 				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey] = &$this->pp_makeInstance($className);
+				
+				//* Force the type proprety value
 				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->type = $type;
 
-				//*** Will (maybe) be removed later (using $this->pp_makeInstance2 and generic record class constructors)
-				if (method_exists($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey], 'init')) {
-					$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->init();
-				}
-
+				//* Load data
 				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
 			}
 		}
@@ -1299,11 +1306,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$this->internalLogs['querys']++;
 		}
 
-
-		if ($this->_disableINTCallback) {
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->parent = &$this;
-		}
-
+		//*** Return the cached object
 		return $GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey];
 	}
 
@@ -1472,7 +1475,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		if ($selectedPage>1) {
-			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>0))).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
+			$links[]='<a href="'.htmlspecialchars($ref->getLink(false)).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
 		}
 		if ($selectedPage>0) {
 			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$selectedPage-1))).'" title="'.$this->pp_getLL('messages.pointer.goToPrev_title','Back to previous page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToPrev','<',TRUE).'</a>';
@@ -1484,7 +1487,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		for ($i=$startPage;$i<$endPage+1;$i++) {
 			if ($i!=$selectedPage) {
-				$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$i))).'" title="'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage_title','Jump to page ###pagenum###',TRUE)).'">'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage','###pagenum###',TRUE)).'</a>';
+				$addparams = $i ? array('pointer'=>$i) : array();
+				$links[] = '<a href="'.htmlspecialchars($ref->getLink(false,$addparams)).'" title="'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage_title','Jump to page ###pagenum###',TRUE)).'">'.str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage','###pagenum###',TRUE)).'</a>';
 			} else {
 				$links[]=str_replace('###pagenum###',$i+1,$this->pp_getLL('messages.pointer.goToPage','###pagenum###',TRUE));
 			}

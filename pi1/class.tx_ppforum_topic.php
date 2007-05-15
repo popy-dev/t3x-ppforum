@@ -32,14 +32,33 @@ require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php
  * @subpackage	tx_ppforum
  */
 class tx_ppforum_topic extends tx_ppforum_message {
-	var $id=0; //Topic uid
-	var $processMessage=array(); //Error message storage
-	var $datakey='edit_topic'; //Used to build forms and to get data in piVars
-//	var $type='topic'; //Used in generic functions herited from tx_ppforum_message
-//	var $tablename='tx_ppforum_topics'; //Table corresponding to this type
+	/**
+	 * Used to build forms and to get data in piVars
+	 * @access public
+	 * @var string
+	 */
+	var $datakey = 'edit_topic';
+	
+	/**
+	 * Error message storage
+	 * @access public
+	 * @var array
+	 */
+	var $processMessage = Array();
 
-	var $forum=NULL; //Pointer on parent forum
-	var $messageList=FALSE;
+	/**
+	 * Pointer on parent forum
+	 * @access public
+	 * @var object
+	 */
+	var $forum = null;
+
+	/**
+	 * Topic's mesage uid list
+	 * @access public
+	 * @var array
+	 */
+	var $messageList = null;
 
 	/**
 	 * List of allowed incomming fields from forms(Other fields will be ignored)
@@ -403,13 +422,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					} elseif (!$data['message']->id) {
 						//Preview mode for new topics
 						$this->loadMessages();
-						$this->messageList[]=0;
-						$data['message']->id='preview';
+						$this->messageList[] = 0;
+						$data['message']->id = 'preview';
 					}
 				}
 
-				//Cleaning incomming vars
-				$this->parent->piVars[$data['message']->datakey]=array();
+				// Cleaning incomming vars
+				$this->parent->piVars[$data['message']->datakey] = array();
 				unset($this->parent->getVars['editmessage']);
 				unset($this->parent->getVars['deletemessage']);
 			}
@@ -1063,7 +1082,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function loadMessages($clearCache=FALSE,$noCheck=FALSE) {
 		if (!is_array($this->messageList) || $clearCache) {
 			//Init
-			$this->messageList=Array();
+			$this->messageList = Array();
 			//Get raw list
 			foreach ($this->parent->getTopicMessages($this->id,$clearCache) as $messageId) {
 				$temp = &$this->parent->getMessageObj($messageId);
