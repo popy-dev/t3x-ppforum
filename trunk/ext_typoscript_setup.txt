@@ -76,17 +76,20 @@ plugin.tx_ppforum_pi1 {
     //Default template :
     macmade=COA
     macmade {
-      10=FILE
-      10.file=EXT:pp_forum/css_templates/macmade/global.css
+      10 = FILE
+      10.file = EXT:pp_forum/css_templates/macmade/global.css
 
-      20=FILE
-      20.file=EXT:pp_forum/css_templates/macmade/forums.css
+      20 = FILE
+      20.file = EXT:pp_forum/css_templates/macmade/forums.css
 
-      30=FILE
-      30.file=EXT:pp_forum/css_templates/macmade/topics.css
+      30 = FILE
+      30.file = EXT:pp_forum/css_templates/macmade/topics.css
 
-      40=FILE
-      40.file=EXT:pp_forum/css_templates/macmade/messages.css
+      40 = FILE
+      40.file = EXT:pp_forum/css_templates/macmade/messages.css
+
+      50 = FILE
+      50.file = EXT:pp_forum/css_templates/macmade/users.css
     }
 
     green = COA
