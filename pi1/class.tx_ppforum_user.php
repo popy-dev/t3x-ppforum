@@ -439,205 +439,11 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function displayInboxLink($altId=0) {
-		$obj=&$this->parent->getForumObj($altId?-$altId:-$this->id);
+	function displayInboxLink($altId = 0) {
+		$obj = &$this->parent->getForumObj($altId ? -$altId : -$this->id);
 		return $obj->getTitleLink();
 	}
 
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function displayProfile($mode='') {
-		$mode = is_array($mode) ? $mode['mode'] : $mode;
-
-		if ($this->id==1 && $mode=='edit') {
-			return $this->displayProfile_form($mode);
-		}
-			return $this->displayProfile_form($mode);
-
-
-
-		/* Declare */
-		$data=Array();
-		$toolkit=NULL;
-		$profileData=$this->getUserPreference('profil');
-	
-		/* Begin */
-		if (!$this->id) {
-			return '';
-		}
-		if (($mode!='edit') || !$this->userCanEdit()) {
-			$mode='view';
-		}
-
-		//t3lib_div::debug($this->parent->config, 'plop');
-		$content.='<div class="user-profile">';
-		if ($mode=='edit') {
-			$content.='<form action="'.htmlspecialchars($this->parent->pp_linkTP_thisPiVars(FALSE,Array('editProfile','backUrl'),array('editProfile'=>$this->id))).'" method="post" enctype="multipart/form-data">';
-		}
-
-		$content.='<h2>'.$this->parent->pp_getLL('profile.title','Profile : ',TRUE).' '.tx_pplib_div::htmlspecialchars($this->data['username']).'</h2>';
-
-
-		$toolkit = &tx_pplib_div::getFormToolkit($mode == 'view');
-		$toolkit->setConf(
-			Array(
-				'namePrefix'=>$this->parent->prefixId,
-				'dataPrefix'=>'profile',
-				)
-			);
-
-		$tempVar=Array();
-		$this->parent->loadParsers();
-		foreach (array_keys($this->parent->parsers) as $key) {
-			$tempVar[$key] = $this->parent->parsers[$key]['label'];
-		}
-
-		if ($mode=='edit' && isset($this->parent->piVars['profile']) && is_array($this->parent->piVars['profile'])) {
-			$toolkit->setData($this->parent->piVars['profile']);
-			$checks=Array(
-				'pref_parser'=>'inlist|'.implode('|',array_keys($tempVar)),
-				'signature_parser'=>'inlist|'.implode('|',array_keys($tempVar)),
-				'signature'=>'none',
-				'def_disableSimeys'=>'none',
-				);
-			$toolkit->checkIncommingData($checks,'onlyValid');
-
-			//Will register only valid fields, due to the 'onlyValid' checking mode
-			$toolkit->fetchFieldsInArray($profileData);
-
-			$avatarUrl = $toolkit->getFieldVal('avatar_url');
-
-			//*** Avatar upload
-			list($avatarImg,$reason)=$this->uploadAvatarImg('upload_ppforum_avatar',$avatarUrl);
-			if ($avatarImg) {
-				$profileData['avatar']=$avatarImg;
-			} elseif ($toolkit->getFieldVal('avatar_drop')) {
-				$profileData['avatar']='';
-			} elseif(trim($reason)) {
-				$toolkit->validErrors['avatar_url'] = $this->parent->pp_getLL('profile.avatar-opt.avatar.error.'.$reason,$reason);
-			}
-
-			$this->setUserPreference('profil',$profileData);
-			$this->save();
-		} else {
-			$toolkit->setData($profileData);
-		}
-
-		if ($mode=='edit') {
-			$data['message']=Array();
-
-			$data['message']['title']='<h3>'.$this->parent->pp_getLL('profile.message.title','Posting config').'</h3>';
-
-			$data['message']['pref_parser']=Array();
-			$data['message']['pref_parser']['left']=$this->parent->pp_getLL('profile.message.pref_parser','Prefered markup language : ',TRUE);
-			$data['message']['pref_parser']['right']=$toolkit->getSelect('pref_parser',$tempVar);
-
-			$data['message']['def_disableSimeys']=Array();
-			$data['message']['def_disableSimeys']['left']=$this->parent->pp_getLL('profile.message.def_disableSimeys','Disable smileys by default : ',TRUE);
-			$data['message']['def_disableSimeys']['right']=$toolkit->getCheckbox('def_disableSimeys');
-
-			$data['message']['signature_parser']=Array();
-			$data['message']['signature_parser']['left']=$this->parent->pp_getLL('profile.message.signature_parser','Use this markup for my signature :',TRUE);
-			$data['message']['signature_parser']['right']=$toolkit->getSelect('signature_parser',$tempVar);
-
-			$data['message']['signature']=Array();
-			$data['message']['signature']['left']=$this->parent->pp_getLL('profile.message.signature','Signature : ',TRUE);
-			$data['message']['signature']['right']=$toolkit->getTextarea('signature');
-
-			$data['avatar-opt']=Array();
-
-			$data['avatar-opt']['title']='<h3>'.$this->parent->pp_getLL('profile.avatar-opt.title','Avatar options').'</h3>';
-
-			if ($image = $this->print_avatarImg()) {
-				$data['avatar-opt']['cur_avatar']=Array();
-				$data['avatar-opt']['cur_avatar']['left']=$this->parent->pp_getLL('profile.avatar-opt.cur_avatar','Current avatar : ');
-				$data['avatar-opt']['cur_avatar']['right']=$image;
-			}
-
-			$data['avatar-opt']['avatar']=Array();
-			$data['avatar-opt']['avatar']['left']=$this->parent->pp_getLL('profile.avatar-opt.avatar','Upload avatar : ',TRUE);
-			$data['avatar-opt']['avatar']['right']='<input type="file" name="upload_ppforum_avatar" accept="image/*" />';
-
-			$data['avatar-opt']['avatar_url']=Array();
-			$data['avatar-opt']['avatar_url']['left']=$this->parent->pp_getLL('profile.avatar-opt.avatar_url','Get Avatar from this url : ',TRUE);
-			$data['avatar-opt']['avatar_url']['right']=$toolkit->getInput('avatar_url');
-
-			$data['avatar-opt']['avatar_drop']=Array();
-			$data['avatar-opt']['avatar_drop']['left']=$this->parent->pp_getLL('profile.avatar-opt.avatar_drop','Remove Avatar : ',TRUE);
-			$data['avatar-opt']['avatar_drop']['right']=$toolkit->getCheckbox('avatar_drop');
-
-			$data['misc']=Array();
-
-			$data['misc']['submit']=Array();
-			$data['misc']['submit']['left']='&nbsp;';
-			$data['misc']['submit']['right']='<input type="submit" value="'.$this->parent->pp_getLL('profile.options.submit','Save',TRUE).'">';
-			if (isset($this->parent->piVars['backUrl']) && trim($this->parent->piVars['backUrl'])) {
-				$data['misc']['submit']['right'].=' <a href="'.htmlspecialchars($this->parent->piVars['backUrl']).'">'.$this->parent->pp_getLL('profile.options.back','Return to forum').'</a>';
-			}
-		} else {
-			$obj = &$this->parent->getForumObj(-($this->id));
-			$data['misc']=$obj->getLink('Test');
-		}
-
-
-		foreach ($data as $partClass=>$part) {
-			$classArr=Array('part');
-			if (!t3lib_div::testInt($partClass)) $classArr[]=$partClass;
-			$content.='<div class="'.htmlspecialchars(implode(' ',$classArr)).'">';
-
-			if (is_array($part)) {
-				if (isset($part['title'])) {
-					$content.=$part['title'];
-					unset($part['title']);
-				}
-				$content.='<div class="sub-container">';
-
-				foreach ($part as $rowClass=>$row) {
-					$classArr=Array('row');
-					if (!t3lib_div::testInt($rowClass)) $classArr[]=$rowClass;
-					$content.='<div class="'.htmlspecialchars(implode(' ',$classArr)).'">';
-					if (is_array($row)) {
-						foreach (array('left','right') as $part) {
-							$content.='
-							<div class="col '.$part.'-col">';
-
-							if (trim($row[$part])) {
-								$content.=$row[$part];
-							} else {
-								//Empty div : used to fix IE height bug
-								$content.='&nbsp;';
-							}
-							$content.='
-							</div>';
-						}
-					} else {
-						$content.=$row;
-					}
-					$content.='</div>';
-				}
-				$content.='</div>';
-			} else {
-				$content.=$part;
-			}
-
-			$content.='</div>';
-		}
-
-		if ($mode=='edit') {
-			$content.='</form>';
-		}
-		$content.='</div>';
-
-
-		return $content;
-	}
-
 	/**
 	 * 
 	 * 
@@ -645,16 +451,20 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function displayProfile_form($mode) {
+	function displayProfile($lConf) {
 		/* Declare */
-		$content='';
-		$data=Array(
-			'title'=>$this->getEditLink($this->parent->pp_getLL('profile.title','Profile : ',true).' '.tx_pplib_div::htmlspecialchars($this->data['username']))
-			);
+		$mode = isset($lConf['mode']) ? $lConf['mode'] : '';
+		$content = '';
 		$infoArray = Array(
 			'mode' => $mode,
 			'parts' => '',
 			'currentPart' => isset($this->parent->piVars['editPPart']) ? $this->parent->piVars['editPPart'] : false,
+		);
+		$conf = Array(
+			'infoArray' => &$infoArray,
+			'data' => Array(
+				'title'=>$this->getEditLink($this->parent->pp_getLL('profile.title','Profile : ',true).' '.tx_pplib_div::htmlspecialchars($this->data['username']))
+			),
 		);
 		$modeParts = Array(
 			'edit' => Array('message', 'avatar-opt', 'privacy'),
@@ -669,35 +479,38 @@ class tx_ppforum_user extends tx_ppforum_base {
 			$infoArray['mode'] = 'view';
 		}
 
+		//*** Allowed parts
 		$infoArray['parts'] = $modeParts[$infoArray['mode']];
+		unset($modeParts);
 
 		//*** Determine current part
 		if (!$infoArray['currentPart'] || !in_array($infoArray['currentPart'], $infoArray['parts'])) {
 			$infoArray['currentPart'] = reset($infoArray['parts']);
 		}
 
+		//*** Output start tag
 		$content .= '<div class="user-profile">';
 		if ($infoArray['mode'] == 'edit') {
 			$content .= '<form action="'.htmlspecialchars($this->getEditLink(false,array('editPPart'=>$infoArray['currentPart']))).'" method="post" enctype="multipart/form-data">';
 		}
 
-		$data['subtitle'] = $this->displayProfile_subtitle($infoArray);
-		$data['main'] = $this->displayProfile_main($infoArray);
+		$conf['data']['subtitle'] = $this->displayProfile_subtitle($infoArray);
+		$conf['data']['main'] = $this->displayProfile_main($infoArray);
 
 		if ($infoArray['mode'] == 'edit') {
-			$data['submit'] = $this->displayProfile_submit($infoArray);
+			$conf['data']['submit'] = $this->displayProfile_submit($infoArray);
 		}
 
-		foreach ($data as $key=>$val) {
+		foreach ($conf['data'] as $key=>$val) {
 			if (trim($val)) {
-				$content.='<div class="row '.htmlspecialchars($key.'-row').'">'.$val.'</div>';
+				$content .= '<div class="row '.htmlspecialchars($key.'-row').'">'.$val.'</div>';
 			}
 		}
 
 		if ($infoArray['mode'] == 'edit') {
-			$content.='</form>';
+			$content .= '</form>';
 		}
-		$content.='</div>';
+		$content .= '</div>';
 		return $content;
 	}
 
@@ -896,26 +709,17 @@ class tx_ppforum_user extends tx_ppforum_base {
 			break;
 		case 'user-info':
 			$conf['data']['title'] = '<h3>'.$this->parent->pp_getLL('profile.user-info.title','User information').'</h3>';
-/*
-			$conf['data']['username'] = Array(
-				'left' => $this->parent->pp_getLL('profile.user-info.nickname','His / Her nickname'),
-				'right' => tx_pplib_div::htmlspecialchars($this->data['username']),
-			);
 
-			if (trim($this->data['name'])) {
-				$conf['data']['name'] = Array(
-					'left' => $this->parent->pp_getLL('profile.user-info.name','Name'),
-					'right' => tx_pplib_div::htmlspecialchars($this->data['name']),
-				);
-			}
-*/
 			$infoContent = Array(
 				$this->parent->pp_getLL('profile.user-info.nickname','Nickname : ') . tx_pplib_div::htmlspecialchars($this->data['username']),
-				$this->parent->pp_getLL('profile.user-info.name','Name : ') . tx_pplib_div::htmlspecialchars($this->data['name']),
 			);
 
+			if ($this->data['name']) {
+				$infoContent[] = $this->parent->pp_getLL('profile.user-info.name','Name : ') . tx_pplib_div::htmlspecialchars($this->data['name']);
+			}
+
 			if ($profileData['show_email']) {
-				$infoContent[] =  $this->parent->pp_linkTP($this->parent->pp_getLL('profile.user-info.email','Email'), array(), true, $this->data['email']);
+				$infoContent[] = $this->parent->pp_linkTP($this->parent->pp_getLL('profile.user-info.email','Email'), array(), true, $this->data['email']);
 			}
 
 			$image = $this->print_avatarImg();
