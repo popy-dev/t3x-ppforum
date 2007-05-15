@@ -663,9 +663,12 @@ class tx_ppforum_user extends tx_ppforum_base {
 
 		/* Begin */
 		//*** Determine mode
-		if (strcmp($infoArray['mode'],'edit') || !$this->userCanEdit() || !trim($infoArray['mode'])) {
+		if (!in_array($infoArray['mode'], array('edit', 'view'))) {
+			$infoArray['mode'] = 'view';
+		} elseif ($infoArray['mode'] == 'edit' && !$this->userCanEdit()) {
 			$infoArray['mode'] = 'view';
 		}
+
 		$infoArray['parts'] = $modeParts[$infoArray['mode']];
 
 		//*** Determine current part
@@ -687,7 +690,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 
 		foreach ($data as $key=>$val) {
 			if (trim($val)) {
-				$content.='<div class="row '.htmlspecialchars($key).'">'.$val.'</div>';
+				$content.='<div class="row '.htmlspecialchars($key.'-row').'">'.$val.'</div>';
 			}
 		}
 
