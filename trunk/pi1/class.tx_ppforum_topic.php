@@ -66,13 +66,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @var array
 	 */
 	var $allowedFields=Array(
-		'title'=>'',
-		'message'=>'',
-		'nosmileys'=>'',
-		'parser'=>'',
-		'pinned'=>'guard',
-		'status'=>'guard',
-		);
+		'title'     => '',
+		'message'   => '',
+		'nosmileys' => '',
+		'parser'    => '',
+		'pinned'    => 'guard',
+		'status'    => 'guard',
+	);
 
 	/**
 	 * Loads the topic data from DB
@@ -583,8 +583,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$content='
 	<div class="topic-details">';
 		$data=array(
-			'conf'=>array(),
-			'mode'=>'view'
+			'data' => array(),
+			'mode' => 'view'
 			);
 	
 		/* Begin */
@@ -607,7 +607,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$data['mode'] = 'preview';
 		}
 
-		$content.=$this->displaySingle($data);
+		$content .= $this->displaySingle($data);
 		if ($data['mode'] == 'preview') {
 			$data['mode'] = 'edit';
 			$content .= $this->displaySingle($data);
@@ -691,13 +691,19 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	<form method="post" action="'.htmlspecialchars($this->getDeleteLink(false)).'" class="topic-delete">';
 		}
 
+		if (in_array($data['mode'] ,array('new','edit','delete'))) {
+			//** Adding a no_cache hidden field : prevents the page to be pre-cached
+			$content .= '
+		<div style="display: none;"><input type="hidden" name="no_cache" value="1" /></div>';
+		}
+
 		//Building standard parts
-		$data['conf']['title-row'] = $this->display_titleRow($data['mode']);
-		$data['conf']['head-row'] = $this->display_headRow($data['mode']);
-		$data['conf']['parser-row'] = $this->display_parserRow($data['mode']);
-		$data['conf']['main-row'] = $this->display_mainRow($data['mode']);
-		$data['conf']['options-row'] = $this->display_optionsRow($data['mode']);
-		$data['conf']['tools-row'] = $this->display_toolsRow($data['mode']);
+		$data['data']['title-row'] = $this->display_titleRow($data['mode']);
+		$data['data']['head-row'] = $this->display_headRow($data['mode']);
+		$data['data']['parser-row'] = $this->display_parserRow($data['mode']);
+		$data['data']['main-row'] = $this->display_mainRow($data['mode']);
+		$data['data']['options-row'] = $this->display_optionsRow($data['mode']);
+		$data['data']['tools-row'] = $this->display_toolsRow($data['mode']);
 
 		//Playing hooks : Allows to manipulate parts (add, sort, etc)
 		tx_pplib_div::playHooks(
@@ -707,7 +713,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			);
 
 		//Printing parts
-		foreach ($data['conf'] as $key=>$val) {
+		foreach ($data['data'] as $key=>$val) {
 			if (trim($val)) {
 				$content.='
 		<div class="row '.htmlspecialchars($key).'">'.$val.'
@@ -716,7 +722,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Closing tags
-		if ($data['mode']!='view') $content.='
+		if ($data['mode'] != 'view') $content.='
 	</form>';
 		$content.='
 	</div>'; //Anchor tag

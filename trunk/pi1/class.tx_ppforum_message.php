@@ -435,43 +435,43 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function display($addClasses=array()) {
 		/* Declare */
-		$content='';
-		$data=array(
-			'conf'=>array(),
-			'mode'=>'view'
-			);
+		$content = '';
+		$data = array(
+			'data' => array(),
+			'mode' => 'view'
+		);
 	
 		/* Begin */
 		//Checking mode (default : view, others : delete, new, edit)
 		//Display will be different regarding the mode
 		if (!$this->id) {
-			$data['mode']='new';
+			$data['mode'] = 'new';
 		} elseif (!intval($this->id)) {
 			//New message preview
-			$data['mode']='preview';	
-			$this->id=0;
-		} elseif ($this->type=='message' && $this->id==intval($this->parent->getVars['editmessage']) && $this->userCanEdit()) {
-			$data['mode']='edit';
-		} elseif ($this->id==intval($this->parent->getVars['deletemessage']) && $this->userCanDelete()) {
-			$data['mode']='delete';
+			$data['mode'] = 'preview';	
+			$this->id = 0;
+		} elseif ($this->type == 'message' && $this->id == intval($this->parent->getVars['editmessage']) && $this->userCanEdit()) {
+			$data['mode'] = 'edit';
+		} elseif ($this->id == intval($this->parent->getVars['deletemessage']) && $this->userCanDelete()) {
+			$data['mode'] = 'delete';
 		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
 			//Editing preview
-			$data['mode']='preview';
+			$data['mode'] = 'preview';
 		}
 
 		//Loading author
 		$this->loadAuthor();
 
 		//Anchor & classes :
-		$addClasses[]='single-message';
+		$addClasses[] = 'single-message';
 
-		if (in_array($data['mode'],array('view','preview'))) {
+		if (in_array($data['mode'], array('view','preview'))) {
 			if ($this->mergedData['hidden']) {
-				$addClasses[]='hidden-message';
+				$addClasses[] = 'hidden-message';
 			}
 		}
 
-		if ($data['mode']=='preview') {
+		if ($data['mode'] == 'preview') {
 			$content.='
 	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_preview_'.$this->id.'">';
 		} else {
@@ -479,29 +479,35 @@ class tx_ppforum_message extends tx_ppforum_base {
 	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
 		}
 
-		if (in_array($data['mode'],array('new','edit'))) {
+		if (in_array($data['mode'], array('new','edit'))) {
 			//Opening form tag. The second parameter of getEditLink ensures that the "action" url will be different of the edit link
-			$content.='<form method="post" action="'.htmlspecialchars($this->getEditLink(FALSE,TRUE)).'" class="message-edit">';
-		} elseif ($data['mode']=='delete') {
-			$content.='<form method="post" action="'.htmlspecialchars($this->getDeleteLink()).'" class="message-delete">';
+			$content .= '<form method="post" action="'.htmlspecialchars($this->getEditLink(FALSE,TRUE)).'" class="message-edit">';
+		} elseif ($data['mode'] == 'delete') {
+			$content .= '<form method="post" action="'.htmlspecialchars($this->getDeleteLink()).'" class="message-delete">';
+		}
+
+		if (in_array($data['mode'] ,array('new','edit','delete'))) {
+			//** Adding a no_cache hidden field : prevents the page to be pre-cached
+			$content .= '
+		<div style="display: none;"><input type="hidden" name="no_cache" value="1" /></div>';
 		}
 
 		//Standards parts
-		$data['conf']['head-row']=$this->display_headRow($data['mode']);
-		$data['conf']['parser-row']=$this->display_parserRow($data['mode']);
-		$data['conf']['main-row']=$this->display_mainRow($data['mode']);
-		$data['conf']['options-row']=$this->display_optionsRow($data['mode']);
-		$data['conf']['tools-row']=$this->display_toolsRow($data['mode']);
+		$data['data']['head-row']=$this->display_headRow($data['mode']);
+		$data['data']['parser-row']=$this->display_parserRow($data['mode']);
+		$data['data']['main-row']=$this->display_mainRow($data['mode']);
+		$data['data']['options-row']=$this->display_optionsRow($data['mode']);
+		$data['data']['tools-row']=$this->display_toolsRow($data['mode']);
 		
 		//Playing hooks : Allows to manipulate parts (add, sort, etc)
 		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display'],
 			$data,
 			$this
-			);
+		);
 
 		//Printing parts
-		foreach ($data['conf'] as $key=>$val) {
+		foreach ($data['data'] as $key=>$val) {
 			if (trim($val)) {
 				$content.='
 		<div class="row '.htmlspecialchars($key).'">'.$val.'
