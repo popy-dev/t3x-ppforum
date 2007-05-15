@@ -44,7 +44,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	var $options=Array(
 		'unsetForumId'=>TRUE,
 		'keepCurrentForumId'=>FALSE,
-		);
+	);
 
 	/**
 	 * Loads the forum data from DB
@@ -59,21 +59,23 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			$this->id = intval($id);
 			$this->userId = -$id;
 			$this->user = &$this->parent->getUserObj($this->userId, $clearCache);
+
+			$isInbox = $this->userId == $this->parent->getCurrentUser();
+
+			$this->data = array(
+				'notoolbar' => $isInbox,
+				'notopic' => false,
+				'description' => $this->parent->pp_getLL('forumsim.description.'.($isInbox ? 'inbox' : 'outbox')),
+			);
+			$this->data['description'] = str_replace(
+				'###user###',
+				$this->user->displayLight(true),
+				$this->data['description']
+			);
+			//t3lib_div::debug($this->data, '');
 		}
 		return $this->id;
 	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	/*function display() {
-		$this->user->setUserPreference('pmdata/newMessages',0);
-		return parent::display();
-	}*/
 
 	/**
 	 *
@@ -443,16 +445,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 */
 	function userCanPostInForum() {
 		return $this->userCanWriteInForum() && $this->parent->currentUser->id!=$this->userId;
-	}
-
-	/**
-	 * Print the forum title (wrapped in a link)
-	 *
-	 * @access public
-	 * @return string 
-	 */
-	function displayHeader() {
-		return '<h2 class="forum-title">'.$this->getTitleLink().'</h2>';
 	}
 
 	/**
