@@ -159,15 +159,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 				$content .= $this->callINTPlugin($lConf);
 
-				/*
-				$obj = &$this->getUserObj($user);
-				if ($obj->id) {
-					$content .= $obj->displayProfile('edit');
-				} else {
-					$GLOBALS['TSFE']->set_no_cache();
-					$content .= 'Utilisateur inexistant ->@TODO message d\'erreur';
-				}
-				*/
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj($topic);
 				if ($obj->id) {
@@ -178,13 +169,29 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					$content .= 'Topic inexistant ->@TODO message d\'erreur';
 				}
 			} elseif ($forum = $this->getCurrentForum()) {
-				$obj = &$this->getForumObj($forum);
-				if ($obj->id) {
-					$this->storeHash(array('forum' => $forum));
-					$content .= $obj->display();
+				if ($forum < 0) {
+					$lConf = Array(
+						'cmd'  => 'callObj',
+						'cmd.' => Array(
+							'object' => 'forum',
+							'uid'    => $forum,
+							'method' => 'display',
+						)
+					);
+
+					$content .= $this->callINTPlugin($lConf);
+					
 				} else {
-					$content .= 'Forum inexistant ->@TODO message d\'erreur';
-					$GLOBALS['TSFE']->set_no_cache();
+
+					$obj = &$this->getForumObj($forum);
+					if ($obj->id) {
+						$this->storeHash(array('forum' => $forum));
+						$content .= $obj->display();
+					} else {
+						$content .= 'Forum inexistant ->@TODO message d\'erreur';
+						$GLOBALS['TSFE']->set_no_cache();
+					}
+					
 				}
 			} else {
 				foreach ($this->getForumChilds() as $key => $forum) {
@@ -501,8 +508,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$disable = $disable || ($this->getVars['editmessage']);
 		$disable = $disable || ($this->getVars['deletemessage']);
 		$disable = $disable || ($this->getVars['clearCache']);
-		$disable = $disable || ($this->getVars['editProfile']);
-		$disable = $disable || ($this->getVars['viewProfile']);
+		//$disable = $disable || ($this->getVars['editProfile']);
+		//$disable = $disable || ($this->getVars['viewProfile']);
 		$disable = $disable || (intval($this->getVars['forum'])<0);
 
 
