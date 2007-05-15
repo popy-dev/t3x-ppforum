@@ -501,6 +501,14 @@ class tx_ppforum_user extends tx_ppforum_base {
 			$conf['data']['submit'] = $this->displayProfile_submit($infoArray);
 		}
 
+		//Playing hooks : Allows to manipulate parts (add, sort, etc)
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile'],
+			$conf,
+			$this
+		);
+
+
 		foreach ($conf['data'] as $key=>$val) {
 			if (trim($val)) {
 				$content .= '<div class="row '.htmlspecialchars($key.'-row').'">'.$val.'</div>';
@@ -521,17 +529,20 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function displayProfile_subtitle($currentPart) {
+	function displayProfile_subtitle($infoArray) {
 		/* Declare */
-		$content='';
-		$data=array('mode'=>$mode, 'left'=>array(), 'right'=>array());
+		$content = '';
 	
 		/* Begin */
-		$data['left']['menu-title'] = $this->parent->pp_getLL('profile.subtitlerow.menu','Menu');
-		$data['right']['edit'] = $this->parent->pp_getLL('profile.subtitlerow.edit','Edit options');
+		$data['left']['menu-title'] = $this->parent->pp_getLL('profile.subtitlerow.menu', 'Menu');
+		$data['right']['edit'] = $this->parent->pp_getLL('profile.subtitlerow.edit', 'Edit options');
 		
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_subtitle'],$data,$this);
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_subtitle'],
+			$data,
+			$this
+		);
 
 		return $this->display_stdPart($data);
 	}
@@ -546,18 +557,21 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 */
 	function displayProfile_main($infoArray) {
 		/* Declare */
-		$content='';
-		$data = array('left'=>array(),'right'=>array());
+		$content = '';
+		$data = array(
+			'infos' => $infoArray,
+			'left'  => array(),
+			'right' => array()
+		);
 	
 		/* Begin */
-
 		//*** Draw menu
 		$data['left']['menu']='
 			<ul>';
 
 		foreach ($infoArray['parts'] as $part) {
 			$addClass = strcmp($part, $infoArray['currentPart']) ? '' : ' class="active"';
-			$data['left']['menu'].='
+			$data['left']['menu'] .= '
 				<li'.$addClass.'>'.$this->getEditLink($this->parent->pp_getLL('profile.'.$part.'.title'), array('editPPart'=>$part)).'</li>';
 		}
 
