@@ -722,7 +722,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Closing tags
-		if ($data['mode'] != 'view') $content.='
+		if (in_array($data['mode'] ,array('new','edit','delete'))) $content.='
 	</form>';
 		$content.='
 	</div>'; //Anchor tag
@@ -866,16 +866,16 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		/* Begin */
 		if ($this->userCanReplyInTopic()) {
-			$data['toolbar']['reply-link']='<div class="button" onclick="return ppforum_showhideTool(this,\'reply-form\');">'.$this->parent->pp_getLL('topic.newpost','Reply',TRUE).'</div>';
-			$data['hiddentools']['reply-form']=$this->displayReplyForm();
+			$data['toolbar']['reply-link']     = '<a class="button" href="#" onclick="return ppforum_showhideTool(this,\'reply-form\');">'.$this->parent->pp_getLL('topic.newpost','Reply',TRUE).'</a>';
+			$data['hiddentools']['reply-form'] = $this->displayReplyForm();
 		}
 
 		if ($this->parent->config['.lightMode']) {
 			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->getVars['lightMode'],'pointer'=>$this->parent->getVars['pointer']));
-			$data['toolbar']['lightmode-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.$this->parent->pp_getLL('topic.stdMode','Normal Mode',TRUE).'</div>';
+			$data['toolbar']['lightmode-link']='<a class="button" href="'.htmlspecialchars($url).'">'.$this->parent->pp_getLL('topic.stdMode','Normal Mode').'</a>';
 		} else {
 			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->getVars['lightMode'],'pointer'=>$this->parent->getVars['pointer']));
-			$data['toolbar']['lightmode-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.$this->parent->pp_getLL('topic.lightMode','Light Mode',TRUE).'</div>';
+			$data['toolbar']['lightmode-link']='<a class="button" href="'.htmlspecialchars($url).'">'.$this->parent->pp_getLL('topic.lightMode','Light Mode').'</a>';
 		}
 
 		if ($this->forum->userIsAdmin()) {
@@ -890,13 +890,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				FALSE,
 				array('clearCache'=>1,'pointer'=>$this->parent->getVars['pointer'])
 				);
-			$data['toolbar']['clearcache-link']='<div class="button" onclick="window.location=\''.htmlspecialchars(addslashes($url)).'\';">'.
+			$data['toolbar']['clearcache-link']='<a class="button" href="'.htmlspecialchars($url).'">'.
 				str_replace(
 					'###NBPAGES###',
 					$nbVersions,
 					$this->parent->pp_getLL('topic.clearCache','Refresh Topic\'s cache (###NBPAGES### versions)',TRUE)
 					).
-				'</div>';
+				'</a>';
 		}
 
 
