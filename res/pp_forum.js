@@ -93,6 +93,29 @@ function ppforum_wrapSelected(starttag,endtag,obj,datakey){
 	return false;
 }
 
+/**
+ * Disable autocomplete functionnality on the given form's fields by adding an "autocomplete" attribute
+ *
+ * @param formNode formObj   = The form object
+ * @param string execeptList = a comma separated field names (fields to skip)
+ * @access public
+ * @return string 
+ */
+function ppforum_disableAutoComplete(formObj, execeptList){
+	// refortmat execeptList
+	if(execeptList){
+		execeptList = ',' + execeptList + ','
+	} else{
+		execeptList = '';
+	}
+	for(i = 0; i < formObj.elements.length; i++) {
+		if(execeptList.indexOf(formObj[i].name) == -1){
+			formObj[i].setAttribute('autocomplete', 'off');
+		}
+		
+	}
+}
+
 function debug(obj){
 	var str='';
 	var c=0;
