@@ -62,11 +62,18 @@ class tx_ppforum_message extends tx_ppforum_base {
 	var $forceReload = Array();
 
 	/**
-	 * Pointer to parent topic
+	 * Parent topic
 	 * @access public
 	 * @var object
 	 */
 	var $topic = null;
+
+	/**
+	 * Message author object
+	 * @access public
+	 * @var object
+	 */
+	var $author = null;
 
 	/**
 	 * List of allowed incomming fields from forms(Other fields will be ignored)
@@ -74,10 +81,10 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @var array
 	 */
 	var $allowedFields=Array(
-		'message' => '',
+		'message'   => '',
 		'nosmileys' => '',
-		'parser' => '',
-		'hidden' => 'guard',
+		'parser'    => '',
+		'hidden'    => 'guard',
 	);
 
 	/**
@@ -97,22 +104,25 @@ class tx_ppforum_message extends tx_ppforum_base {
 					'topic'
 				);
 			}
+			//** init mergedData
 			$this->mergedData = $this->data;			
 		}
 		return $this->id;
 	}
 
 	/**
+	 * Merge allowed fields from incomming message data
+	 * $this->mergedData need to be set ! (done by load())
 	 *
-	 *
-	 * @param 
 	 * @access public
 	 * @return void 
 	 */
 	function mergeData() {
 		if (isset($this->parent->piVars[$this->datakey]) && is_array($this->parent->piVars[$this->datakey])) {
-			$incommingData=$this->parent->piVars[$this->datakey];
-			if ($this->type=='message') {
+			$incommingData = $this->parent->piVars[$this->datakey];
+
+			//** Init bool vars
+			if ($this->type == 'message') {
 				$isAdmin = $this->topic->forum->userIsAdmin();
 				$isGuard = $this->topic->forum->userIsGuard();
 			} else {
@@ -122,7 +132,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 			foreach ($this->allowedFields as $key=>$val) {
 				//** Field access check
-				$allowed = false;
 				switch ($val){
 				case 'admin': 
 					$allowed = $isAdmin;
@@ -159,7 +168,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function loadAuthor($clearCache=FALSE) {
 		if (!is_object($this->author) || $clearCache) {
-			$this->author=&$this->parent->getUserObj($this->mergedData['author']);
+			$this->author = &$this->parent->getUserObj($this->mergedData['author']);
 		}
 	}
 
@@ -171,82 +180,63 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function save($forceReload=TRUE) {
 		/* Declare */
-		$null=NULL;
-		$result=FALSE;
+		$null = null;
+		$result = false;
 
 		/* Begin */
-		//Plays hook list : Allow to change some field before saving
+		// Plays hook list : Allow to change some field before saving
 		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['save'],
 			$null,
 			$this
 			);
 		
-		//Updating tstamp field
-		$this->mergedData['tstamp']=$GLOBALS['SIM_EXEC_TIME'];
+		// Updating tstamp field
+		$this->mergedData['tstamp'] = $GLOBALS['SIM_EXEC_TIME'];
 
 		if ($this->id) {
-			//*** Optimistic update :
-			//This part of code is here only for explaination, everything is in the same row (for memory consumming reasons)
-			/*
-			//Calculating diff
-			$diff=array_diff_assoc(
-				$this->data,
-				$this->data
-				);
-			/**/
-
-			//Updating db row
-			$result=$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+			//** Optimistic update :
+			$result = $GLOBALS['TYPO3_DB']->exec_UPDATEquery(
 				$this->tablename,
-				'uid='.$this->id,
+				'uid='.strval($this->id),
 				array_diff_assoc(
 					$this->mergedData,
 					$this->data
-					)
-				);
+				)
+			);
 
 			$this->parent->log('UPDATE');
 		} else {
-			//Initialize some fields
-			/*
-			if ($this->type=='message') {
-				$this->mergedData['topic']=$this->topic->id;
-			} else {
-				$this->mergedData['forum']=$this->forum->id;
-			}
-			$this->mergedData['author']=$this->parent->getCurrentUser();
-			$this->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
-			*/
+			//** Set pid
+			$this->mergedData['pid'] = $this->parent->config['savepage'];
 
-			$this->mergedData['pid']=$this->parent->config['savepage'];
-
-			//Insert db row
-			$result=$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->tablename,$this->mergedData);
+			// Insert db row
+			$result = $GLOBALS['TYPO3_DB']->exec_INSERTquery($this->tablename,$this->mergedData);
 			$this->parent->log('INSERT');
 
-			//Initialize id. Maybe we should load the full row, but for now this will not be usefull
-			$this->id=$this->mergedData['uid']=$GLOBALS['TYPO3_DB']->sql_insert_id();
-			$this->isNew=TRUE;
+			// Initialize id. Maybe we should load the full row, but no need for now
+			$this->id = $this->mergedData['uid'] = $GLOBALS['TYPO3_DB']->sql_insert_id();
+			$this->isNew = true;
 
-			//Reloading list (may have change because of the new row)
-			if ($forceReload) $this->forceReload['list']=1;
+			// Reloading list (may have change because of the new row)
+			if ($forceReload) $this->forceReload['list'] = true;
 		}
 
-		$this->data=$this->mergedData;
+		// As we have save mergedData, the item data now equals mergedData
+		$this->data = $this->mergedData;
 
 		//Launch the event func
-		if ($this->type=='message') {
+		if ($this->type == 'message') {
 			//Launch topic event handler
-			if ($forceReload) $this->forceReload['topic']=1;
+			if ($forceReload) $this->forceReload['topic'] = true;
 			$this->event_onUpdateInMessage();
 		} else {
 			//Launch forum event handler
-			if ($forceReload) $this->forceReload['forum']=1;
-			$this->event_onUpdateInTopic($this->isNew,FALSE);
+			if ($forceReload) $this->forceReload['forum'] = true;
+			$this->event_onUpdateInTopic($this->isNew, false);
 		}
 
-		return $result?$this->id:FALSE;
+		return $result ? $this->id : false;
 	}
 
 	/**
@@ -260,15 +250,15 @@ class tx_ppforum_message extends tx_ppforum_base {
 		if ($this->id) {
 			//check if topic can delete message
 			if ($this->topic->deleteMessage($this->id)) {
-				return TRUE;
+				return true;
 			} else {
 				//Normal delete
-				$this->mergedData['deleted']=1;
-				if ($forceReload) $this->forceReload['list']=1;
+				$this->mergedData['deleted'] = 1;
+				if ($forceReload) $this->forceReload['list'] = true;
 				return $this->save($forceReload);
 			}
 		} else {
-			return FALSE;
+			return false;
 		}
 	}
 
@@ -284,7 +274,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function event_onUpdateInMessage() {
 		/* Declare */
-		$null=NULL;
+		$null = null;
 	
 		/* Begin */
 		//Playing hook list
@@ -295,18 +285,18 @@ class tx_ppforum_message extends tx_ppforum_base {
 			);
 
 		//If needed (deletion/creation of a message), clear the message list query cache
-		if ($this->forceReload['list']) $this->topic->loadMessages(TRUE);
+		if ($this->forceReload['list']) $this->topic->loadMessages(true);
 
 		//Forcing data and object reload. Could be used to ensure that data is "as fresh as possible"
 		//Useless if oject wasn't builded with 'getMessageObj' function
 		//In this case, you should use $this->parent->getSingleMessage($this->id,'clearCache');
-		if ($this->forceReload['data']) $this->load($this->id,TRUE);
+		if ($this->forceReload['data']) $this->load($this->id, true);
 
 		//Launch topic event function only if needed (eg: don't enter here when deleting messages from topic::delete)
-		if ($this->forceReload['topic']) $this->topic->event_onUpdateInTopic($this->isNew,$this->id);
+		if ($this->forceReload['topic']) $this->topic->event_onUpdateInTopic($this->isNew, $this->id);
 
 		//Resets directives
-		$this->forceReload=array();
+		$this->forceReload = array();
 	}
 
 	/****************************************/
@@ -321,13 +311,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title=FALSE,$addParams=array(), $parameter = null) {
+	function getLink($title = false,$addParams = array(), $parameter = null) {
 		//** Message anchor
 		if (is_null($parameter) && $this->id) {
 			$parameter = $this->parent->_displayPage . '#ppforum_message_'.$this->id;
 		}
 
-		//** Page pointer
+		//** Page pointer (don't set param if equals 0)
 		if ($pointer = $this->getPageNum()) {
 			$addParams['pointer'] = $pointer;
 		}
@@ -336,14 +326,14 @@ class tx_ppforum_message extends tx_ppforum_base {
 			$title,
 			$addParams, //overrule piVars
 			$parameter
-			);
+		);
 	}
 
 	/**
 	 * Builds a link to the message edit form
 	 *
 	 * @param string $title = The link text. If empty, the function will return the url (instead of the A tag)
-	 * @param boolean $forceReload = an additional parameter, used to fix an anchor bug (message edit link after editing it)
+	 * @param boolean $forceReload = an additional parameter, used to fix an anchor "bug" (message edit link after editing it)
 	 * @access public
 	 * @return string
 	 */
@@ -376,7 +366,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 	/************ Div functions *************/
 	/****************************************/
 
-
 	/**
 	 * Search in wich page of the topic this message will appear (used by link functions)
 	 *
@@ -394,32 +383,46 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return string
 	 */
-	function processMessage($text,$curParser=FALSE) {
+	function processMessage($text, $curParser = false) {
 		//Load parser array
 		$this->parent->loadParsers();
+
 		//Get parser val from message data
 		if (!is_string($curParser)) {
-			$curParser=$this->mergedData['parser'];
+			$curParser = $this->mergedData['parser'];
 		}
-		//Check current parser
-		$parser=in_array($curParser,array_keys($this->parent->parsers))?$curParser:0; //Get a valid parser
 
-		if ($parser && $parser!='0' && in_array($curParser,array_keys($this->parent->parsers))) {
-			$parserArr=&$this->parent->parsers[$parser]; //Get parser conf
-			$method=$parserArr['conf']['messageParser'];
-			$parserArr['object']->caller=&$this;
-			$text=$parserArr['object']->$method($text);
+		//Check current parser
+		$curParser = in_array($curParser,array_keys($this->parent->parsers)) ? $curParser : '0'; //Get a valid parser
+
+		if (trim($curParser)) {
+			// Get parser conf
+			$parserArr = &$this->parent->parsers[$curParser];
+			// Set caller proprety
+			$parserArr['object']->caller = &$this;
+			// Call parse function
+			$method = $parserArr['conf']['messageParser'];
+			$text = $parserArr['object']->$method($text);
 		} else {
-			$text=tx_pplib_div::htmlspecialchars($text);
-//			$text=str_replace("\r",'',$text);
-			$text=ereg_replace("\n[\n[:space:]]+",'</p><p>',$text);
-			$text='<p>'.nl2br($text).'</p>';
+			// Escape html
+			$text = tx_pplib_div::htmlspecialchars($text);
+
+			// Clean CR/LF
+			$text = str_replace(
+				array("\r\n", "\r"),
+				array("\n"  , "\n"),
+				$text
+			);
+
+			// Paragraphs splitting
+			$text = preg_replace("/\n[\n[:space:]]+/",'</p><p>',$text);
+			$text = '<p>'.nl2br($text).'</p>';
 		}
 
 		if (!$this->mergedData['nosmileys']) {
-			$text=$this->parent->smileys->processMessage($text);
+			$text = $this->parent->smileys->processMessage($text);
 		}
-		//No hook there. API coming soon :)
+
 		return $text;
 	}
 
@@ -472,60 +475,62 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		if ($data['mode'] == 'preview') {
-			$content.='
+			$content .= '
 	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_preview_'.$this->id.'">';
 		} else {
-			$content.='
+			$content .= '
 	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_message_'.$this->id.'">';
 		}
 
 		if (in_array($data['mode'], array('new','edit'))) {
-			//Opening form tag. The second parameter of getEditLink ensures that the "action" url will be different of the edit link
+			// Opening form tag. The second parameter of getEditLink ensures that the "action" url will be different of the edit link
 			$content .= '<form method="post" action="'.htmlspecialchars($this->getEditLink(FALSE,TRUE)).'" class="message-edit">';
 		} elseif ($data['mode'] == 'delete') {
 			$content .= '<form method="post" action="'.htmlspecialchars($this->getDeleteLink()).'" class="message-delete">';
 		}
 
-		if (in_array($data['mode'] ,array('new','edit','delete'))) {
+		if (in_array($data['mode'], array('new','edit','delete'))) {
 			//** Adding a no_cache hidden field : prevents the page to be pre-cached
 			$content .= '
 		<div style="display: none;"><input type="hidden" name="no_cache" value="1" /></div>';
 		}
 
-		//Standards parts
-		$data['data']['head-row']=$this->display_headRow($data['mode']);
-		$data['data']['parser-row']=$this->display_parserRow($data['mode']);
-		$data['data']['main-row']=$this->display_mainRow($data['mode']);
-		$data['data']['options-row']=$this->display_optionsRow($data['mode']);
-		$data['data']['tools-row']=$this->display_toolsRow($data['mode']);
+		// Standards parts
+		$data['data']['head-row']    = $this->display_headRow($data['mode']);
+		$data['data']['parser-row']  = $this->display_parserRow($data['mode']);
+		$data['data']['main-row']    = $this->display_mainRow($data['mode']);
+		$data['data']['options-row'] = $this->display_optionsRow($data['mode']);
+		$data['data']['tools-row']   = $this->display_toolsRow($data['mode']);
 		
-		//Playing hooks : Allows to manipulate parts (add, sort, etc)
+		// Playing hooks : Allows to manipulate parts (add, sort, etc)
 		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display'],
 			$data,
 			$this
 		);
 
-		//Printing parts
-		foreach ($data['data'] as $key=>$val) {
+		// Printing parts
+		foreach ($data['data'] as $key => $val) {
 			if (trim($val)) {
-				$content.='
+				$content .= '
 		<div class="row '.htmlspecialchars($key).'">'.$val.'
 		</div>';
 			}
 		}
 
-		//Closes form
-		if ($data['mode']=='edit' || $data['mode']=='new') $content.='</form>';
-		//Closes div
+		// Closes form
+		if (in_array($data['mode'] ,array('new','edit','delete'))) $content.='</form>';
+
+		// Closes div
 		$content.='
 	</div>';
 
 
-		if (in_array($data['mode'],array('preview'))) {
-			$this->parent->getVars['editmessage']=$this->id;
+		if (in_array($data['mode'], array('preview'))) {
+			// Recursive self call : preview mode need the form to be displayed
+			$this->parent->getVars['editmessage'] = $this->id;
 
-			$content.=$this->display();
+			$content .= $this->display();
 
 			unset($this->parent->getVars['editmessage']);
 		}
@@ -545,15 +550,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function display_stdPart($data) {
 		/* Declare */
-		$content='';
+		$content = '';
+		$leftIsOk = isset($data['left']) && is_array($data['left']) && count($data['left']);
+		$rightIsOk = isset($data['right']) && is_array($data['right']) && count($data['right']);
 
 		/* Begin */
-		//Forcing to array
-		//if (!is_array($data['left'])) $data['left']=array($data['left']);
-		//if (!is_array($data['right'])) $data['right']=array($data['right']);
-
 		//If we have something to display
-		if ((is_array($data['left']) && count($data['left'])) || (is_array($data['right']) && count($data['right']))) {
+		if ($leftIsOk || $rightIsOk) {
 			//Browses columnls
 			foreach (array('left','right') as $part) {
 				if (isset($data[$part])) {
@@ -606,74 +609,86 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function display_headRow($mode) {
 		/* Declare */
-		$content='';
-		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
+		$content = '';
+		$data = array(
+			'mode'  => $mode,
+			'left'  => array(),
+			'right' => array()
+		);
 	
 		/* Begin */
 		if (in_array($mode,array('view','preview','delete', 'edit'))) {
-			$data['left']['author'] = $this->author->displayLight();
+			$data['left']['author']  = $this->author->displayLight();
 			$data['right']['crdate'] = $this->parent->renderDate($this->mergedData['crdate']);
 		}
 		
-		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_headRow'],$data,$this);
+		// Playing hooks : Allows to manipulate subparts (add, sort, etc)
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_headRow'],
+			$data,
+			$this
+		);
 
 		return $this->display_stdPart($data);
 	}
 
 	/**
-	 *
+	 * Print the parser-selector form row
 	 *
 	 * @param string $mode = display mode (new, view, edit, delete, etc...)
 	 * @access public
-	 * @return void 
+	 * @return string 
 	 */
 	function display_parserRow($mode) {
 		if (!in_array($mode,array('edit','new'))) {
 			return '';
 		}
 
-		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
+		$data=array(
+			'mode'  => $mode,
+			'left'  => array(),
+			'right' => array(),
+		);
 
 		$this->parent->loadParsers();
 
 
 		if (isset($this->mergedData['parser'])) {
-			$parser=in_array($this->mergedData['parser'],array_keys($this->parent->parsers))?$this->mergedData['parser']:'0'; //Get a valid parser
+			$parser = in_array($this->mergedData['parser'], array_keys($this->parent->parsers)) ? $this->mergedData['parser'] : '0'; //Get a valid parser
 		} else {
 			//*** Selecting default parser
-			$profile=$this->parent->currentUser->getUserPreference('profil');
-			if (isset($profile['pref_parser']) && in_array($profile['pref_parser'],array_keys($this->parent->parsers))) {
-				$parser=$profile['pref_parser'];
+			$profile = $this->parent->currentUser->getUserPreference('profil');
+			if (isset($profile['pref_parser']) && in_array($profile['pref_parser'], array_keys($this->parent->parsers))) {
+				$parser = $profile['pref_parser'];
 			} else {
-				$parser='0';
+				$parser = '0';
 			}
 		}
 
 		//Parser selector
-		$data['left']['parser-selector']=$this->parent->pp_getLL('message.fields.parser','Parser : ',TRUE).' <select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[parser]" onchange="ppforum_switchParserToolbar(this,\'parser-toolbar-\'+this.options[this.selectedIndex].value);">';
-		$data['right']='';
+		$data['left']['parser-selector'] = $this->parent->pp_getLL('message.fields.parser','Parser : ') . ' <select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']') . '[parser]" onchange="ppforum_switchParserToolbar(this,\'parser-toolbar-\'+this.options[this.selectedIndex].value);">';
+		$data['right'] = '';
 
 		foreach (array_keys($this->parent->parsers) as $key) {
-			$val=&$this->parent->parsers[$key];
-			$val['object']->caller=&$this;
+			$val = &$this->parent->parsers[$key];
+			$val['object']->caller = &$this;
 
 			//Options
-			$selected='';
-			$display=' style="display: none;"';
-			if (!strcmp($key,$parser)) {
-				$selected=' selected="selected"';
-				$display='';
+			$selected = '';
+			$display  = ' style="display: none;"';
+			if (!strcmp($key, $parser)) {
+				$selected = ' selected="selected"';
+				$display  = '';
 			}
-			$data['left']['parser-selector'].='<option value="'.htmlspecialchars($key).'"'.$selected.'>'.$val['label'].'</option>';
+			$data['left']['parser-selector'] .= '<option value="'.htmlspecialchars($key).'"'.$selected.'>'.$val['label'].'</option>';
 
 			//We build toolbars at same time
-			if ($val['conf']['printToolbar'] && method_exists($val['object'],$val['conf']['printToolbar'])) {
+			if ($val['conf']['printToolbar'] && method_exists($val['object'], $val['conf']['printToolbar'])) {
 				//We have a valid parser-object and the method exists, so it can print the toolbar
-				$val['object']->conf=$val['conf']; //Init conf
-				$methodName=$val['conf']['printToolbar'];
+				$val['object']->conf = $val['conf']; //Init conf
+				$methodName = $val['conf']['printToolbar'];
 				//Generate toolbar
-				$data['right'].='<div class="parser-toolbar parser-toolbar-'.htmlspecialchars($key).'"'.$display.'>'.
+				$data['right'] .= '<div class="parser-toolbar parser-toolbar-'.htmlspecialchars($key).'"'.$display.'>'.
 					$val['object']->$methodName().
 					'</div>';
 			} else {
@@ -688,7 +703,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_parserRow'],$data,$this);
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_parserRow'],
+			$data,
+			$this
+		);
 
 		return $this->display_stdPart($data);
 	}
@@ -702,33 +721,47 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function display_mainRow($mode) {
 		/* Declare */
-		$content='';
-		$data = array('mode'=>$mode,'left'=>array(),'right'=>array());
+		$content = '';
+		$data = array(
+			'mode'  => $mode,
+			'left'  => array(),
+			'right' => array()
+		);
 	
 		/* Begin */
 		if (in_array($mode,array('view','preview'))) {
-			if (!$this->parent->config['.lightMode']) $data['left']['author-details']=$this->author->displaySmallProfile();
-			$data['right']['message']='<div class="message">'.$this->processMessage($this->mergedData['message']).'</div>';
+			if (!$this->parent->config['.lightMode']) {
+				$data['left']['author-details'] = $this->author->displaySmallProfile();
+			}
+			$data['right']['message'] = '<div class="message">'.$this->processMessage($this->mergedData['message']).'</div>';
 		} elseif ($mode == 'delete') {
-			$data['right']['message']=$this->parent->pp_getLL('message.confirmDelete','Are you sure to delete this message ?',TRUE);
+			$data['right']['message'] = $this->parent->pp_getLL('message.confirmDelete','Are you sure to delete this message ?');
 		} else {
-			$tmp_id='fieldId_'.md5(microtime());
+			$tmp_id = 'fieldId_'.md5(microtime());
 			$data['left']['smileys'] = $this->wrapForNoJs($this->parent->smileys->displaySmileysTools($this->datakey));
-			$data['right']['message']='<label for="'.$tmp_id.'">'.$this->parent->pp_getLL('message.message','Enter your message here :',TRUE).'</label><br /><textarea id="'.$tmp_id.'" onmouseout="if (document.selection){this.selRange=document.selection.createRange().duplicate();}" cols="50" rows="10" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[message]">'.tx_pplib_div::htmlspecialchars($this->mergedData['message'])/*(is_array($this->parent->piVars[$this->datakey])?tx_pplib_div::htmlspecialchars($this->parent->piVars[$this->datakey]['message']):tx_pplib_div::htmlspecialchars($this->data['message']))*/.'</textarea>';
+			$data['right']['message'] = '<label for="'.$tmp_id.'">' . $this->parent->pp_getLL('message.message','Enter your message here :') . '</label><br />' .
+				'<textarea id="'.$tmp_id.'" onmouseout="if (document.selection){this.selRange=document.selection.createRange().duplicate();}" cols="50" rows="10" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[message]">'.tx_pplib_div::htmlspecialchars($this->mergedData['message']).'</textarea>';
 		}
 
+		//*** Author signature
 		$this->loadAuthor();
 		if ($this->author->id && !$this->parent->config['.lightMode']) {
-			$profilData=$this->author->getUserPreference('profil');
-			if (in_array($data['mode'],array('view','preview')) && trim($profilData['signature'])) {
-				$profilData['signature']=$this->processMessage($profilData['signature'],$profilData['signature_parser']);
-				$data['right']['signature']='<div class="user-signature"><hr class="separator" />'.$profilData['signature'].'</div>';
+			$profilData = $this->author->getUserPreference('profil');
+			if (in_array($data['mode'], array('view','preview')) && trim($profilData['signature'])) {
+				// Apply parser
+				$profilData['signature'] = $this->processMessage($profilData['signature'],$profilData['signature_parser']);
+				$data['right']['signature'] = '<div class="user-signature"><hr class="separator" />'.$profilData['signature'].'</div>';
 			}
 		}
 
-		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_mainRow'],$data,$this);
+		// Playing hooks : Allows to manipulate subparts (add, sort, etc)
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_mainRow'],
+			$data,
+			$this
+		);
 
+		// Disable left column if light mode is activated
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
 		}
@@ -737,64 +770,75 @@ class tx_ppforum_message extends tx_ppforum_base {
 	}
 
 	/**
+	 * Display the "options" row
 	 *
-	 *
-	 * @param 
+	 * @param string $mode = display mode (new, view, edit, delete, etc...)
 	 * @access public
-	 * @return void 
+	 * @return string 
 	 */
 	function display_optionsRow($mode) {
 		if (!in_array($mode,array('edit','new'))) {
 			return '';
 		}
-		$baseName=htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']');
-		$prefId='prefId_'.md5(microtime());
 
-		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
+		//*** fieldname prefix
+		$baseName = htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']');
+		$prefId   = 'prefId_'.md5(microtime());
+		$data = array(
+			'mode'  => $mode,
+			'left'  => array(),
+			'right' => array()
+		);
 		
 		if (isset($this->mergedData['nosmileys'])) {
-			$checked=$this->mergedData['nosmileys']?' checked="checked"':'';
+			$checked = $this->mergedData['nosmileys'] ? ' checked="checked"' : '';
 		} else {
-			$profile=$this->parent->currentUser->getUserPreference('profil');
-			$checked=$profile['def_disableSimeys']?' checked="checked"':'';
+			$profile = $this->parent->currentUser->getUserPreference('profil');
+			$checked = $profile['def_disableSimeys'] ? ' checked="checked"' : '';
 		}
 
-		$data['right']['div']='<input type="hidden" value="" name="'.$baseName.'[nosmileys]" /><input id="'.$prefId.'_nosmileys" type="checkbox" value="1" name="'.$baseName.'[nosmileys]"'.$checked.' /><label for="'.$prefId.'_nosmileys">'.$this->parent->pp_getLL('message.fields.nosmileys','Desactivate smileys',TRUE).'</label>';
+		$data['right']['div'] = '<input type="hidden" value="" name="'.$baseName.'[nosmileys]" /><input id="'.$prefId.'_nosmileys" type="checkbox" value="1" name="'.$baseName.'[nosmileys]"'.$checked.' /><label for="'.$prefId.'_nosmileys">'.$this->parent->pp_getLL('message.fields.nosmileys','Desactivate smileys').'</label>';
 
-		if (($this->type=='topic') && $this->forum->userIsGuard()) {
+		// Topic "status" selector
+		if (($this->type == 'topic') && $this->forum->userIsGuard()) {
 			if (isset($this->mergedData['pinned']) && $this->mergedData['pinned']) {
-				$checked=' checked="checked"';
+				$checked = ' checked="checked"';
 			} else {
-				$checked='';
+				$checked = '';
 			}
 
-			$data['right']['div'].='<input type="hidden" value="" name="'.$baseName.'[pinned]" /><input id="'.$prefId.'_pinned" type="checkbox" value="1" name="'.$baseName.'[pinned]"'.$checked.' /><label for="'.$prefId.'_pinned">'.$this->parent->pp_getLL('topic.fields.pinned','Pinned',TRUE).'</label>';
+			$data['right']['div'] .= '<input type="hidden" value="" name="'.$baseName.'[pinned]" /><input id="'.$prefId.'_pinned" type="checkbox" value="1" name="'.$baseName.'[pinned]"'.$checked.' /><label for="'.$prefId.'_pinned">'.$this->parent->pp_getLL('topic.fields.pinned','Pinned').'</label>';
 
 			if (!$this->parent->config['.lightMode']) {
-				$data['left']['status']=$this->parent->pp_getLL('topic.status','Change state : ',TRUE).'<select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[status]" />';
-				foreach (array(0=>'normal',1=>'hidden',2=>'closed') as $key=>$val) {
-					$selected='';
-					if (intval($this->mergedData['status'])==$key) {
-						$selected=' selected="selected"';
+				$data['left']['status'] = $this->parent->pp_getLL('topic.status','Change state : ').'<select name="'.$baseName.'[status]" />';
+				foreach (array(0=>'normal',1=>'hidden',2=>'closed') as $key => $val) {
+					$selected = '';
+					if (intval($this->mergedData['status']) == $key) {
+						$selected = ' selected="selected"';
 					}
 
-					$data['left']['status'].='<option value="'.strval(intval($key)).'"'.$selected.'>'.$this->parent->pp_getLL('topic.status.'.$val,$val,TRUE).'</option>';
+					$data['left']['status'] .= '<option value="'.strval(intval($key)).'"'.$selected.'>'.$this->parent->pp_getLL('topic.status.'.$val,$val).'</option>';
 				}
-				$data['left']['status'].='</select>';
+				$data['left']['status'] .= '</select>';
 			}
 		}
 
-		if (($this->type=='message') && $this->topic->forum->userIsGuard()) {
+		// "hidden" checkbox
+		if (($this->type == 'message') && $this->topic->forum->userIsGuard()) {
 			if (isset($this->mergedData['hidden']) && $this->mergedData['hidden']) {
-				$checked=' checked="checked"';
+				$checked = ' checked="checked"';
 			} else {
-				$checked='';
+				$checked = '';
 			}
-			$data['right']['div'].='<input type="hidden" value="" name="'.$baseName.'[hidden]" /><input id="'.$prefId.'_hidden" type="checkbox" value="1" name="'.$baseName.'[hidden]"'.$checked.' /><label for="'.$prefId.'_hidden">'.$this->parent->pp_getLL('message.fields.hidden','Hide',TRUE).'</label>';
+			$data['right']['div'] .= '<input type="hidden" value="" name="'.$baseName.'[hidden]" /><input id="'.$prefId.'_hidden" type="checkbox" value="1" name="'.$baseName.'[hidden]"'.$checked.' /><label for="'.$prefId.'_hidden">'.$this->parent->pp_getLL('message.fields.hidden','Hide').'</label>';
 		}
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_optionRow'],$data,$this);
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_optionRow'],
+			$data,
+			$this
+		);
 
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
@@ -812,21 +856,24 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function display_toolsRow($mode) {
 		//Builds a conf array
-		$conf=array();
-		$conf['cmd']='callObj';
-		$conf['cmd.']['method']='_display_toolsRow';
-		$conf['cmd.']['div.']['mode']=$mode;
+		$conf = array(
+			'cmd'  => 'callObj',
+			'cmd.' => Array(
+				'uid' => $this->id,
+				'method' => '_display_toolsRow',
+				'div.'   => array('mode' => $mode),
+			),
+		);
 
-		if ($this->type=='message') {
-			$conf['cmd.']['object']='message';
+		if ($this->type == 'message') {
+			$conf['cmd.']['object'] = 'message';
 			//Simulating reference to parent topic :
-			if (!$this->id) $conf['cmd.']['div.']['topic']=$this->topic->id;
+			if (!$this->id) $conf['cmd.']['div.']['topic'] = $this->topic->id;
 		} else {
-			$conf['cmd.']['object']='topic';
+			$conf['cmd.']['object'] = 'topic';
 			//Simulating reference to parent forum :
-			if (!$this->id) $conf['cmd.']['div.']['forum']=$this->forum->id;
+			if (!$this->id) $conf['cmd.']['div.']['forum'] = $this->forum->id;
 		}
-		$conf['cmd.']['uid']=$this->id;
 
 		//Calls the plugin as USER int with this special config
 		// Also the content will be generated each time a user request the page
@@ -869,7 +916,18 @@ class tx_ppforum_message extends tx_ppforum_base {
 			if ($mode!='delete') {
 				$data['right']['toolbar-2'].='<input type="submit" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[preview]" value="'.$this->parent->pp_getLL('message.edit.preview','Preview',TRUE).'" />';
 			}
-			$data['right']['toolbar-2'].='<script type="text/javascript">/*<![CDATA[*/<!--'.chr(10).'var temp=document.getElementById(\''.htmlspecialchars($tmp_id).'\');while(temp && temp.nodeName!=\'FORM\') temp=temp.parentNode;var i=0;while(i<temp.elements.length) {temp[i].setAttribute(\'autocomplete\',\'off\');i++;}'.chr(10).'//-->/*]]>*/</script>';			
+			$data['right']['toolbar-2'] .= '
+				<script type="text/javascript">
+					/*<![CDATA[*/
+					<!--
+					var temp = document.getElementById(\'ppforum_message_'.$this->id.'\').firstChild;
+					while(temp && temp.nodeName!=\'FORM\') temp=temp.nextSibling;
+					if (temp) {
+						ppforum_disableAutoComplete(temp);
+					}
+					//-->
+					/*]]>*/
+				</script>';			
 
 		} elseif ($mode=='view') {
 			$temp=array();
