@@ -129,6 +129,7 @@ plugin.tx_ppsearchengine_pi1.engines.pp_forum {
 
   table=tt_content
   where=tt_content.tx_ppsearchengine_isengine=1 AND tt_content.list_type='pp_forum_pi1'
+  languageField = sys_language_uid
 
   cObject=<plugin.tx_ppforum_pi1
   cObject.userFunc=tx_ppforum_pi1->doSearch
