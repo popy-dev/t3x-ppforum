@@ -18,7 +18,7 @@
 	/* Rootline */
 	.tx-ppforum-pi1 .rootline ul {
 		overflow: auto;
-		_height: 100%;
+		height: 100%;
 		list-style: none;
 		margin: 0px;
 		padding: 5px;
@@ -64,7 +64,7 @@
 /* BEGIN Rows layout */
 	.tx-ppforum-pi1 .row, .tx-ppforum-pi1 .row-alt {
 		overflow: hidden;
-		_height: 100%;
+		height: 100%;
 	}
 
 	.tx-ppforum-pi1 .left-col {
@@ -72,16 +72,22 @@
 		width: 200px;
 	}
 
-	/* Fixing heights */
 	.tx-ppforum-pi1 .right-col, .tx-ppforum-pi1 .left-col {
 		overflow: hidden;
-		padding: 5px 5px 32767px 5px;
+		padding: 5px 5px 5px 5px;
+	}
+
+	/* For IE6, the overflow:hidden; will not prevent the right col to go under the left col :( */
+	* html .tx-ppforum-pi1 .right-col {
+		margin-left: 200px;
+	}
+
+	/* Fixing left col height */
+	.tx-ppforum-pi1 .left-col {
+		padding-bottom: 32767px;
 		margin-bottom: -32762px;
 	}
 	
-	.tx-ppforum-pi1 .right-col {
-		_margin-left: 200px;
-	}
 /* END Rows layout */
 
 /*** BEGIN Buttons */
@@ -91,13 +97,29 @@
 	}
 
 	.tx-ppforum-pi1 .button {
+		display: block;
+		color: inherit;
+
 		padding: 2px 4px 3px 3px;
 		margin: 2px;
 		background: #dddddd;
 		border: 2px outset buttonface;
 		cursor: pointer;
-		_border-style: solid;
-		_border-color: #f9f8f3 #828177 #828177 #f9f8f3;
+	}
+
+	/* IE doesn't support inherit ... */
+	* html .tx-ppforum-pi1 .button, * + html .tx-ppforum-pi1 .button {
+		color: black;
+	}
+
+	/* Remove hover link underline */
+	.tx-ppforum-pi1 .button:hover {
+		text-decoration: none;
+	}
+
+	* html .tx-ppforum-pi1 .button {
+		border-style: solid;
+		border-color: #f9f8f3 #828177 #828177 #f9f8f3;
 	}
 
 	.tx-ppforum-pi1 .button:hover:active {
@@ -112,7 +134,9 @@
 		background-color: #dddddd;
 		padding: 2px;
 		overflow: hidden;
-		_height: 100%;
+	}
+	* html .tx-ppforum-pi1 .toolbar {
+		height: 100%;
 	}
 /*** END Tools part */
 

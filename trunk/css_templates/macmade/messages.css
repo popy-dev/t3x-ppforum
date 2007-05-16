@@ -53,7 +53,10 @@
 /* Inter message spacer */
 .tx-ppforum-pi1 .single-message {
 	margin-bottom: 10px;
-	_height: 100%;
+}
+
+* html .tx-ppforum-pi1 .single-message {
+	height: 1%;
 }
 
 .tx-ppforum-pi1 .single-tool .single-message {
