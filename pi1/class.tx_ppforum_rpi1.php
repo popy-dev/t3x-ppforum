@@ -941,7 +941,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$cssTemplate = 'macmade';
 		}
 
-		$this->st_addCss(
+		tx_pplib_div::addCss(
 			$this->cObj->cObjGetSingle(
 				$this->conf['csstemplates.'][$cssTemplate],
 				$this->conf['csstemplates.'][$cssTemplate.'.'],
@@ -958,7 +958,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function printJs() {
-		$this->st_addJs(
+		tx_pplib_div::addJs(
 			$this->cObj->cObjGetSingle(
 				$this->conf['javascript'],
 				$this->conf['javascript.'],
