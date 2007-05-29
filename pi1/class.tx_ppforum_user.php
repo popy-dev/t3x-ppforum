@@ -37,6 +37,13 @@ class tx_ppforum_user extends tx_ppforum_base {
 	var $ucSave = FALSE;
 
 	/**
+	 * Store user data as it was at load time
+	 * @access public
+	 * @var array
+	 */
+	var $oldData = array();
+
+	/**
 	 *
 	 *
 	 * @param 
@@ -52,6 +59,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 				$this->uc=Array();
 			}
 
+			$this->oldData = $this->data;
 		}
 		return $this->id;
 	}
@@ -81,9 +89,6 @@ class tx_ppforum_user extends tx_ppforum_base {
 
 		if ($this->id) {
 			//*** Optimistic update :
-			//Loading old data
-			$oldData=$this->parent->getSingleUser($this->id);
-
 			//*** Updating uc
 			if ($this->ucSave) {
 				$this->data['uc']=serialize($this->uc);
@@ -96,7 +101,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 				'uid='.$this->id,
 				array_diff_assoc(
 					$this->data,
-					$oldData
+					$this->oldData
 					)
 				);
 
