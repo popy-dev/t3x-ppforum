@@ -213,6 +213,18 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function getLinkKeepPage($title = false, $addParams = array(), $parameter = null) {
+		$addParams['pointer'] = $this->parent->getVars['pointer'];
+		return $this->getLink($title, $addParams, $parameter);
+	}
+
+	/**
 	 * Prints the topic title (as a link to the topic detail)
 	 *
 	 * @access public
@@ -869,6 +881,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$data['toolbar']['reply-link']     = '<a class="button" href="#" onclick="return ppforum_showhideTool(this,\'reply-form\');">'.$this->parent->pp_getLL('topic.newpost','Reply',TRUE).'</a>';
 			$data['hiddentools']['reply-form'] = $this->displayReplyForm();
 		}
+		$data['toolbar']['refresh-link'] = '<a class="button" href="'.htmlspecialchars($this->getLinkKeepPage()).'">'.$this->parent->pp_getLL('topic.refresh','Refresh').'</a>';
 
 		if ($this->parent->config['.lightMode']) {
 			$url=$this->getLink(FALSE,Array('lightMode'=>!$this->parent->getVars['lightMode'],'pointer'=>$this->parent->getVars['pointer']));
