@@ -779,7 +779,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				while (($i<count($this->messageList)) && ($messageId!=intval($this->messageList[$i]))) $i++;
 
 				if ($i<count($this->messageList)) {
-					$res=intval($i/$resPerPage);
+					$res = intval($i/$resPerPage);
 				}
 			}
 		}
