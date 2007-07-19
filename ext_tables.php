@@ -83,9 +83,14 @@ $TCA['tx_ppforum_messages'] = Array (
 
 
 t3lib_div::loadTCA('tt_content');
-$TCA['tt_content']['types']['list']['subtypes_excludelist'][$_EXTKEY.'_pi1']='layout,select_key,pages,recursive';
-$TCA['tt_content']['types']['list']['subtypes_addlist'][$_EXTKEY.'_pi1']='pi_flexform,tx_ppsearchengine_isengine';
+$TCA['tt_content']['types']['list']['subtypes_excludelist'][$_EXTKEY.'_pi1'] = 'layout,select_key,pages,recursive';
+$TCA['tt_content']['types']['list']['subtypes_addlist'][$_EXTKEY.'_pi1'] = 'pi_flexform,tx_ppsearchengine_isengine';
 
+
+if (t3lib_extMgm::isLoaded('pp_rsslatestcontent')) {
+	$TCA['tt_content']['types']['pp_rsslatestcontent_rssfeed']['subtypes_excludelist'][$_EXTKEY.'_pi1'] = $TCA['tt_content']['types']['list']['subtypes_excludelist'][$_EXTKEY.'_pi1'];
+	$TCA['tt_content']['types']['pp_rsslatestcontent_rssfeed']['subtypes_addlist'][$_EXTKEY.'_pi1'] = $TCA['tt_content']['types']['list']['subtypes_addlist'][$_EXTKEY.'_pi1'];
+}
 
 t3lib_extMgm::addPlugin(array('LLL:EXT:pp_forum/locallang_db.xml:tt_content.list_type_pi1', $_EXTKEY.'_pi1'),'list_type');
 t3lib_extMgm::addPiFlexFormValue($_EXTKEY.'_pi1', 'FILE:EXT:'.$_EXTKEY.'/flexform.xml');

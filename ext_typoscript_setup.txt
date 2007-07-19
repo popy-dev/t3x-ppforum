@@ -120,6 +120,9 @@ config.pp_rsslatestcontent.external.pp_forum_pi1 {
 
   recordObjects < plugin.tx_ppforum_pi1.recordObjects
 }
+config.pp_rsslatestcontent.external.pp_forum_pi1 >
+config.pp_rsslatestcontent.external.pp_forum_pi1 < plugin.tx_ppforum_pi1
+config.pp_rsslatestcontent.external.pp_forum_pi1 = tx_ppforum_pi1->rss_getList
 
 // pp_searchengine integration
 plugin.tx_ppsearchengine_pi1.engines.pp_forum {
