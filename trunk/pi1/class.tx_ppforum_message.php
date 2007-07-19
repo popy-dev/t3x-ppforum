@@ -415,7 +415,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			);
 
 			// Paragraphs splitting
-			$text = preg_replace("/\n[\n[:space:]]+/",'</p><p>',$text);
+			$text = preg_replace("/\n[[:space:]]\n[\n[:space:]]+/",'</p><p>',$text);
 			$text = '<p>'.nl2br($text).'</p>';
 		}
 
