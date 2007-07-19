@@ -336,13 +336,14 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 */
 	function _displaySmallProfile($conf) {
 		$rows=array();
-		$nbMessages=intval(reset(reset(tx_pplib::doCachedQuery(
+		//*** @TODO : should rewrite this ?
+		$nbMessages=intval(reset(reset($this->parent->doCachedQuery(
 			array(
 				'select'=>'count(uid) AS nb',
 				'from'=>$this->parent->tables['message'],
 				'where'=>'author='.intval($this->id)
 				)
-			))))+intval(reset(reset(tx_pplib::doCachedQuery(
+			))))+intval(reset(reset($this->parent->doCachedQuery(
 			array(
 				'select'=>'count(uid) AS nb',
 				'from'=>$this->parent->tables['topic'],

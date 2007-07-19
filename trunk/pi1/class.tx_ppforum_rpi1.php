@@ -941,13 +941,13 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$cssTemplate = 'macmade';
 		}
 
-		tx_pplib_div::addCss(
+		tx_pplib_headmgr::addCssContent(
 			$this->cObj->cObjGetSingle(
 				$this->conf['csstemplates.'][$cssTemplate],
 				$this->conf['csstemplates.'][$cssTemplate.'.'],
 				'pp_forum->csstemplate'
-				)
-			);
+			)
+		);
 	}
 
 	/**
@@ -1548,7 +1548,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			unset($lConf['cmd.']);
 
 			//Merging conf
-			$conf = $this->arrayMergeRecursive($lConf,$conf,TRUE);
+			$conf = tx_pplib_div::arrayMergeRecursive($lConf,$conf,TRUE);
 			return $this->cObj->cObjGetSingle('USER_INT',$conf);
 		}
 	}
