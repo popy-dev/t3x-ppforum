@@ -41,6 +41,8 @@ CREATE TABLE tx_ppforum_forums (
 	reply_restrict varchar(10) DEFAULT '' NOT NULL,
 	edit_restrict varchar(10) DEFAULT '' NOT NULL,
 	delete_restrict varchar(10) DEFAULT '' NOT NULL,
+
+	force_language varchar(10) DEFAULT '' NOT NULL,
 	
 	PRIMARY KEY (uid),
 	KEY parent (pid)
