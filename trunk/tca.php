@@ -42,7 +42,6 @@ $TCA['tx_ppforum_forums'] = Array (
 				'foreign_table_where' => 'AND tx_ppforum_forums.pid=###CURRENT_PID### AND tx_ppforum_forums.sys_language_uid IN (-1,0)',
 			)
 		),
-
 		'title' => Array (		
 			'exclude' => 1,		
 			'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.title',		
@@ -112,9 +111,19 @@ $TCA['tx_ppforum_forums'] = Array (
 				'default' => '0'
 			)
 		),
+		'force_language' => Array (		
+			'exclude' => 1,		
+			'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.force_language',		
+			'l10n_mode' => 'exclude',
+			'config' => Array (
+				'type' => 'input',	
+				'size' => '30',	
+				'max' => '10',	
+			)
+		),
 	),
 	'types' => Array (
-		'0' => Array('showitem' => 'hidden;;;;1-1-1, sys_language_uid, l18n_parent, title;;;;2-2-2,description, parent, notopic, notoolbar, hidetopic, hidemessage')
+		'0' => Array('showitem' => 'hidden;;;;1-1-1, sys_language_uid, l18n_parent, title;;;;2-2-2,description, parent, notopic, notoolbar, hidetopic, hidemessage, force_language')
 	),
 	'palettes' => Array (
 		'1' => Array('showitem' => '')

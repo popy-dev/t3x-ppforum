@@ -70,6 +70,13 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	var $userIsAdmin = null;
 
 	/**
+	 * 
+	 * @access public
+	 * @var string
+	 */
+	var $metaData = array();
+
+	/**
 	 * Loads the forum data from DB
 	 *
 	 * @param int $id = Forum uid
@@ -81,6 +88,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if (parent::load($id, $clearCache)) {
 			$this->id = intval($id);
 			$this->forum = &$this->parent->getForumObj($this->data['parent']);
+
+			$this->getMetaData();
 		}
 		return $this->id;
 	}
@@ -129,6 +138,23 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function getMetaData() {
+		if (trim($this->data['force_language'])) {
+			$this->metaData['force_language'] = $this->data['force_language'];
+		}
+
+		if (is_object($this->forum)) {
+			$this->metaData = $this->forum->metaData + $this->metaData;
+		}
+	}
+
+	/**
 	 * Make some access-check
 	 *
 	 * @access public
@@ -140,10 +166,10 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				$this->forum->readAccess();
 			}
 
-			$this->access['admin']=$this->readSingleAccess('admin',FALSE);
-			$this->access['guard']=$this->access['admin'] || $this->readSingleAccess('guard',FALSE);
-			$this->access['write']=$this->access['guard'] || $this->readSingleAccess('write');
-			$this->access['read']= $this->access['guard'] || $this->readSingleAccess('read');
+			$this->access['admin'] = $this->readSingleAccess('admin', false);
+			$this->access['guard'] = $this->access['admin'] || $this->readSingleAccess('guard', false);
+			$this->access['write'] = $this->access['guard'] || $this->readSingleAccess('write');
+			$this->access['read']  = $this->access['guard'] || $this->readSingleAccess('read');
 
 			$this->readRestricts();
 		}

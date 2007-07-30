@@ -14,6 +14,7 @@
 			<label index="tx_ppforum_forums.notoolbar">Disable forum's toolbar</label>
 			<label index="tx_ppforum_forums.hidetopic">Hide new topics</label>
 			<label index="tx_ppforum_forums.hidemessage">Hide new messages</label>
+			<label index="tx_ppforum_forums.force_language">Forum language</label>
 			<!-- Access fields -->
 			<label index="tx_ppforum_forums.readaccess">Read access (empty means everybody !)</label>
 			<label index="tx_ppforum_forums.readaccess_mode">Read access mode</label>
@@ -81,6 +82,7 @@
 			<label index="tx_ppforum_forums.notoolbar">Désactiver la barre d'outil pour ce forum</label>
 			<label index="tx_ppforum_forums.hidetopic">Cacher les nouveaux topics</label>
 			<label index="tx_ppforum_forums.hidemessage">Cacher les nouveaux messages</label>
+			<label index="tx_ppforum_forums.force_language">Langue du forum</label>
 			<!-- Access fields -->
 			<label index="tx_ppforum_forums.readaccess">Accès en lecture (vide= tout le monde)</label>
 			<label index="tx_ppforum_forums.readaccess_mode">Mode d'accès en lecture</label>
