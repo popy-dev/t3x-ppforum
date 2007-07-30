@@ -738,8 +738,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 			$data['right']['message'] = $this->parent->pp_getLL('message.confirmDelete','Are you sure to delete this message ?');
 		} else {
 			$tmp_id = 'fieldId_'.md5(microtime());
+			$errorMsg = $this->error_getFieldError('message');
+			$errorMsg = is_null($errorMsg) ? '' : ('<div class="error">' . $errorMsg . '</div>');
 			$data['left']['smileys'] = $this->wrapForNoJs($this->parent->smileys->displaySmileysTools($this->datakey));
 			$data['right']['message'] = '<label for="'.$tmp_id.'">' . $this->parent->pp_getLL('message.message','Enter your message here :') . '</label><br />' .
+				$errorMsg .
 				'<textarea id="'.$tmp_id.'" onmouseout="if (document.selection){this.selRange=document.selection.createRange().duplicate();}" cols="50" rows="10" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[message]">'.tx_pplib_div::htmlspecialchars($this->mergedData['message']).'</textarea>';
 		}
 
@@ -949,6 +952,16 @@ class tx_ppforum_message extends tx_ppforum_base {
 		return $this->display_stdPart($data);
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function error_getFieldError($fieldName) {
+		return isset($this->topic->processMessage[$this->datakey]['field'][$fieldName]) ? $this->topic->processMessage[$this->datakey]['field'][$fieldName] : null;
+	}
 
 
 	/****************************************/
