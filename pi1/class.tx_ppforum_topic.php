@@ -201,8 +201,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (intval($this->id)) {
 			$addParams['topic'] = $this->id;
 		} else {
-			$addParams['forum']=$this->forum->id;
-			$addParams['edittopic']=1;
+			$addParams['forum'] = $this->forum->id;
+			$addParams['edittopic'] = 1;
 		}
 
 		return $this->forum->getTopicLink(
@@ -306,56 +306,61 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function checkIncommingData() {
 		/* Declare */
-		$data=Array(
-				'currentTopic'=>$this->data,
-				'errors'=>array(),
-				'message'=>NULL,
-				'mode'=>'new',
-				'shouldContinue'=>TRUE
-				);
+		$data = Array(
+			'currentTopic' => $this->data,
+			'errors'  => Array(),
+			'message' => null,
+			'mode'    => 'new',
+			'shouldContinue' => true
+		);
+		$postData = Array();
 	
 		/* Begin */
-		$data['message']=&$this->parent->getMessageObj(0);
+		$data['message'] = &$this->parent->getMessageObj(0);
 
-		//If we have nothing in piVars, nothing to do
-		if (!is_array($this->parent->piVars[$data['message']->datakey]) || !count($this->parent->piVars[$data['message']->datakey])) return FALSE;
-
-		//Current topic isn't valid, so we can't append (or modify) a child to it !
-		if (!$this->id) return FALSE;
-
-		$data['errors']=&$this->processMessage[$data['message']->datakey];
-
-		//Checking mode (don't check permissions, it wouldbe check later)
-		if (intval($this->parent->getVars['editmessage'])>0) {
-			$data['mode']='edit';
-			unset($data['message']);
-			$data['message']=&$this->parent->getMessageObj($this->parent->getVars['editmessage']);
-			$data['message']->mergeData();
-		} elseif (intval($this->parent->getVars['deletemessage'])) {
-			$data['mode']='delete';
-			unset($data['message']);
-			$data['message']=&$this->parent->getMessageObj($this->parent->getVars['deletemessage']);
-		} else {
-			//New message : the message object already exists, also it just need a parent topic (current topic)
-			$data['message']->topic=&$this;
-			$data['message']->mergeData();
+		if (isset($this->parent->piVars[$data['message']->datakey])) {
+			$postData = &$this->parent->piVars[$data['message']->datakey];
 		}
 
+		//If we have nothing in piVars, nothing to do
+		if (!count($postData)) return false;
+
+		//Current topic isn't valid, so we can't append (or modify) a child to it !
+		if (!$this->id) return false;
+
+		//Checking mode (don't check permissions, it wouldbe check later)
+		if (intval($this->parent->getVars['editmessage']) > 0) {
+			$data['mode'] = 'edit';
+			unset($data['message']);
+			$data['message'] = &$this->parent->getMessageObj($this->parent->getVars['editmessage']);
+			$data['message']->mergeData($postData);
+		} elseif (intval($this->parent->getVars['deletemessage'])) {
+			$data['mode'] = 'delete';
+			unset($data['message']);
+			$data['message'] = &$this->parent->getMessageObj($this->parent->getVars['deletemessage']);
+		} else {
+			//New message : the message object already exists, also it just need a parent topic (current topic)
+			$data['message']->topic = &$this;
+			$data['message']->mergeData($postData);
+		}
+
+		$data['errors'] = &$data['message']->validErrors;
+
 		//Checking data validity
-		if (($data['mode']!='delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/justPosted')==$this->parent->piVars[$data['message']->datakey])) {
+		if (strcmp($data['mode'], 'delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/justPosted') == $postData)) {
 			//*** Incomming data is the same as last time -> user has probably refreshed the page
 			//Cleaning incomming vars
-			$this->parent->piVars[$data['message']->datakey]=array();
+			$postData = Array();
 			unset($this->parent->piVars['editmessage']);
 			unset($this->parent->piVars['deletemessage']);
 
-			$this->parent->getMessageObj(0,TRUE);
-			if ($data['mode']=='new') return FALSE;
+			$this->parent->getMessageObj(0, true);
+			if ($data['mode'] == 'new') return false;
 		}
 
 		switch ($data['mode']){
 		case 'edit':
-			if ((!$data['message']->id) || (!$data['message']->userCanEdit())) {
+			if (!$data['message']->id || !$data['message']->userCanEdit()) {
 				$data['errors']['global']['access-denied.message-edit']='Access denied : You can\'t edit this message';
 			}
 			break;
@@ -388,27 +393,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//If we have no errors :
 		if (!count($data['errors'])) {
-
-			if ($data['mode']!='delete') {
-				//*** Checking fields
-				if (!trim($data['message']->mergedData['message'])) {
-					$data['errors']['field']['message']='You should enter a message';
-				}
-				$data['message']->mergedData['message']=str_replace("\r",'',$data['message']->mergedData['message']);
-
-				if (!isset($data['message']->mergedData['hidden'])) {
-					if (intval($this->forum->data['hidemessage'])) {
-						$data['message']->mergedData['hidden']=1;
-					} else {
-						$data['message']->mergedData['hidden']=0;
-					}
-				}
+			if ($data['mode'] != 'delete') {
+				$data['message']->checkData($data['errors']);
 			}
 
 			if ($data['mode']=='new') {
-				$data['message']->mergedData['topic']=$this->id;
-				$data['message']->mergedData['author']=$this->parent->getCurrentUser();
-				$data['message']->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
+				$data['message']->mergedData['topic']  = $this->id;
+				$data['message']->mergedData['author'] = $this->parent->getCurrentUser();
+				$data['message']->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
 			}
 
 			//Playing hook list : Allows to fill other fields
@@ -416,20 +408,20 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkIncommingData:checkAndFetch'],
 				$data,
 				$this
-				);
+			);
 
 			if (!count($data['errors'])) {
-				if ($data['mode']=='delete') {
+				if ($data['mode'] == 'delete') {
 					$data['message']->delete();
 				} else {
-					if (!isset($this->parent->piVars[$data['message']->datakey]['preview'])) {
+					if (!isset($postData['preview'])) {
 						$data['message']->save();
 						//Saving data for validity check (protection against multi-post)
-						$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/justPosted',$this->parent->piVars['editpost']);
+						$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/justPosted', $this->parent->piVars['editpost']);
 
-						if ($data['mode']=='new') {
+						if ($data['mode'] == 'new') {
 							// Clearing object cache (because now the message has an id !)
-							$this->parent->getMessageObj(0,TRUE);
+							$this->parent->getMessageObj(0, true);
 						}
 					} elseif (!$data['message']->id) {
 						//Preview mode for new topics
@@ -440,7 +432,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				}
 
 				// Cleaning incomming vars
-				$this->parent->piVars[$data['message']->datakey] = array();
+				$postData = Array();
 				unset($this->parent->getVars['editmessage']);
 				unset($this->parent->getVars['deletemessage']);
 			}
@@ -456,40 +448,46 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function checkTopicData() {
 		/* Declare */
 		$data=Array(
-				'currentForum'=>$this->forum->data,
-				'errors'=>'',
-				'mode'=>'new',
-				'shouldContinue'=>TRUE
-				);
+			'currentForum'=>$this->forum->data,
+			'errors'=>'',
+			'mode'=>'new',
+			'shouldContinue'=>TRUE
+		);
+		$postData = Array();
 	
 		/* Begin */
+		if (isset($this->parent->piVars[$this->datakey])) {
+			$postData = &$this->parent->piVars[$this->datakey];
+		}
+
 		//If we have no data it's useless to continue
-		if (!is_array($this->parent->piVars[$this->datakey]) || !count($this->parent->piVars[$this->datakey])) return FALSE;
+		if (!count($postData)) return false;
 
 		//If current topic isn't valid AND parent forum too, exit function
-		if (!($this->id || $this->forum->id)) return FALSE;
+		if (!($this->id || $this->forum->id)) return false;
 
-		$this->mergeData();
+
+		$this->mergeData($postData);
 
 		//Store errors in forum object
-		$data['errors']=&$this->forum->processMessage[$this->datakey];
+		$data['errors'] = &$this->validErrors;
 
 		//Checking mode (permissions will be checked later)
 		if (!$this->id) {
 			//Nothing :)
 		} elseif ($this->parent->getVars['edittopic']) {
-			$data['mode']='edit';
+			$data['mode'] = 'edit';
 		} elseif ($this->parent->getVars['deletetopic']) {
-			$data['mode']='delete';
+			$data['mode'] = 'delete';
 		}
 
 		//Checking data validity
-		if (($data['mode']!='delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/lastTopic')==$this->parent->piVars[$this->datakey])) {
+		if (($data['mode']!='delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/lastTopic')==$postData)) {
 			unset($this->parent->piVars[$this->datakey]);
 			unset($this->parent->getVars['edittopic']);
 			unset($this->parent->getVars['deletetopic']);
 
-			if ($data['mode']=='new') $this->getTopicObj(0,TRUE);
+			if ($data['mode']=='new') $this->getTopicObj(0, true);
 			return FALSE;
 		}
 
@@ -529,29 +527,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		if (!count($data['errors'])) {
 
-			if ($data['mode']!='delete') {
-				if (!trim($this->mergedData['title'])) {
-					$data['errors']['field']['title']='You should enter a title';
-				}
-				if (!trim($this->mergedData['message'])) {
-					$data['errors']['field']['message']='You should enter a message';
-				}
-
-				if (isset($this->mergedData['status'])) {
-					$this->mergedData['status']=max(0,min(2,intval($this->mergedData['status'])));
-				} else {
-					if (intval($this->forum->data['hidetopic'])) {
-						$this->mergedData['status']=1;
-					} else {
-						$this->mergedData['status']=0;
-					}
-				}
+			if ($data['mode'] != 'delete') {
+				$this->checkData($data['errors']);
 			}
 
-			if ($data['mode']=='new') {
-				$this->mergedData['forum']=$this->forum->id;
-				$this->mergedData['author']=$this->parent->getCurrentUser();
-				$this->mergedData['crdate']=$GLOBALS['SIM_EXEC_TIME'];
+			if ($data['mode'] == 'new') {
+				$this->mergedData['forum']  = $this->forum->id;
+				$this->mergedData['author'] = $this->parent->getCurrentUser();
+				$this->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
 			}
 
 			//Playing hook list : Allows to fill other fields
@@ -559,20 +542,20 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkTopicData:checkAndFetch'],
 				$data,
 				$this
-				);
+			);
 
 			if (!count($data['errors'])) {
 				if ($data['mode']=='delete') {
 					$this->delete();
 				} else {
 					//Preview support
-					if (!isset($this->parent->piVars[$this->datakey]['preview'])) {
+					if (!isset($postData['preview'])) {
 						$this->save();
 					
 						//Saving data for validity check (protection against multi-post)
 						$GLOBALS['TSFE']->fe_user->setKey('ses','ppforum/lastTopic',$this->parent->piVars[$this->datakey]);
 					} elseif (!$this->id) {
-						$this->id='preview';
+						$this->id = 'preview';
 					}
 				}
 
@@ -753,7 +736,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (in_array($mode,array('view','delete','preview'))) {
 			return $this->getTitleLink();
 		} else {
-			return $this->parent->pp_getLL('topic.title','Title : ',TRUE).' <input value="'.tx_pplib_div::htmlspecialchars($this->mergedData['title']).'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />';
+			return $this->parent->pp_getLL('topic.title','Title : ').' <input value="'.tx_pplib_div::htmlspecialchars($this->mergedData['title']).'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />' . strval($this->error_getFieldError('message'));
 		}
 	}
 
@@ -946,16 +929,16 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function displayReplyForm() {
 		//Build a message object
-		$obj=&$this->parent->getMessageObj(0);
+		$obj = &$this->parent->getMessageObj(0);
 
 		//Force the parent topic to this (message functions must it to be set !)
-		if (!is_object($obj->topic) || $obj->topic>id!=$this->id) {
-			$obj->topic=&$this;
+		if (!is_object($obj->topic) || $obj->topic->id != $this->id) {
+			$obj->topic = &$this;
 		}
 		return array(
 			'content'=>'<div class="tool-title">'.$this->parent->pp_getLL('topic.newpost.title','Reply',TRUE).'</div>'.$obj->display(), //The form
-			'display'=>(is_array($this->processMessage[$obj->datakey]) && count($this->processMessage[$obj->datakey])) //If true, the form will not be hidden
-			);
+			'display'=>(is_array($obj->validErrors) && count($obj->validErrors)) //If true, the form will not be hidden
+		);
 	}
 
 	/****************************************/

@@ -87,6 +87,8 @@ $LOCAL_LANG=array (
     'user.loguedas' => 'Logued as ',
     'user.nbmessages' => 'Messages: ',
     'user.mainUserGroup' => 'Group: ',
+		'errors.fields.message' => 'You should enter a message.',
+		'errors.fields.title' => 'You should enter a title.',
   ),
 );
 ?>
