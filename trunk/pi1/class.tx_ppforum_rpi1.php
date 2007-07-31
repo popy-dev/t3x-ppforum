@@ -160,7 +160,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$content .= $this->callINTPlugin($lConf);
 
 			} elseif ($topic = $this->getCurrentTopic()) {
-				$obj = &$this->getTopicObj($topic);
+				$obj = &$this->getTopicObj(intval($topic));
 				if ($obj->id) {
 					$this->storeHash(array('topic' => $topic));
 					$content .= $obj->display();
@@ -863,7 +863,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$root[] = $rootLine[$key]->getTitleLink();
 			}
 			if ($topic = $this->getCurrentTopic()) {
-				$obj = &$this->getTopicObj($topic);
+				$obj = &$this->getTopicObj(intval($topic));
 				$root[] = $obj->getTitleLink();
 			}
 			$content.='<li>'.implode(' &gt; </li><li>',$root).'</li>';
