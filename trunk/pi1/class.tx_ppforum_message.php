@@ -86,6 +86,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 		'parser'    => '',
 		'hidden'    => 'guard',
 	);
+	
+	/**
+	 * 
+	 * @access public
+	 * @var string
+	 */
+	var $validErrors = Array();
 
 	/**
 	 * Loads the message data from DB
@@ -117,9 +124,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function mergeData() {
-		if (isset($this->parent->piVars[$this->datakey]) && is_array($this->parent->piVars[$this->datakey])) {
-			$incommingData = $this->parent->piVars[$this->datakey];
+	function mergeData($incommingData) {
+		if (is_array($incommingData)) {
+			//$incommingData = $this->parent->piVars[$this->datakey];
 
 			//** Init bool vars
 			if ($this->type == 'message') {
@@ -153,10 +160,10 @@ class tx_ppforum_message extends tx_ppforum_base {
 			//Playing hook list
 			$null = null;
 			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['init'],
+				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['mergeData'],
 				$null,
 				$this
-				);
+			);
 		}
 	}
 
@@ -424,6 +431,64 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		return $text;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function checkData(&$errors) {
+		//*** Checking message field
+		if (!trim($this->mergedData['message'])) {
+			$errors['field']['message'] = $this->parent->pp_getLL('errors.fields.message');
+		} else {
+			//** Clean text (correct CR/LF)
+			$this->mergedData['message'] = str_replace(
+				array("\r\n", "\r"),
+				Array(chr(10), chr(10)),
+				$this->mergedData['message']
+			);
+		}
+
+
+		if ($this->type == 'topic') {
+			//** Checking Topic fields
+			//* Title
+			if (!trim($this->mergedData['title'])) {
+				$errors['field']['title'] = $this->parent->pp_getLL('errors.fields.title');
+			}
+
+			//**
+			if (isset($this->mergedData['status'])) {
+				$this->mergedData['status'] = t3lib_div::intInRange($this->mergedData['status'], 0, 2);
+			} else {
+				if ($this->forum->data['hidetopic']) {
+					$this->mergedData['status'] = 1;
+				} else {
+					$this->mergedData['status'] = 0;
+				}
+			}
+		} else {
+			//*** If hidden field is not set, get its default value
+			if (!isset($this->mergedData['hidden'])) {
+				if (intval($this->topic->forum->data['hidemessage'])) {
+					$this->mergedData['hidden'] = 1;
+				} else {
+					$this->mergedData['hidden'] = 0;
+				}
+			}
+		}
+
+		//Playing hook list : Allows to fill other fields
+		tx_pplib_div::playHooks(
+			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['checkData'],
+			$errors,
+			$this
+		);
+
 	}
 
 	/****************************************/
@@ -727,22 +792,31 @@ class tx_ppforum_message extends tx_ppforum_base {
 			'left'  => array(),
 			'right' => array()
 		);
+		
 	
 		/* Begin */
+		if ($this->type == 'message') {
+			$lang = $this->topic->forum->metaData['force_language'];
+		} else {
+			$lang = $this->forum->metaData['force_language'];
+		}
+
+		if ($lang) {
+			$lang = ' lang="' . $lang . '" xml:lang="' . $lang . '"';
+		}
 		if (in_array($mode,array('view','preview'))) {
 			if (!$this->parent->config['.lightMode']) {
 				$data['left']['author-details'] = $this->author->displaySmallProfile();
 			}
-			$data['right']['message'] = '<div class="message">'.$this->processMessage($this->mergedData['message']).'</div>';
+			$data['right']['message'] = '<div class="message"' . $lang . '>'.$this->processMessage($this->mergedData['message']).'</div>';
 		} elseif ($mode == 'delete') {
 			$data['right']['message'] = $this->parent->pp_getLL('message.confirmDelete','Are you sure to delete this message ?');
 		} else {
 			$tmp_id = 'fieldId_'.md5(microtime());
-			$errorMsg = $this->error_getFieldError('message');
-			$errorMsg = is_null($errorMsg) ? '' : ('<div class="error">' . $errorMsg . '</div>');
+
 			$data['left']['smileys'] = $this->wrapForNoJs($this->parent->smileys->displaySmileysTools($this->datakey));
 			$data['right']['message'] = '<label for="'.$tmp_id.'">' . $this->parent->pp_getLL('message.message','Enter your message here :') . '</label><br />' .
-				$errorMsg .
+				strval($this->error_getFieldError('message')) .
 				'<textarea id="'.$tmp_id.'" onmouseout="if (document.selection){this.selRange=document.selection.createRange().duplicate();}" cols="50" rows="10" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[message]">'.tx_pplib_div::htmlspecialchars($this->mergedData['message']).'</textarea>';
 		}
 
@@ -959,8 +1033,14 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function error_getFieldError($fieldName) {
-		return isset($this->topic->processMessage[$this->datakey]['field'][$fieldName]) ? $this->topic->processMessage[$this->datakey]['field'][$fieldName] : null;
+	function error_getFieldError($fieldName, $wrapIt = true) {
+		$error = isset($this->validErrors['field'][$fieldName]) ? $this->validErrors['field'][$fieldName] : null;
+
+		if (!is_null($error) && $wrapIt) {
+			$error = '<div class="error">' . $error . '</div>';
+		}
+
+		return $error;
 	}
 
 

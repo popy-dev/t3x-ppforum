@@ -32,12 +32,6 @@ require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
  * @subpackage	tx_ppforum
  */
 class tx_ppforum_forum extends tx_ppforum_base {
-	/**
-	 * Error message storage
-	 * @access public
-	 * @var array
-	 */
-	var $processMessage = array();
 
 	/**
 	 * Pointer to parent forum object
@@ -975,7 +969,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		}
 		return array(
 			'content'=>'<div class="tool-title">'.$this->parent->pp_getLL('forum.newtopic.title','Open a new Topic',TRUE).'</div>'.$obj->display(),
-			'display'=>(is_array($this->processMessage[$obj->datakey]) && count($this->processMessage[$obj->datakey]))
+			'display'=>(count($obj->validErrors))
 			);
 	}
 
