@@ -62,3 +62,7 @@
 	font-weight: normal;
 }
 
+.tx-ppforum-pi1 .single-topic form .title-row .error {
+	display: inline;
+	margin-left: 1em;
+}
