@@ -736,7 +736,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (in_array($mode,array('view','delete','preview'))) {
 			return $this->getTitleLink();
 		} else {
-			return $this->parent->pp_getLL('topic.title','Title : ').' <input value="'.tx_pplib_div::htmlspecialchars($this->mergedData['title']).'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />' . strval($this->error_getFieldError('message'));
+			return $this->parent->pp_getLL('topic.title','Title : ').' <input value="'.tx_pplib_div::htmlspecialchars($this->mergedData['title']).'" type="text" size="30" maxlength="200" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[title]" />' . strval($this->error_getFieldError('title'));
 		}
 	}
 
