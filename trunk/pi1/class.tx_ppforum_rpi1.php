@@ -521,56 +521,25 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function loadParsers() {
-		if (!is_array($this->parsers) || !count($this->parsers)) { //Check if parsers are already loaded
-			//Parsers may have been loaded by another instance !
-			if (is_array($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS']) && count($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'])) {
-				$this->parsers = &$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'];
+		if (!is_array($this->parsers) || !count($this->parsers)) {
+			if (!isset($this->conf['parsers.']) || !is_array($this->conf['parsers.'])) {
+				$this->conf['parsers.'] = array();
+			}
 
-				//We just need to update parent pointer
-				foreach (array_keys($this->parsers) as $key) {
-					$this->parsers[$key]->parent = &$this;
-				}
-			} else {
-				//We have to load the full list
-				global $TYPO3_CONF_VARS; //-> XCLASS will not works if we don't do this
-				if (!is_array($this->conf['parsers.'])) $this->conf['parsers.'] = array();
+			//Default parser
+			$this->parsers['0'] = $this->pp_getLL('parsers.default','Default');
 
-				//Default parser
-				$this->parsers['0']['label'] = $this->pp_getLL('parsers.default','Default',TRUE);
-
-				foreach ($this->conf['parsers.'] as $key => $val) {
-					if (!strpos($key,'.')) {
-
-						//Get parser label
-						$this->parsers[$key]['label'] = $GLOBALS['TSFE']->sL($val);
-						if (!trim($this->parsers[$key]['label'])) $this->parsers[$key]['label'] = $key;
-
-						//Get parser label
-						$this->parsers[$key]['conf'] = $this->conf['parsers.'][$key.'.'];
-
-						//If needed, include a php file
-						if (trim($this->parsers[$key]['conf']['includeLib'])) {
-							include_once(t3lib_div::getFileAbsFileName($this->parsers[$key]['conf']['includeLib']));
-						}
-
-						//Builds the object
-						$this->parsers[$key]['object'] = $this->pp_makeInstance($this->parsers[$key]['conf']['object']);
-
-						//Checks parser validity
-						if (!is_object($this->parsers[$key]['object']) || !method_exists($this->parsers[$key]['object'],$this->parsers[$key]['conf']['messageParser'])) {
-							//Parser is invalid, also unset the key
-							unset($this->parsers[$key]);
-						} else {
-							//Init parser conf (makes easy to configure parser via Typoscript !)
-							$this->parsers[$key]['object']->conf = $this->parsers[$key]['conf'];
-						}
+			foreach ($this->conf['parsers.'] as $key => $val) {
+				if (is_array($val) && isset($val['objectRef'])) {
+					$realKey = substr($key, 0, -1);
+					$this->parsers[$realKey] = &t3lib_div::getUserObj($val['objectRef']);
+					
+					if (is_object($this->parsers[$realKey])) {
+						$this->parsers[$realKey]->init($val, $this);
+					} else {
+						unset($this->parsers[$realKey]);
 					}
-
-					//End of loop
 				}
-				
-				//Here we have a clean parser list, so cache it
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['OBJECTS']['PARSERS'] = &$this->parsers;
 			}
 		}
 	}

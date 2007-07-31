@@ -403,13 +403,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$curParser = in_array($curParser,array_keys($this->parent->parsers)) ? $curParser : '0'; //Get a valid parser
 
 		if (trim($curParser)) {
-			// Get parser conf
-			$parserArr = &$this->parent->parsers[$curParser];
-			// Set caller proprety
-			$parserArr['object']->caller = &$this;
-			// Call parse function
-			$method = $parserArr['conf']['messageParser'];
-			$text = $parserArr['object']->$method($text);
+			//t3lib_div::debug($text, t3lib_div::debug_trail());
+			$text = $this->parent->parsers[$curParser]->parse($text);
+			//t3lib_div::debug($text, 'text');
 		} else {
 			// Escape html
 			$text = tx_pplib_div::htmlspecialchars($text);
@@ -735,9 +731,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$data['right'] = '';
 
 		foreach (array_keys($this->parent->parsers) as $key) {
-			$val = &$this->parent->parsers[$key];
-			$val['object']->caller = &$this;
-
 			//Options
 			$selected = '';
 			$display  = ' style="display: none;"';
@@ -745,21 +738,17 @@ class tx_ppforum_message extends tx_ppforum_base {
 				$selected = ' selected="selected"';
 				$display  = '';
 			}
-			$data['left']['parser-selector'] .= '<option value="'.htmlspecialchars($key).'"'.$selected.'>'.$val['label'].'</option>';
 
-			//We build toolbars at same time
-			if ($val['conf']['printToolbar'] && method_exists($val['object'], $val['conf']['printToolbar'])) {
-				//We have a valid parser-object and the method exists, so it can print the toolbar
-				$val['object']->conf = $val['conf']; //Init conf
-				$methodName = $val['conf']['printToolbar'];
-				//Generate toolbar
+			if (is_object($this->parent->parsers[$key])) {
+				$optionTitle = $this->parent->parsers[$key]->getTitle(true);
 				$data['right'] .= '<div class="parser-toolbar parser-toolbar-'.htmlspecialchars($key).'"'.$display.'>'.
-					$val['object']->$methodName().
+					$this->parent->parsers[$key]->printToolbar().
 					'</div>';
+				
 			} else {
-				//$data['right'].='<div class="parser-toolbar parser-toolbar-'.htmlspecialchars($key).'"'.$display.'>&nbsp;</div>';
+				$optionTitle = $this->parent->parsers[$key];
 			}
-
+			$data['left']['parser-selector'] .= '<option value="'.htmlspecialchars($key).'"'.$selected.'>' . $optionTitle . '</option>';
 		}
 
 		$data['left']['parser-selector'] .= '</select>&nbsp;';
