@@ -400,10 +400,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Check current parser
-		$curParser = in_array($curParser,array_keys($this->parent->parsers)) ? $curParser : '0'; //Get a valid parser
+		$curParser = isset($this->parent->parsers[$curParser]) ? $curParser : '0'; //Get a valid parser
 
 		if (trim($curParser)) {
-			//t3lib_div::debug($text, t3lib_div::debug_trail());
 			$text = $this->parent->parsers[$curParser]->parse($text);
 			//t3lib_div::debug($text, 'text');
 		} else {
@@ -715,11 +714,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 
 		if (isset($this->mergedData['parser'])) {
-			$parser = in_array($this->mergedData['parser'], array_keys($this->parent->parsers)) ? $this->mergedData['parser'] : '0'; //Get a valid parser
+			$parser = isset($this->parent->parsers[$this->mergedData['parser']]) ? $this->mergedData['parser'] : '0'; //Get a valid parser
 		} else {
 			//*** Selecting default parser
 			$profile = $this->parent->currentUser->getUserPreference('profil');
-			if (isset($profile['pref_parser']) && in_array($profile['pref_parser'], array_keys($this->parent->parsers))) {
+			if (isset($profile['pref_parser']) && isset($this->parent->parsers[$profile['pref_parser']])) {
 				$parser = $profile['pref_parser'];
 			} else {
 				$parser = '0';
