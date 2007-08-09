@@ -98,7 +98,12 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	function loadTopicList($clearCache=FALSE) {
 		if (!is_array($this->topicList) || $clearCache) {
 			$this->topicList=Array();
-			foreach ($this->parent->getForumTopics($this->id) as $topicId) {
+
+			$idList = $this->parent->getForumTopics($this->id);
+
+			$this->parent->loadRecordObjectList($idList, 'topic');
+
+			foreach ($idList as $topicId) {
 				$topic=&$this->parent->getTopicObj($topicId);
 				if ($topic->isVisible() && $this->topicIsVisible($topicId)) {
 					$this->topicList[$topicId]=&$topic;

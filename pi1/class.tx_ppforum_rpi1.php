@@ -22,15 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-//require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib.php');
 require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib2.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_forum.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_forumsim.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_topic.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_user.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_smileys.php');
-
 
 /**
  * Plugin 'Popy Forum' for the 'pp_forum' extension.
@@ -1282,6 +1274,64 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		return $GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey];
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function loadRecordObjectList($idList, $type) {
+		/* Declare */
+		$classKey = $type;
+		$className = false;
+		$loadIdList = array();
+		$cacheKeys = Array();
+
+		/* Begin */
+		if (!in_array($type, array('message', 'topic'))) {
+			return ;
+		}
+		//*** Determine classname
+		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
+
+		foreach ($idList as $id) {
+			$cacheKeys[$id] = $this->pluginId.':recordObjects_'.$type.':'.strval($id);
+
+			if (!isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]])) {
+				$loadIdList[] = $id;
+			}
+		}
+
+		if (!count($loadIdList)) {
+			return ;
+		}
+
+		$tabRes = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+			'*',
+			$this->tables[$type],
+			'uid IN (' . implode(',', $loadIdList) . ')' . $this->pp_getEnableFields($this->tables[$type]),
+			'',
+			'',
+			'',
+			'uid'
+		);
+
+		$this->internalLogs['realQuerys']++;
+
+		foreach ($loadIdList as $id) {
+			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
+
+			//* Instanciate object
+			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]] = &$this->pp_makeInstance($className);
+			
+			//* Force the type proprety value
+			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->type = $type;
+
+			//* Load data
+			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->loadData($row);
+		}
+	}
 
 	/**
 	 *
