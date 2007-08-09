@@ -77,7 +77,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 
 		/* Begin */
 		//Plays hook list : Allow to change some field before saving
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['save'],
 			$null,
 			$this
@@ -621,7 +621,12 @@ class tx_ppforum_user extends tx_ppforum_base {
 		//*** Init parser list
 		$this->parent->loadParsers();
 		foreach (array_keys($this->parent->parsers) as $key) {
-			$parserList[$key] = $this->parent->parsers[$key]['label'];
+			if (is_object($this->parent->parsers[$key])) {
+				$parserList[$key] = $this->parent->parsers[$key]->getTitle(true);
+			} else {
+				$parserList[$key] = $this->parent->parsers[$key];
+			}
+
 		}
 
 		$toolkit->setConf(
@@ -813,7 +818,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 		$data['right']['submit']='<input type="submit" value="'.$this->parent->pp_getLL('profile.submit','Save',TRUE).'">';
 		
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		$this->parent->st_playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_submit'],$data,$this);
+		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_submit'],$data,$this);
 
 		return $this->display_stdPart($data);
 	}

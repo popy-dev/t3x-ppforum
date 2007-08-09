@@ -95,12 +95,12 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			);
 		$content='<tr class="topic-list-head">';
 		/* Begin */
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			//Specific hook
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forumsim']['displayTopicListHead'],
 			$data,
 			$this
-			);
+		);
 		foreach ($data as $class=>$text) {
 			$content.='<td class="single-col '.htmlspecialchars($class).'">'.$text.'</td>';
 		}
@@ -157,7 +157,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 				$data['lastMessage']->getLink('-&gt;');
 		}
 
-		$this->parent->st_playHooks(
+		tx_pplib_div::playHooks(
 			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forumsim']['displaySingleTopic'],
 			$data,
 			$this
