@@ -77,12 +77,25 @@ class tx_ppforum_base {
 	function load($id, $clearCache = false) {
 		$this->tablename = $this->parent->tables[$this->type];
 
-		if ($id && $this->data = $this->parent->pp_getRecord($id, $this->tablename, $clearCache)) {
-			$this->id = intval($id);
+		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename, $clearCache));
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function loadData($data) {
+		if (is_array($data) && isset($data['uid']) && intval($data['uid'])) {
+			$this->id = intval($data['uid']);
+			$this->data = $data;
 		} else {
+			$this->id = false;
 			$this->data = array();
 		}
-		return $this->id ? $this->id : false;
+		return $this->id;
 	}
 
 }

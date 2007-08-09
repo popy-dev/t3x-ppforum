@@ -95,15 +95,14 @@ class tx_ppforum_message extends tx_ppforum_base {
 	var $validErrors = Array();
 
 	/**
-	 * Loads the message data from DB
-	 *
-	 * @param int $id = Message uid
-	 * @param boolean $clearCache = if TRUE, cached data will be overrided
+	 * Loads the message data
+	 * 
+	 * @param array $data = the record row
 	 * @access public
-	 * @return int = loaded uid
+	 * @return int = the loaded id 
 	 */
-	function load($id, $clearCache = false) {
-		if (parent::load($id, $clearCache)) {
+	function loadData($data) {
+		if (parent::loadData($data)) {
 			//** Load topic
 			if ($this->type == 'message') {
 				$this->topic = &$this->parent->getRecordObject(
@@ -112,8 +111,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 				);
 			}
 			//** init mergedData
-			$this->mergedData = $this->data;			
+			$this->mergedData = $this->data;
 		}
+
 		return $this->id;
 	}
 

@@ -75,18 +75,16 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	);
 
 	/**
-	 * Loads the topic data from DB
-	 *
-	 * @param int $id = Topic uid
-	 * @param boolean $clearCache = if TRUE, cached data will be overrided
+	 * Loads the topic
+	 * 
+	 * @param array $data = the record row
 	 * @access public
-	 * @return int = loaded uid
+	 * @return int = the loaded id 
 	 */
-	function load($id, $clearCache = false) {
-		if (parent::load($id, $clearCache)) {
-			$this->forum = &$this->parent->getForumObj($this->data['forum']);
+	function loadData($data) {
+		if (parent::loadData($data)) {
+			$this->forum = &$this->parent->getRecordObject(intval($this->data['forum']), 'forum');
 		}
-		return $this->id;
 	}
 
 	/**
@@ -1085,8 +1083,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (!is_array($this->messageList) || $clearCache) {
 			//Init
 			$this->messageList = Array();
+
 			//Get raw list
-			foreach ($this->parent->getTopicMessages($this->id,$clearCache) as $messageId) {
+			$idList = $this->parent->getTopicMessages($this->id, $clearCache);
+
+			// Message list preload
+			$this->parent->loadRecordObjectList($idList, 'message');
+			foreach ($idList as $messageId) {
 				$temp = &$this->parent->getMessageObj($messageId);
 				//Additional check
 				if ($noCheck || ($temp->isVisible() && $this->messageIsVisible($messageId))) {
