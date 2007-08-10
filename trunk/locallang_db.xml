@@ -57,6 +57,7 @@
 			<label index="flexform.tab_config">Configuration</label>
 			<label index="flexform.tab_config.savepage">Save page</label>
 			<label index="flexform.tab_config.mergeSearchResults">Merge search results</label>
+
 			<label index="flexform.tab_display">Display</label>
 			<label index="flexform.tab_display.maxMessages">Max amount of topic's messages to display</label>
 			<label index="flexform.tab_display.maxTopics">Max amount of topic to display</label>
@@ -72,6 +73,9 @@
 			<label index="flexform.tab_image.maxHeight">Avatar image max height</label>
 			<label index="flexform.tab_image.resizeImg">Save a resized image</label>
 			<label index="flexform.tab_image.allowedExt">Allowed image ext</label>
+
+			<label index="flexform.tab_plugins">Plugins</label>
+			<label index="flexform.tab_plugins.denyHooks">Disable plugins</label>
 		</languageKey>
 		<languageKey index="fr" type="array">
 			<label index="tx_ppforum_forums">Forums</label>
@@ -140,6 +144,9 @@
 			<label index="flexform.tab_image.maxHeight">Hauteur maximale de l'avatar (en pixels)</label>
 			<label index="flexform.tab_image.resizeImg">Enregistrer l'image redimensionnée</label>
 			<label index="flexform.tab_image.allowedExt">Extensions autorisées</label>
+
+			<label index="flexform.tab_plugins">Plugins</label>
+			<label index="flexform.tab_plugins.denyHooks">Désactiver des plugins</label>
 		</languageKey>
 	</data>
 </T3locallang>
