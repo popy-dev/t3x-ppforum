@@ -90,7 +90,7 @@ $LOCAL_LANG = array (
 		'errors.fields.message' => 'You should enter a message.',
 		'errors.fields.title' => 'You should enter a title.',
   ),
-  'default' => Array (
+  'fr' => Array (
     'forum.child-list.summary' => 'Sous forums',
     'forum.clearCache' => 'Vider le cache du forum (###NBPAGES### versions)',
     'forum.forumIndex' => 'Index du forum',
