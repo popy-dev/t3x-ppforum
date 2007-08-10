@@ -351,7 +351,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				'counters'=>&$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId],
 				'forum'=>$forumId
 				);
-			tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['getCounters'],$data,$this);
+
+			$this->parent->pp_playHookObjList('forum_getCounters', $data, $this);
 		}
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId];
 	}
@@ -365,15 +366,11 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	function userCanWriteInForum() {
 		//Load basic access
 		$this->readAccess();
-		$res=$this->access['write'];
+		$res = $this->access['write'];
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userCanWriteInForum'],
-			$res,
-			$this
-			);
-		
+		$this->parent->pp_playHookObjList('forum_userCanWriteInForum', $res, $this);
+
 		return $res;
 	}
 
@@ -384,15 +381,11 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return bool 
 	 */
 	function userCanPostInForum() {
-		$res=$this->userCanWriteInForum();
-		$res=$res && !$this->data['notopic'] && $this->access['restrict']['newtopic'];
+		$res = $this->userCanWriteInForum();
+		$res = $res && !$this->data['notopic'] && $this->access['restrict']['newtopic'];
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userCanPostInForum'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_userCanPostInForum', $res, $this);
 		
 		return $res;
 	}
@@ -414,11 +407,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$res = $res && $this->access['restrict']['reply'];
 	
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userCanReplyInForum'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_userCanReplyInForum', $res, $this);
 		
 		return $res;
 	}
@@ -436,11 +425,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			$this->userIsGuard = $this->access['guard'] ? true : false;
 
 			//Plays hook list : Allows to change the result
-			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsGuard'],
-				$this->userIsGuard,
-				$this
-			);
+			$this->parent->pp_playHookObjList('forum_userIsGuard', $this->userIsGuard, $this);
 		}
 		
 		return $this->userIsGuard;
@@ -461,11 +446,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			$this->userIsAdmin = $this->access['admin'];
 
 			//Plays hook list : Allows to change the result
-			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['userIsAdmin'],
-				$this->userIsAdmin,
-				$this
-			);
+			$this->parent->pp_playHookObjList('forum_userIsAdmin', $this->userIsAdmin, $this);
 			
 		}
 		
@@ -483,11 +464,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function event_onNewTopic($topicId) {
 		$null = null;
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onNewTopic'],
-			$null,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_event_onNewTopic', $null, $this);
 
 		$this->event_onUpdateInForum();
 	}
@@ -511,11 +488,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		$this->parent->clearHashList($paramKey);
 
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['event_onUpdateInForum'],
-			$null,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_event_onUpdateInForum', $null, $this);
 
 		if (is_object($this->forum)) {
 			$this->forum->event_onUpdateInForum();
@@ -612,11 +585,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				if ($counter==$nbTopics-1) $data['classes'][]='row-last';
 
 				//Play a hook list : allows to add more classes to the child row
-				tx_pplib_div::playHooks(
-					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayChildList:classes'],
-					$data,
-					$this
-					);
+				$this->parent->pp_playHookObjList('forum_displayChildList', $data, $this);
 	
 				//Print child row
 				$content.=$this->displaySingleChild($data['child'],$data['classes']);
@@ -651,11 +620,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		/* Begin */
 		//Allows to add some columns
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayChildListHead'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_displayChildListHead', $data, $this);
 
 		//Render columns
 		foreach ($data as $class=>$text) {
@@ -722,11 +687,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		}
 
 		//Allow to add/modify/sort/delete columns
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displaySingleChild'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_displaySingleChild', $data, $this);
 
 		//Render columns
 		foreach ($data['cols'] as $class=>$text) {
@@ -775,11 +736,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				if (!$counter) $data['classes'][]='row-first';
 				if ($counter==$nbTopics-1) $data['classes'][]='row-last';
 
-				tx_pplib_div::playHooks(
-					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayTopicList:classes'],
-					$data,
-					$this
-					);
+				$this->parent->pp_playHookObjList('forum_displayTopicList', $data, $this);
 
 				$content.=$this->displaySingleTopic($data['topic'],$data['classes']);
 				$counter++;
@@ -810,11 +767,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			);
 		$content='<tr class="topic-list-head">';
 		/* Begin */
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displayTopicListHead'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_displayTopicListHead', $data, $this);
+
 		foreach ($data as $class=>$text) {
 			$content.='<td class="single-col '.htmlspecialchars($class).'">'.$text.'</td>';
 		}
@@ -861,11 +815,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				' ' .	$data['lastMessage']->getLink($this->parent->pp_getLL('topic.viewLastMessage','(View last message)'));
 		}
 
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['displaySingleTopic'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_displaySingleTopic', $data, $this);
 
 		foreach ($data['conf'] as $class=>$text) {
 			$content.='<td class="single-col '.htmlspecialchars($class).'">'.$text.'</td>';
@@ -936,11 +886,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		
 		}
 
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_forum']['_displayForumTools'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('forum_displayForumTools', $data, $this);
 
 		$content.='<div class="forum-toolbar toolbar">';
 		if (count($data['toolbar'])) {

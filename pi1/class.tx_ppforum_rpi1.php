@@ -114,11 +114,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$printRest = true;
 
 		//Hook list : if a hook reurn something and switch $printRest to true, the plugin will return this content instead of the normal content
-		$hookRes = tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_pi1']['main:alternateRendering'],
-			$printRest,
-			$this
-			);
+		$hookRes = $this->pp_playHookObjList('main_alternateRendering', $printRest, $this);
 
 		if (!$printRest) {
 			//Looking for first available content

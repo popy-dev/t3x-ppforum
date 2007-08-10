@@ -159,11 +159,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 			//Playing hook list
 			$null = null;
-			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['mergeData'],
-				$null,
-				$this
-			);
+			$this->parent->pp_playHookObjList('message_mergeData', $null, $this);
 		}
 	}
 
@@ -192,11 +188,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		/* Begin */
 		// Plays hook list : Allow to change some field before saving
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_'.$this->type]['save'],
-			$null,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_save', $null, $this);
 		
 		// Updating tstamp field
 		$this->mergedData['tstamp'] = $GLOBALS['SIM_EXEC_TIME'];
@@ -285,11 +277,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	
 		/* Begin */
 		//Playing hook list
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['event_onUpdateInMessage'],
-			$null,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_event_onUpdateInMessage', $null, $this);
 
 		//If needed (deletion/creation of a message), clear the message list query cache
 		if ($this->forceReload['list']) $this->topic->loadMessages(true);
@@ -478,12 +466,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Playing hook list : Allows to fill other fields
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['checkData'],
-			$errors,
-			$this
-		);
-
+		$this->parent->pp_playHookObjList('message_checkData', $errors, $this);
 	}
 
 	/****************************************/
@@ -563,11 +546,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$data['data']['tools-row']   = $this->display_toolsRow($data['mode']);
 		
 		// Playing hooks : Allows to manipulate parts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('message_display', $data, $this);
 
 		// Printing parts
 		foreach ($data['data'] as $key => $val) {
@@ -683,11 +662,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 		
 		// Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_headRow'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('message_display_headRow', $data, $this);
 
 		return $this->display_stdPart($data);
 	}
@@ -756,11 +731,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_parserRow'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('message_display_parserRow', $data, $this);
 
 		return $this->display_stdPart($data);
 	}
@@ -820,11 +791,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		// Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_mainRow'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('message_display_mainRow', $data, $this);
 
 		// Disable left column if light mode is activated
 		if ($this->parent->config['.lightMode']) {
@@ -899,11 +866,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['display_optionRow'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('message_display_optionRow', $data, $this);
 
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
@@ -1005,7 +968,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 					
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['_display_toolsRow'],$data,$this);
+		$this->parent->pp_playHookObjList('message_display_toolsRow', $data, $this);
 
 		if ($this->parent->config['.lightMode']) {
 			unset($data['left']);
@@ -1065,11 +1028,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['isVisible'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_isVisible', $res, $this);
 
 		return $res;
 	}
@@ -1094,11 +1053,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['isVisibleRecursive'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_isVisibleRecursive', $res, $this);
 
 		return $res;
 	}
@@ -1129,11 +1084,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['getBasicWriteAccess'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_getBasicWriteAccess', $res, $this);
 
 		return $res;
 	}
@@ -1150,11 +1101,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$res=$this->topic->userCanEditMessage($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['userCanEdit'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_userCanEdit', $res, $this);
 
 		return $res;
 	}
@@ -1171,11 +1118,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$res=$this->topic->userCanDeleteMessage($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_message']['userCanDelete'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('message_userCanDelete', $res, $this);
 
 		return $res;
 	}

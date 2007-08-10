@@ -140,11 +140,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 		} else {
 			//Playing hook list
-			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['event_onUpdateInTopic'],
-				$null,
-				$this
-				);
+			$this->parent->pp_playHookObjList('topic_event_onUpdateInTopic', $null, $this);
 
 			//Clear cached page (but only where this topic is displayed !)
 			$this->parent->clearHashList(array('topic'=>intval($this->id)));
@@ -290,7 +286,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				'counters'=>&$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId],
 				'topic'=>$topicId
 				);
-			tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['getCounters'],$data,$this);
+			$this->parent->pp_playHookObjList('topic_getCounters', $data, $this);
 		}
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId];
 	}
@@ -378,11 +374,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Playing hook list : Allows to make additional validity/access check
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkIncommingData:checkValidityAndAccess'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_checkIncommingData_checkValidityAndAccess', $data, $this);
 
 		//Allows a hook ordering to exit
 		if (!$data['shouldContinue']) {
@@ -402,11 +394,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			//Playing hook list : Allows to fill other fields
-			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkIncommingData:checkAndFetch'],
-				$data,
-				$this
-			);
+			$this->parent->pp_playHookObjList('topic_checkIncommingData_checkAndFetch', $data, $this);
 
 			if (!count($data['errors'])) {
 				if ($data['mode'] == 'delete') {
@@ -512,11 +500,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 		
 		//Playing hook list : Allows to make additional validity/access check
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkTopicData:checkValidityAndAccess'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_checkTopicData_checkValidityAndAccess', $data, $this);
 
 		//Allows a hook ordering to exit
 		if (!$data['shouldContinue']) {
@@ -536,11 +520,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			//Playing hook list : Allows to fill other fields
-			tx_pplib_div::playHooks(
-				$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['checkTopicData:checkAndFetch'],
-				$data,
-				$this
-			);
+			$this->parent->pp_playHookObjList('topic_checkTopicData_checkAndFetch', $data, $this);
 
 			if (!count($data['errors'])) {
 				if ($data['mode']=='delete') {
@@ -699,11 +679,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$data['data']['tools-row'] = $this->display_toolsRow($data['mode']);
 
 		//Playing hooks : Allows to manipulate parts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['display'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_display', $data, $this);
 
 		//Printing parts
 		foreach ($data['data'] as $key=>$val) {
@@ -802,11 +778,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				if ($counter==$length-1) $data['classes'][]='row-last';
 
 				//Play a hook list : allows to add more classes to the child row
-				tx_pplib_div::playHooks(
-					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['displayMessages:classes'],
-					$data,
-					$this
-					);
+				$this->parent->pp_playHookObjList('topic_displayMessages', $data, $this);
 
 				$content.=$data['message']->display($data['classes']);
 
@@ -893,12 +865,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				'</a>';
 		}
 
-
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['_displayTopicTools'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_displayTopicTools', $data, $this);
 
 		$content.='<div class="topic-toolbar toolbar">';
 		if (count($data['toolbar'])) {
@@ -961,11 +928,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanWriteInTopic'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_userCanWriteInTopic', $res, $this);
 
 		return $res;
 	}
@@ -987,11 +950,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanReplyInTopic'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_userCanReplyInTopic', $res, $this);
 
 		return $res;
 	}
@@ -1036,11 +995,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanEditTopic($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanReplyInTopic'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_userCanReplyInTopic', $res, $this);
 
 		return $res;
 	}
@@ -1059,11 +1014,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanDeleteTopic($this->id,$res);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanDelete'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_userCanDelete', $res, $this);
 
 		return $res;
 	}
@@ -1121,11 +1072,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->messageIsVisible($messageId);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['messageIsVisible'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_messageIsVisible', $res, $this);
 
 		return $res;
 	}
@@ -1142,11 +1089,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanEditMessage($messageId,$res);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanEditMessage'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_userCanEditMessage', $res, $this);
 
 		return $res;
 	}
@@ -1163,11 +1106,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res=$this->forum->userCanDeleteMessage($messageId,$res);
 
 		//Plays hook list : Allows to change the result
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['userCanDeleteMessage'],
-			$res,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_userCanDeleteMessage', $res, $this);
 
 		return $res;
 	}
@@ -1186,11 +1125,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			);
 
 		//Plays hook list : don't forget to set the $res value to TRUE is your hook deletes the message, otherwise it ill done a second time !
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_topic']['deleteMessage'],
-			$data,
-			$this
-			);
+		$this->parent->pp_playHookObjList('topic_deleteMessage', $data, $this);
 		
 		if (!$data['res'] && is_object($this->forum) && $this->forum->deleteMessage($messageId)) {
 			$data['res']=TRUE;

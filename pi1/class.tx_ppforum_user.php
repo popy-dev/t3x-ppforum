@@ -77,12 +77,8 @@ class tx_ppforum_user extends tx_ppforum_base {
 
 		/* Begin */
 		//Plays hook list : Allow to change some field before saving
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['save'],
-			$null,
-			$this
-			);
-		
+		$this->parent->pp_playHookObjList('user_save', $null, $this);
+
 		//Updating tstamp field
 		$this->data['tstamp']=$GLOBALS['SIM_EXEC_TIME'];
 
@@ -359,11 +355,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 			$rows[] = $image;
 		}
 
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['_printSmallProfile'],
-			$rows,
-			$this
-		);
+		$this->parent->pp_playHookObjList('user_printSmallProfile', $rows, $this);
 
 		return implode('<br />',$rows);
 	}
@@ -508,12 +500,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 		}
 
 		//Playing hooks : Allows to manipulate parts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile'],
-			$conf,
-			$this
-		);
-
+		$this->parent->pp_playHookObjList('user_displayProfile', $conf, $this);
 
 		foreach ($conf['data'] as $key=>$val) {
 			if (trim($val)) {
@@ -544,11 +531,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 		$data['right']['edit'] = $this->parent->pp_getLL('profile.subtitlerow.edit', 'Edit options');
 		
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_subtitle'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('user_displayProfile_subtitle', $data, $this);
 
 		return $this->display_stdPart($data);
 	}
@@ -587,11 +570,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 		$data['right']['edit'] = $this->displayProfile_main_part($infoArray);
 
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks(
-			$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_main'],
-			$data,
-			$this
-		);
+		$this->parent->pp_playHookObjList('user_displayProfile_main', $data, $this);
 
 		return $this->display_stdPart($data);
 	}
@@ -818,7 +797,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 		$data['right']['submit']='<input type="submit" value="'.$this->parent->pp_getLL('profile.submit','Save',TRUE).'">';
 		
 		//Playing hooks : Allows to manipulate subparts (add, sort, etc)
-		tx_pplib_div::playHooks($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['pp_forum']['tx_ppforum_user']['displayProfile_submit'],$data,$this);
+		$this->parent->pp_playHookObjList('user_displayProfile_submit', $data, $this);
 
 		return $this->display_stdPart($data);
 	}
