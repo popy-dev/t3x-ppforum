@@ -163,7 +163,7 @@
 								<default>macmade</default>
 							</config>
 						</TCEforms>
-					</csstemplate>				
+					</csstemplate>
 				
 					<!-- lightMode field -->
 					<lightMode_def>
@@ -250,6 +250,36 @@
 				</el>
 			</ROOT>
 		</tab_image>
+
+		<tab_plugins>
+			<ROOT>
+				<TCEforms>
+					<sheetTitle>LLL:EXT:pp_forum/locallang_db.xml:flexform.tab_plugins</sheetTitle>
+				</TCEforms>
+				<type>array</type>
+				<el>
+
+					<denyHooks>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:flexform.tab_plugins.denyHooks</label>
+							<config>
+								<type>select</type>
+								<maxitems>10000</maxitems>
+								<size>5</size>
+
+								<renderMode>checkbox</renderMode>
+								<items type="array">
+								</items>
+
+								<itemsProcFunc>EXT:pp_lib/tceforms/class.tx_pplib_userfuncs.php:&amp;tx_pplib_userfuncs-&gt;addRegisteredHooks</itemsProcFunc>
+								<extKey>pp_forum</extKey>
+							</config>
+						</TCEforms>
+					</denyHooks>
+
+				</el>
+			</ROOT>
+		</tab_plugins>
 
 	</sheets>
 </T3DataStructure>
