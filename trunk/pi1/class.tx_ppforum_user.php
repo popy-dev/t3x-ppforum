@@ -601,7 +601,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 		$this->parent->loadParsers();
 		foreach (array_keys($this->parent->parsers) as $key) {
 			if (is_object($this->parent->parsers[$key])) {
-				$parserList[$key] = $this->parent->parsers[$key]->getTitle(true);
+				$parserList[$key] = $this->parent->parsers[$key]->parser_getTitle(true);
 			} else {
 				$parserList[$key] = $this->parent->parsers[$key];
 			}

@@ -510,23 +510,15 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	function loadParsers() {
 		if (!is_array($this->parsers) || !count($this->parsers)) {
-			if (!isset($this->conf['parsers.']) || !is_array($this->conf['parsers.'])) {
-				$this->conf['parsers.'] = array();
-			}
-
 			//Default parser
 			$this->parsers['0'] = $this->pp_getLL('parsers.default','Default');
 
-			foreach ($this->conf['parsers.'] as $key => $val) {
-				if (is_array($val) && isset($val['objectRef'])) {
-					$realKey = substr($key, 0, -1);
-					$this->parsers[$realKey] = &t3lib_div::getUserObj($val['objectRef']);
-					
-					if (is_object($this->parsers[$realKey])) {
-						$this->parsers[$realKey]->init($val, $this);
-					} else {
-						unset($this->parsers[$realKey]);
-					}
+			foreach (array_keys($this->hookObjList) as $key) {
+				if (method_exists($this->hookObjList[$key], 'parser_getKey')) {
+					$realKey = $this->hookObjList[$key]->parser_getKey();
+					$this->parsers[$realKey] = &$this->hookObjList[$key];
+					$this->parsers[$realKey]->parser_init($this);
+					unset($this->hookObjList[$key]);
 				}
 			}
 		}

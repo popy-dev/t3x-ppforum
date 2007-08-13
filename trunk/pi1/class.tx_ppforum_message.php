@@ -714,7 +714,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			}
 
 			if (is_object($this->parent->parsers[$key])) {
-				$optionTitle = $this->parent->parsers[$key]->getTitle(true);
+				$optionTitle = $this->parent->parsers[$key]->parser_getTitle(true);
 				$data['right'] .= '<div class="parser-toolbar parser-toolbar-'.htmlspecialchars($key).'"'.$display.'>'.
 					$this->parent->parsers[$key]->printToolbar().
 					'</div>';

@@ -6,7 +6,14 @@
  *
  */
 
-
+/**
+ * "Open" a tool : it means the <div> tag containing a tool (identified by a class) will be displayed and the others hidden
+ *
+ * @param node caller = the button node
+ * @param string toolClass = the class wich identify the div
+ * @access public
+ * @return bool (always false) 
+ */
 function ppforum_showhideTool(caller,toolClass){
 	var temp=caller.parentNode;
 	while (temp && (temp.nodeName!='DIV' || !temp.attributes || !temp.attributes['class'] || temp.attributes['class'].value.indexOf('hiddentools')==-1)) temp=temp.nextSibling;
@@ -102,9 +109,9 @@ function ppforum_wrapSelected(starttag,endtag,obj,datakey){
  * @return string 
  */
 function ppforum_disableAutoComplete(formObj, execeptList){
-	// refortmat execeptList
+	// reformat execeptList
 	if(execeptList){
-		execeptList = ',' + execeptList + ','
+		execeptList = ',' + execeptList + ',';
 	} else{
 		execeptList = '';
 	}
