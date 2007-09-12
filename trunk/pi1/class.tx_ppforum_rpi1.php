@@ -436,21 +436,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function close() {
-		//$this->pp_saveLL();
-
-		//If user has submited data, some piVars keys should have changed
-		//  So we need to report it in the GET/POST vars (because the USER_INT objects will reload piVars from them !)
-		/*if ($GLOBALS['TSFE']->no_cache && !$this->_disableINTCallback && is_array($this->piVars)) {
-			$piVars = $this->piVars;
-			t3lib_div::addSlashesOnArray($piVars);
-			//Just modify POST vars, because they will override GET vars
-			$GLOBALS['HTTP_POST_VARS'][$this->prefixId] = $_POST[$this->prefixId] = $piVars;
-
-			$getVars = $this->getVars;
-			t3lib_div::addSlashesOnArray($getVars);
-			$GLOBALS['HTTP_GET_VARS'][$this->prefixId] = $_GET[$this->prefixId] = $getVars;
-		}*/
-
 		if (is_array($this->callbackList)) {
 			$count = count($this->callbackList);
 			for ($i = 0;$i<$count;$i++) {
@@ -1191,28 +1176,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	/****************************************/
 	/*************** Div funcs **************/
 	/****************************************/
-
-	/**
-	 * Get a record from db.
-	 * 
-	 * @param int $id = record's uid
-	 * @param string $table = table name
-	 * @access public
-	 * @return mixed : array if success / false if fails
-	 */
-	function pp_getRecord($id, $table) {
-		$data = parent::pp_getRecord($id, $table);
-
-		if ($data && ($table == $this->tables['forum'])) {
-			$data = $GLOBALS['TSFE']->sys_page->getRecordOverlay(
-				$this->tables['forum'],
-				$data,
-				$GLOBALS['TSFE']->sys_language_content
-			);
-		}
-
-		return $data;
-	}
 
 	/**
 	 * Get a record object
