@@ -16,16 +16,8 @@
 	}
 
 	/* Rootline */
-	.tx-ppforum-pi1 .rootline ul {
-		overflow: auto;
-		height: 100%;
-		list-style: none;
-		margin: 0px;
+	.tx-ppforum-pi1 .rootline {
 		padding: 5px;
-	}
-	.tx-ppforum-pi1 .rootline li {
-		float: left;
-		margin-right: 4px;
 	}
 
 	.tx-ppforum-pi1 img {
@@ -128,6 +120,25 @@
 	}
 /*** END Buttons */
 
+
+.tx-ppforum-pi1 textarea {
+	color: inherit;
+	border: 1px #ccc solid;
+	background: #fafafa;
+
+	width: 500px;
+	height: 150px;
+}
+
+.tx-ppforum-pi1 textarea:focus {
+	background: #f0f0f0;
+	color: #333;
+	border-color: #666;
+}
+
+.tx-ppforum-pi1 .belink-resizable-corner {
+	background-image: url(EXT:pp_forum/res/resizable-corner.png);
+}
 
 /*** BEGIN Tools part */
 	.tx-ppforum-pi1 .toolbar {
