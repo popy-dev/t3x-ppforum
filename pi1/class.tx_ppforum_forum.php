@@ -71,20 +71,18 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	var $metaData = array();
 
 	/**
-	 * Loads the forum data from DB
-	 *
-	 * @param int $id = Forum uid
-	 * @param boolean $clearCache = @see tx_pplib::do_cachedQuery
+	 * 
+	 * 
+	 * @param 
 	 * @access public
-	 * @return int = loaded uid
+	 * @return void 
 	 */
-	function load($id, $clearCache = false) {
-		if (parent::load($id, $clearCache)) {
-			$this->id = intval($id);
-			$this->forum = &$this->parent->getForumObj($this->data['parent']);
-
+	function loadData($data, $delaySubs = false) {
+		if (parent::loadData($data)) {
+			$this->forum = &$this->parent->getForumObj($this->data['parent'], $delaySubs);
 			$this->getMetaData();
 		}
+
 		return $this->id;
 	}
 
@@ -95,7 +93,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function loadTopicList($clearCache=FALSE) {
+	function loadTopicList($clearCache = false) {
 		if (!is_array($this->topicList) || $clearCache) {
 			$this->topicList=Array();
 
@@ -103,8 +101,10 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 			$this->parent->loadRecordObjectList($idList, 'topic');
 
+			$this->parent->flushDelayedObjects();
+
 			foreach ($idList as $topicId) {
-				$topic=&$this->parent->getTopicObj($topicId);
+				$topic = &$this->parent->getTopicObj($topicId);
 				if ($topic->isVisible() && $this->topicIsVisible($topicId)) {
 					$this->topicList[$topicId]=&$topic;
 				}
@@ -655,9 +655,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if ($lastTopicId) {
 			//Loading last topic and last
 			$data['lastTopic']=&$this->parent->getTopicObj($lastTopicId);
-			$data['lastTopic']->loadAuthor();
 			$data['lastMessage']=&$this->parent->getMessageObj($data['lastTopic']->getLastMessage());
-			$data['lastMessage']->loadAuthor();
 		}
 
 		//Render basic columns
@@ -796,8 +794,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if (!$data['topic']->id) {
 			return '';
 		}
-		$data['counters']=$data['topic']->getCounters($topic->id);
-		$data['topic']->loadAuthor();
+		$data['counters'] = $data['topic']->getCounters($topic->id);
 		$data['topic']->loadMessages();
 
 		$data['conf']['topic-title']=$data['topic']->getTitleLink();
@@ -807,7 +804,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$data['conf']['topic-lastmessage']='';
 		if ($messageId = $topic->getLastMessage()) {
 			$data['lastMessage'] = &$this->parent->getMessageObj($messageId);
-			$data['lastMessage']->loadAuthor();
 		}
 		if ($data['lastMessage']->id) {
 			$data['conf']['topic-lastmessage'] = $this->parent->pp_getLL('message.postedby','By ') .	$data['lastMessage']->author->displayLight().
@@ -861,7 +857,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		/* Begin */
 		if ($this->userCanPostInForum()) {
-			$data['toolbar']['reply-link']='<div class="button" onclick="return ppforum_showhideTool(this,\'newtopic-form\');">'.$this->parent->pp_getLL('forum.newtopic','New topic',TRUE).'</div>';
+			$data['toolbar']['reply-link']='<div class="button" onclick="return tx_ppforum.showhideTool(this,\'newtopic-form\');">'.$this->parent->pp_getLL('forum.newtopic','New topic',TRUE).'</div>';
 			$data['hiddentools']['newtopic-form']=$this->displayNewTopicForm();
 		}
 

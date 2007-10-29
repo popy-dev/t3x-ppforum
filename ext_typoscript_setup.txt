@@ -66,10 +66,17 @@ plugin.tx_ppforum_pi1 {
     user = tx_ppforum_user
   }
 
+  javascript = COA
+  javascript {
+    10 = PPLIB_JSFILE
+    10.filename = typo3/contrib/prototype/prototype.js
 
+    15 = PPLIB_JSFILE
+    15.filename = EXT:pp_forum/res/belink.resizable.js
 
-  javascript=FILE
-  javascript.file=EXT:pp_forum/res/pp_forum.js
+    20 = PPLIB_JSFILE
+    20.filename = EXT:pp_forum/res/pp_forum.js
+  }
 
   //Css templates configuration
   csstemplates {
@@ -101,7 +108,7 @@ plugin.tx_ppforum_pi1 {
       20 = FILE
       20.file = EXT:pp_forum/css_templates/green/forums.css
 
-      30=FILE
+      30 = FILE
       30.file = EXT:pp_forum/css_templates/green/topics.css
 
       40 = FILE

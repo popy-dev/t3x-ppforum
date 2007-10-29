@@ -44,19 +44,17 @@ class tx_ppforum_user extends tx_ppforum_base {
 	var $oldData = array();
 
 	/**
-	 *
-	 *
+	 * 
+	 * 
 	 * @param 
-	 * @param boolean $clearCache = if TRUE, cached data will be overrided
 	 * @access public
 	 * @return void 
 	 */
-	function load($id, $clearCache = false) {
-		if (parent::load($id, $clearCache)) {
-			$this->id=intval($id);
-			$this->uc=unserialize($this->data['uc']);
+	function loadData($data, $delaySubs = false) {
+		if (parent::loadData($data, $delaySubs)) {
+			$this->uc = unserialize($this->data['uc']);
 			if (!is_array($this->uc)) {
-				$this->uc=Array();
+				$this->uc = Array();
 			}
 
 			$this->oldData = $this->data;

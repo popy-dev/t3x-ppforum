@@ -71,13 +71,15 @@ class tx_ppforum_base {
 	 *
 	 * @param int $id = Record's uid
 	 * @param boolean $clearCache = if TRUE, cached data will be overrided
+	 * @param boolean $delaySubs = if TRUE, sub object loading should be delayed.
+	 *           This option is used by the list loader (loadRecordObjectList) to load all sub objects at same time
 	 * @access public
 	 * @return int = loaded uid
 	 */
-	function load($id, $clearCache = false) {
+	function load($id, $clearCache = false, $delaySubs = false) {
 		$this->tablename = $this->parent->tables[$this->type];
 
-		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename, $clearCache));
+		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename), $delaySubs);
 	}
 
 	/**
@@ -87,7 +89,7 @@ class tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function loadData($data) {
+	function loadData($data, $delaySubs = false) {
 		if (is_array($data) && isset($data['uid']) && intval($data['uid'])) {
 			$this->id = intval($data['uid']);
 			$this->data = $data;

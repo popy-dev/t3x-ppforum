@@ -81,9 +81,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return int = the loaded id 
 	 */
-	function loadData($data) {
+	function loadData($data, $delaySubs = false) {
 		if (parent::loadData($data)) {
-			$this->forum = &$this->parent->getRecordObject(intval($this->data['forum']), 'forum');
+			$this->forum = &$this->parent->getRecordObject(intval($this->data['forum']), 'forum', false,$delaySubs);
 		}
 	}
 
@@ -335,6 +335,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		} else {
 			//New message : the message object already exists, also it just need a parent topic (current topic)
 			$data['message']->topic = &$this;
+			$data['message']->author = &$this->parent->currentUser;
 			$data['message']->mergeData($postData);
 		}
 
@@ -387,9 +388,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$data['message']->checkData($data['errors']);
 			}
 
-			if ($data['mode']=='new') {
-				$data['message']->mergedData['topic']  = $this->id;
-				$data['message']->mergedData['author'] = $this->parent->getCurrentUser();
+			if ($data['mode'] == 'new') {
 				$data['message']->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
 			}
 
@@ -433,11 +432,10 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function checkTopicData() {
 		/* Declare */
-		$data=Array(
-			'currentForum'=>$this->forum->data,
-			'errors'=>'',
-			'mode'=>'new',
-			'shouldContinue'=>TRUE
+		$data = Array(
+			'errors' => '',
+			'mode'   => 'new',
+			'shouldContinue' => true,
 		);
 		$postData = Array();
 	
@@ -460,7 +458,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Checking mode (permissions will be checked later)
 		if (!$this->id) {
-			//Nothing :)
+			$this->author = &$this->parent->currentUser;
 		} elseif ($this->parent->getVars['edittopic']) {
 			$data['mode'] = 'edit';
 		} elseif ($this->parent->getVars['deletetopic']) {
@@ -514,8 +512,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			if ($data['mode'] == 'new') {
-				$this->mergedData['forum']  = $this->forum->id;
-				$this->mergedData['author'] = $this->parent->getCurrentUser();
 				$this->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
 			}
 
@@ -564,8 +560,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if ($this->forum->id < 0) {
 			$GLOBALS['TSFE']->set_no_cache();
 		}
-		//Loads author
-		$this->loadAuthor();
 
 		if (!$this->id) {
 			$data['mode'] = 'new';
@@ -831,7 +825,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		/* Begin */
 		if ($this->userCanReplyInTopic()) {
-			$data['toolbar']['reply-link']     = '<a class="button" href="#" onclick="return ppforum_showhideTool(this,\'reply-form\');">'.$this->parent->pp_getLL('topic.newpost','Reply',TRUE).'</a>';
+			$data['toolbar']['reply-link']     = '<a class="button" href="#" onclick="return tx_ppforum.showhideTool(this,\'reply-form\');">'.$this->parent->pp_getLL('topic.newpost','Reply',TRUE).'</a>';
 			$data['hiddentools']['reply-form'] = $this->displayReplyForm();
 		}
 		$data['toolbar']['refresh-link'] = '<a class="button" href="'.htmlspecialchars($this->getLinkKeepPage()).'">'.$this->parent->pp_getLL('topic.refresh','Refresh').'</a>';
@@ -1040,6 +1034,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 			// Message list preload
 			$this->parent->loadRecordObjectList($idList, 'message');
+
+			$this->parent->flushDelayedObjects();
+
 			foreach ($idList as $messageId) {
 				$temp = &$this->parent->getMessageObj($messageId);
 				//Additional check
