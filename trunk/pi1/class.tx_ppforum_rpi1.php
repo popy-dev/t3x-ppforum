@@ -92,6 +92,16 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	var $pluginId = 0;
 
+	/**
+	 * 
+	 * @access private
+	 * @var array
+	 */
+	var $_delayedObjectList = Array(
+		'message' => Array(),
+		'topic' => Array(),
+		'user' => Array(),	
+	);
 
 	/****************************************/
 	/************* Main funcs ***************/
@@ -130,7 +140,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 			$content .= $this->printRootLine();
 			$content .= $this->printUserBar();
-			
+
 			$editProfile = isset($this->getVars['editProfile']) ? intval($this->getVars['editProfile']) : false;
 			$viewProfile = isset($this->getVars['viewProfile']) ? intval($this->getVars['viewProfile']) : false;
 
@@ -786,11 +796,11 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id])) {
 			/* Declare */
-			$rootLine=$this->getForumRootline($id);
-			$obj=&$this->getForumObj(0);
-			$root=Array(
+			$rootLine = $this->getForumRootline($id);
+			$obj      = &$this->getForumObj(0);
+			$root     = Array(
 				$obj->getLink($this->pp_getLL('forum.forumIndex','Forum index')),
-				);
+			);
 		
 			/* Begin */
 			foreach (array_keys($rootLine) as $key) {
@@ -800,9 +810,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$obj = &$this->getTopicObj(intval($topic));
 				$root[] = $obj->getTitleLink();
 			}
-			$content.='<li>'.implode(' &gt; </li><li>',$root).'</li>';
 
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id]='<div class="rootline"><ul>'.$content.'</ul></div>';
+			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id] = '<div class="rootline">' . implode(' &gt; ',$root) . '</div>';
 		}
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id];
 	}
@@ -929,22 +938,24 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	function &getForumRootline($id = 0, $clearCache = false) {
 		/* Declare */
 		$id = intval($id) ? intval($id) : $this->getCurrentForum();
-		$tid = $id;
+		$temp = array();
 		$forum = null;
 	
 		/* Begin */
 		if (!$id) {
 			return array();
 		} elseif ($clearCache || !is_array($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id])) {
-			$forum = &$this->getForumObj($tid);
-			if ($forum->forum->id) {
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id]=&$this->getForumRootline($forum->forum->id,$clearCache);
-			} else {
-				$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id]=Array();
+			$forum = &$this->getForumObj($id);
+
+			while ($forum->id) {
+				$temp[] = &$forum;
+				$forum = &$forum->forum;
 			}
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id][]=&$forum;
+
+			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id] = array_reverse($temp);
 		}
-		$this->internalLogs['querys']++;
+
+		$this->internalLogs['querys'] += count($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id]);
 		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id];
 	}
 
@@ -1184,10 +1195,11 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @param int $id = the row uid
 	 * @param string $type = the object type
 	 * @param boolean $clearCache = if TRUE, cached object will be overrided
+	 * @param boolean $delayed = if TRUE, the object data will not be loaded, but added to a stack, and will be loaded later
 	 * @access public
 	 * @return object / null if object cannot be build
 	 */
-	function &getRecordObject($id, $type, $clearCache = false) {
+	function &getRecordObject($id, $type, $clearCache = false, $delayed = false) {
 		/* Declare */
 		$cacheKey = $this->pluginId.':recordObjects_'.$type.':'.strval($id);
 		$classKey = $type;
@@ -1211,8 +1223,12 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				//* Force the type proprety value
 				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->type = $type;
 
-				//* Load data
-				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
+				if ($delayed && isset($this->_delayedObjectList[$type])) {
+					$this->_delayedObjectList[$type][] = $id;
+				} else {
+					//* Load data
+					$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
+				}
 			}
 		}
 
@@ -1232,7 +1248,26 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function loadRecordObjectList($idList, $type) {
+	function flushDelayedObjects() {
+		do {
+			$count = 0;
+			foreach ($this->_delayedObjectList as $type => $idList) {
+				if ($count += count($idList)) {
+					$this->_delayedObjectList[$type] = Array();
+					$this->loadRecordObjectList(array_unique($idList), $type, true);
+				}
+			}
+		} while ($count);
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function loadRecordObjectList($idList, $type, $justLoadData = false) {
 		/* Declare */
 		$classKey = $type;
 		$className = false;
@@ -1240,7 +1275,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$cacheKeys = Array();
 
 		/* Begin */
-		if (!in_array($type, array('message', 'topic'))) {
+		if (!in_array($type, array('message', 'topic', 'user'))) {
 			return ;
 		}
 		//*** Determine classname
@@ -1249,7 +1284,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		foreach ($idList as $id) {
 			$cacheKeys[$id] = $this->pluginId.':recordObjects_'.$type.':'.strval($id);
 
-			if (!isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]])) {
+			if (!isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]) || $justLoadData) {
 				$loadIdList[] = $id;
 			}
 		}
@@ -1273,14 +1308,16 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		foreach ($loadIdList as $id) {
 			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
 
-			//* Instanciate object
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]] = &$this->pp_makeInstance($className);
-			
-			//* Force the type proprety value
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->type = $type;
+			if (!$justLoadData) {
+				//* Instanciate object
+				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]] = &$this->pp_makeInstance($className);
+				
+				//* Force the type proprety value
+				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->type = $type;
+			}
 
 			//* Load data
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->loadData($row);
+			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->loadData($row, true);
 		}
 	}
 

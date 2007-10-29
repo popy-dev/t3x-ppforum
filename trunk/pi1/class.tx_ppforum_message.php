@@ -98,18 +98,30 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * Loads the message data
 	 * 
 	 * @param array $data = the record row
+	 * @param boolean $delaySubs = if TRUE, sub object loading should be delayed.
+	 *           This option is used by the list loader (loadRecordObjectList) to load all sub objects at same time
 	 * @access public
 	 * @return int = the loaded id 
 	 */
-	function loadData($data) {
-		if (parent::loadData($data)) {
+	function loadData($data, $delaySubs = false) {
+		if (parent::loadData($data, $delaySubs)) {
 			//** Load topic
 			if ($this->type == 'message') {
 				$this->topic = &$this->parent->getRecordObject(
 					intval($this->data['topic']),
-					'topic'
+					'topic',
+					false,
+					$delaySubs
 				);
 			}
+
+			$this->author = &$this->parent->getRecordObject(
+				intval($this->data['author']),
+				'user',
+				false,
+				$delaySubs
+			);
+
 			//** init mergedData
 			$this->mergedData = $this->data;
 		}
@@ -164,18 +176,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 	}
 
 	/**
-	 * Loads the message/topic author
-	 *
-	 * @access public
-	 * @return void 
-	 */
-	function loadAuthor($clearCache=FALSE) {
-		if (!is_object($this->author) || $clearCache) {
-			$this->author = &$this->parent->getUserObj($this->mergedData['author']);
-		}
-	}
-
-	/**
 	 * Saves the message to the DB (and call event function)
 	 *
 	 * @access public
@@ -192,6 +192,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 		
 		// Updating tstamp field
 		$this->mergedData['tstamp'] = $GLOBALS['SIM_EXEC_TIME'];
+		$this->mergedData['author'] = $this->author->id;
+
+		if ($this->type == 'message') {
+			$this->mergedData['topic'] = $this->topic->id;
+		} else {
+			$this->mergedData['forum'] = $this->forum->id;
+		}
 
 		if ($this->id) {
 			//** Optimistic update :
@@ -206,6 +213,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 			$this->parent->log('UPDATE');
 		} else {
+			$this->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
+
 			//** Set pid
 			$this->mergedData['pid'] = $this->parent->config['savepage'];
 
@@ -504,10 +513,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			//Editing preview
 			$data['mode'] = 'preview';
 		}
-
-		//Loading author
-		$this->loadAuthor();
-
+	
 		//Anchor & classes :
 		$addClasses[] = 'single-message';
 
@@ -701,7 +707,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//Parser selector
-		$data['left']['parser-selector'] = $this->parent->pp_getLL('message.fields.parser','Parser : ') . ' <select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']') . '[parser]" onchange="ppforum_switchParserToolbar(this,\'parser-toolbar-\'+this.options[this.selectedIndex].value);">';
+		$data['left']['parser-selector'] = $this->parent->pp_getLL('message.fields.parser','Parser : ') . ' <select name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']') . '[parser]" onchange="tx_ppforum.switchParserToolbar(this,\'parser-toolbar-\'+this.options[this.selectedIndex].value);">';
 		$data['right'] = '';
 
 		foreach (array_keys($this->parent->parsers) as $key) {
@@ -780,7 +786,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//*** Author signature
-		$this->loadAuthor();
 		if ($this->author->id && !$this->parent->config['.lightMode']) {
 			$profilData = $this->author->getUserPreference('profil');
 			if (in_array($data['mode'], array('view','preview')) && trim($profilData['signature'])) {
@@ -944,19 +949,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 			if ($mode!='delete') {
 				$data['right']['toolbar-2'].='<input type="submit" name="'.htmlspecialchars($this->parent->prefixId.'['.$this->datakey.']').'[preview]" value="'.$this->parent->pp_getLL('message.edit.preview','Preview',TRUE).'" />';
 			}
-			$data['right']['toolbar-2'] .= '
-				<script type="text/javascript">
-					/*<![CDATA[*/
-					<!--
-					var temp = document.getElementById(\'ppforum_message_'.$this->id.'\').firstChild;
-					while(temp && temp.nodeName!=\'FORM\') temp=temp.nextSibling;
-					if (temp) {
-						ppforum_disableAutoComplete(temp);
-					}
-					//-->
-					/*]]>*/
-				</script>';			
-
 		} elseif ($mode=='view') {
 			$temp=array();
 			//Prints 'edit' and 'delete' links (regarding permissions)
