@@ -15,16 +15,8 @@
 	}
 
 	/* Rootline */
-	.tx-ppforum-pi1 .rootline ul {
-		overflow: auto;
-		_height: 100%;
-		list-style: none;
-		margin: 0px;
+	.tx-ppforum-pi1 .rootline {
 		padding: 5px;
-	}
-	.tx-ppforum-pi1 .rootline li {
-		float: left;
-		margin-right: 4px;
 	}
 
 	.tx-ppforum-pi1 img {
@@ -98,6 +90,8 @@
 	}
 /* END Rows layout */
 
+
+
 /*** BEGIN Buttons */
 	.tx-ppforum-pi1 .button {
 		float: right;
@@ -120,6 +114,11 @@
 		padding: 3px 3px 2px 4px;
 		border: 2px inset buttonface;
 	}
+
+	.tx-ppforum-pi1 .belink-resizable-corner {
+		background-image: url(EXT:pp_forum/res/resizable-corner.png);
+	}
+
 /*** END Buttons */
 
 
