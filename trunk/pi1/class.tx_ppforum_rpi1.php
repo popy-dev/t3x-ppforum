@@ -1228,7 +1228,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				} else {
 					//* Load data
 					if ($type == 'forum' && $id == 0) {
-						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->loadData($this->config['rootForum']);
+						$rData = $this->config['rootForum'];
+						$rData['uid'] = 'root';
+						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->loadData($rData);
 					} else {
 						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
 					}
