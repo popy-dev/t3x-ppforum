@@ -90,7 +90,7 @@ class tx_ppforum_base {
 	 * @return void 
 	 */
 	function loadData($data, $delaySubs = false) {
-		if (is_array($data) && isset($data['uid']) && intval($data['uid'])) {
+		if (is_array($data) && isset($data['uid']) && trim($data['uid'])) {
 			$this->id = intval($data['uid']);
 			$this->data = $data;
 		} else {
