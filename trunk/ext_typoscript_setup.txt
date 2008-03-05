@@ -55,6 +55,19 @@ plugin.tx_ppforum_pi1 {
       allowedExt=tab_image|lDEF|allowedExt|vDEF
       allowedExt.ifEmpty=gif,jpg,jpeg
     }
+
+    rootForum = CONF_ARRAY
+    rootForum {
+      force_language = tab_rootForum|lDEF|force_language|vDEF
+      readaccess = tab_rootForum|lDEF|readaccess|vDEF
+      writeaccess = tab_rootForum|lDEF|writeaccess|vDEF
+      guardaccess = tab_rootForum|lDEF|guardaccess|vDEF
+      adminaccess = tab_rootForum|lDEF|adminaccess|vDEF
+      newtopic_restrict = tab_rootForum|lDEF|newtopic_restrict|vDEF
+      reply_restrict = tab_rootForum|lDEF|reply_restrict|vDEF
+      edit_restrict = tab_rootForum|lDEF|edit_restrict|vDEF
+      delete_restrict = tab_rootForum|lDEF|delete_restrict|vDEF
+    }
 	}
 
   //** Data object classes
