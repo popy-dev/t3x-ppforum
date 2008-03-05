@@ -71,6 +71,13 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	var $metaData = array();
 
 	/**
+	 * Access list
+	 * @access public
+	 * @var array
+	 */
+	var $access = array();
+
+	/**
 	 * 
 	 * 
 	 * @param 
@@ -154,24 +161,56 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	}
 
 	/**
-	 * Make some access-check
+	 * Determine current user's role
 	 *
 	 * @access public
 	 * @return void 
 	 */
 	function readAccess() {
-		if (!is_array($this->access) || !count($this->access)) {
-			if (is_object($this->forum)) {
+		if (empty($this->access)) {
+			// Load parent access to be able to inherit from him
+			if ($this->id) {
 				$this->forum->readAccess();
 			}
 
 			$this->access['admin'] = $this->readSingleAccess('admin', false);
 			$this->access['guard'] = $this->access['admin'] || $this->readSingleAccess('guard', false);
-			$this->access['write'] = $this->access['guard'] || $this->readSingleAccess('write');
-			$this->access['read']  = $this->access['guard'] || $this->readSingleAccess('read');
+			$this->access['write'] = $this->access['guard'] || $this->readSingleAccess('write', true);
+			$this->access['read']  = $this->access['guard'] || $this->readSingleAccess('read', true);
 
 			$this->readRestricts();
 		}
+	}
+
+	/**
+	 * Read a list of fe_groups and fe_users and return TRUE if the current user (or one of his groups) is in
+	 *
+	 * @param string $str = The access key to "determine"
+	 * @param bool $noneIsEverybody = defines what means an empty selection (false mean nobody, true mean everybody
+	 * @access protected
+	 * @return boolean
+	 */
+	function readSingleAccess($access, $noneIsEverybody) {
+		/* Declare */
+		$res  = false;
+		$mode = isset($this->data[$access . 'access_mode']) ? $this->data[$access . 'access_mode'] : 'erase';
+		$list = array_filter(t3lib_div::intExplode(',', $this->data[$access.'access']));
+		global $TSFE;
+
+		/* Begin */
+		if ($mode != 'inherit' || !$this->id) { //Mode erase (forum 0 is always set to erase)
+			if (count($list)) {
+				if ($this->parent->getCurrentUser() && is_array($TSFE->fe_user->groupData['uid']) && count(array_intersect($list, $TSFE->fe_user->groupData['uid']))) {
+					$res = true;
+				}
+			} elseif ($noneIsEverybody) {
+				$res = true;
+			}
+		} else { //Inherit mode
+			$res = $this->forum->access[$access];
+		}
+
+		return $res;
 	}
 
 	/**
@@ -182,14 +221,16 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function readRestricts() {
-		if (!is_array($this->access['restrict'])) {
-			$this->access['restrict']=Array();
-			if (is_object($this->forum)) {
+		if (!isset($this->access['restrict']) || empty($this->access['restrict'])) {
+			$this->access['restrict'] = Array();
+
+			// Loads parent restrictions to be able to inherit for him
+			if ($this->id) {
 				$this->forum->readRestricts();
 			}
 
 			foreach (array('newtopic','reply','edit','delete') as $name) {
-				$this->readSingleRestrict($name);
+				$this->access['restrict'][$name] = $this->readSingleRestrict($name);
 			}
 		}
 	}
@@ -199,68 +240,35 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 *
 	 * @param 
 	 * @access public
-	 * @return void 
+	 * @return boolean 
 	 */
 	function readSingleRestrict($name) {
 		/* Declare */
-		$fieldVal=$this->data[$name.'_restrict'];
-		$result=FALSE;
+		$result   = false;
+		$fieldVal = isset($this->data[$name.'_restrict']) ? $this->data[$name.'_restrict'] : 'inherit';
 	
 		/* Begin */
-		if (!trim($fieldVal)) {
-			$fieldVal='inherit'; //Back to default value
-		}
-		if (!is_object($this->forum) && $fieldVal=='inherit') {
-			$fieldVal='everybody'; //Can't inherit
+		if (!$this->id && $fieldVal == 'inherit') {
+			$fieldVal = 'everybody'; // Root forum can't inherit
 		}
 		switch ($fieldVal) {
-		case 'inherit':
-			$result=$this->forum->access['restrict'][$name];
-			break;
 		case 'everybody': 
-			$result=TRUE;
+			$result = true;
 			break;
 		case 'guard': 
-			$result=$this->access['guard'];
+			$result = $this->access['guard'];
 			break;
 		case 'admin': 
-			$result=$this->access['admin'];
+			$result = $this->access['admin'];
+			break;
+		case 'inherit':
+			$result = $this->forum->access['restrict'][$name];
 			break;
 		default:
 			break;
 		}
 
-		$this->access['restrict'][$name]=$result;
-	}
-
-	/**
-	 * Read a list of fe_groups and fe_users and return TRUE if the current user (or one of his groups) is in
-	 *
-	 * @param string $str = The string to parse
-	 * @access protected
-	 * @return boolean
-	 */
-	function readSingleAccess($access,$noneIsEverybody=TRUE) {
-		/* Declare */
-		$res=FALSE;
-		$mode=$this->data[$access.'access_mode'];
-		$list=array_filter(explode(',',$this->data[$access.'access']),'intval');
-		global $TSFE;
-
-		/* Begin */
-		if (($mode=='erase') || !is_object($this->forum)) { //Mode erase or current forum is forum id 0
-			if (count($list)) {
-				if ($this->parent->getCurrentUser() && is_array($TSFE->fe_user->groupData['uid']) && count(array_intersect($list,$TSFE->fe_user->groupData['uid']))) {
-					$res=TRUE;
-				}
-			} elseif ($noneIsEverybody) {
-				$res=TRUE;
-			}
-		} else { //Inherit mode
-			$res=$this->forum->access[$access];
-		}
-
-		return $res;
+		return $result;
 	}
 
 	/**

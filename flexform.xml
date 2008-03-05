@@ -130,8 +130,7 @@
 							</config>
 						</TCEforms>
 					</maxMessages>
-	
-				
+
 					<!-- max pages field -->
 					<pageRange>
 						<TCEforms>
@@ -164,7 +163,7 @@
 							</config>
 						</TCEforms>
 					</csstemplate>
-				
+
 					<!-- lightMode field -->
 					<lightMode_def>
 						<TCEforms>
@@ -280,6 +279,185 @@
 				</el>
 			</ROOT>
 		</tab_plugins>
+
+		<tab_rootForum>
+			<ROOT>
+				<TCEforms>
+					<sheetTitle>LLL:EXT:pp_forum/locallang_db.xml:flexform.tab_rootForum</sheetTitle>
+				</TCEforms>
+				<type>array</type>
+				<el>
+
+					<force_language>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.force_language</label>
+							<config>
+								<type>input</type>
+								<size>30</size>
+								<max>10</max>	
+							</config>
+						</TCEforms>
+					</force_language>
+
+					<readaccess>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.readaccess</label>
+							<config>
+								<type>group</type>
+								<internal_type>db</internal_type>
+								<allowed>fe_groups</allowed>
+								<size>5</size>
+								<minitems>0</minitems>	
+								<maxitems>10000</maxitems>	
+							</config>
+						</TCEforms>
+					</readaccess>
+
+					<writeaccess>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.writeaccess</label>
+							<config>
+								<type>group</type>
+								<internal_type>db</internal_type>
+								<allowed>fe_groups</allowed>
+								<size>5</size>
+								<minitems>0</minitems>	
+								<maxitems>10000</maxitems>	
+							</config>
+						</TCEforms>
+					</writeaccess>
+
+					<guardaccess>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.guardaccess</label>
+							<config>
+								<type>group</type>
+								<internal_type>db</internal_type>
+								<allowed>fe_groups</allowed>
+								<size>5</size>
+								<minitems>0</minitems>	
+								<maxitems>10000</maxitems>	
+							</config>
+						</TCEforms>
+					</guardaccess>
+
+					<adminaccess>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.adminaccess</label>
+							<config>
+								<type>group</type>
+								<internal_type>db</internal_type>
+								<allowed>fe_groups</allowed>
+								<size>5</size>
+								<minitems>0</minitems>	
+								<maxitems>10000</maxitems>	
+							</config>
+						</TCEforms>
+					</adminaccess>
+
+					<newtopic_restrict>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.newtopic_restrict</label>
+							<config>
+								<type>select</type>
+								<items>
+									<numIndex index="0" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.everybody</numIndex>
+										<numIndex index="1">everybody</numIndex>
+									</numIndex>
+									<numIndex index="1" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.guard</numIndex>
+										<numIndex index="1">guard</numIndex>
+									</numIndex>
+									<numIndex index="3" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.admin</numIndex>
+										<numIndex index="1">admin</numIndex>
+									</numIndex>
+								</items>
+								<size>1</size>
+								<maxitems>1</maxitems>
+							</config>
+						</TCEforms>
+					</newtopic_restrict>
+
+					<reply_restrict>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.reply_restrict</label>
+							<config>
+								<type>select</type>
+								<items>
+									<numIndex index="0" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.everybody</numIndex>
+										<numIndex index="1">everybody</numIndex>
+									</numIndex>
+									<numIndex index="1" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.guard</numIndex>
+										<numIndex index="1">guard</numIndex>
+									</numIndex>
+									<numIndex index="3" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.admin</numIndex>
+										<numIndex index="1">admin</numIndex>
+									</numIndex>
+								</items>
+								<size>1</size>
+								<maxitems>1</maxitems>
+							</config>
+						</TCEforms>
+					</reply_restrict>
+
+					<edit_restrict>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.edit_restrict</label>
+							<config>
+								<type>select</type>
+								<items>
+									<numIndex index="0" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.everybody</numIndex>
+										<numIndex index="1">everybody</numIndex>
+									</numIndex>
+									<numIndex index="1" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.guard</numIndex>
+										<numIndex index="1">guard</numIndex>
+									</numIndex>
+									<numIndex index="3" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.admin</numIndex>
+										<numIndex index="1">admin</numIndex>
+									</numIndex>
+								</items>
+								<size>1</size>
+								<maxitems>1</maxitems>
+							</config>
+						</TCEforms>
+					</edit_restrict>
+
+					<delete_restrict>
+						<TCEforms>
+							<label>LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.delete_restrict</label>
+							<config>
+								<type>select</type>
+								<items>
+									<numIndex index="0" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.everybody</numIndex>
+										<numIndex index="1">everybody</numIndex>
+									</numIndex>
+									<numIndex index="1" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.guard</numIndex>
+										<numIndex index="1">guard</numIndex>
+									</numIndex>
+									<numIndex index="3" type="array">
+										<numIndex index="0">LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.basic.restrict.admin</numIndex>
+										<numIndex index="1">admin</numIndex>
+									</numIndex>
+								</items>
+								<size>1</size>
+								<maxitems>1</maxitems>
+							</config>
+						</TCEforms>
+					</delete_restrict>
+
+				</el>
+			</ROOT>
+		</tab_rootForum>
 
 	</sheets>
 </T3DataStructure>

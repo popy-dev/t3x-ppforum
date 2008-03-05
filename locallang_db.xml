@@ -76,6 +76,9 @@
 
 			<label index="flexform.tab_plugins">Plugins</label>
 			<label index="flexform.tab_plugins.denyHooks">Disable plugins</label>
+
+			<label index="flexform.tab_rootForum">Root forum configuration</label>
+			<label index="flexform.tab_rootForum.denyHooks">Disable plugins</label>
 		</languageKey>
 		<languageKey index="fr" type="array">
 			<label index="tx_ppforum_forums">Forums</label>

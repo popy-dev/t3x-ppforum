@@ -1227,7 +1227,11 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					$this->_delayedObjectList[$type][] = $id;
 				} else {
 					//* Load data
-					$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
+					if ($type == 'forum' && $id == 0) {
+						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->loadData($this->config['rootForum']);
+					} else {
+						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
+					}
 				}
 			}
 		}
