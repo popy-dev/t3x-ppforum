@@ -69,20 +69,16 @@ class tx_ppforum_pi1 {
 	 * @return void 
 	 */
 	function init() {
-		$cacheKey = 'realPluginObject('.tx_pplib_div::strintval($this->cObj->data['uid']).')';
+		$cacheKey = 'tx_ppforum_rpi1('.tx_pplib_div::strintval($this->cObj->data['uid']).')';
 
-		if (!isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey])) {
-			global $TYPO3_CONF_VARS;
-			if (!class_exists('tx_ppforum_rpi1')) {
-				require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_rpi1.php');
-			}
-			
-
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey] = &t3lib_div::makeInstance('tx_ppforum_rpi1');
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->cObj = &$this->cObj;
+		if (!tx_pplib_instantcache::isInCache($cacheKey, 'PI_SINGLETON')) {
+			$this->pluginObj = &tx_pplib_div::makeInstance('tx_ppforum_rpi1');
+			$this->pluginObj->cObj = &$this->cObj;
+			tx_pplib_instantcache::storeInCache($this->pluginObj, $cacheKey, 'PI_SINGLETON');
+		} else {
+			$this->pluginObj = &tx_pplib_instantcache::getFromCache($cacheKey, 'PI_SINGLETON');
 		}
 
-		$this->pluginObj = &$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey];
 	}
 
 	/**
@@ -124,9 +120,5 @@ class tx_ppforum_pi1 {
 }
 
 
-
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_pi1.php'])	{
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_pi1.php']);
-}
-
+tx_pplib_div::XCLASS('ext/pp_forum/pi1/class.tx_ppforum_pi1.php');
 ?>
