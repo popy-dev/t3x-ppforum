@@ -1204,6 +1204,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$cacheKey = $this->pluginId.':recordObjects_'.$type.':'.strval($id);
 		$classKey = $type;
 		$className = false;
+		$res = null;
 
 		/* Begin */
 		//*** Special case : negative forum id means forumsim object
@@ -1212,16 +1213,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		//*** Determine classname
 		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
 
-		if ($clearCache || !isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey])) {
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey] = null;
-
+		if ($clearCache || !tx_pplib_instantcache::isInCache($cacheKey)) {
 			//** if a valid class is found, build object and init it
 			if (trim($className)) {
 				//* Instanciate object
-				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey] = &$this->pp_makeInstance($className);
+				$res = &$this->pp_makeInstance($className);
 				
 				//* Force the type proprety value
-				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->type = $type;
+				$res->type = $type;
 
 				if ($delayed && isset($this->_delayedObjectList[$type])) {
 					$this->_delayedObjectList[$type][] = $id;
@@ -1230,12 +1229,16 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					if ($type == 'forum' && $id == 0) {
 						$rData = $this->config['rootForum'];
 						$rData['uid'] = 'root';
-						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->loadData($rData);
+						$res->loadData($rData);
 					} else {
-						$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey]->load($id);
+						$res->load($id);
 					}
 				}
 			}
+
+			tx_pplib_instantcache::storeInCache($res, $cacheKey);
+		} else {
+			$res = &tx_pplib_instantcache::getFromCache($cacheKey);
 		}
 
 		//*** Increment query counter
@@ -1244,7 +1247,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		//*** Return the cached object
-		return $GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKey];
+		return $res;
 	}
 
 	/**
@@ -1626,10 +1629,5 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 }
 
-
-
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_pi1.php'])	{
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_pi1.php']);
-}
-
+tx_pplib_div::XCLASS('ext/pp_forum/pi1/class.tx_ppforum_pi1.php');
 ?>
