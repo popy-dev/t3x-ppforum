@@ -143,7 +143,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->parent->pp_playHookObjList('topic_event_onUpdateInTopic', $null, $this);
 
 			//Clear cached page (but only where this topic is displayed !)
-			$this->parent->clearHashList(array('topic'=>intval($this->id)));
+			tx_pplib_cachemgm::clearItemCaches(Array('topic' => intval($this->id)), false);
 
 			//If needed (deletion/creation of a message), clear the message list query cache
 			if ($this->forceReload['list']) $this->forum->loadTopicList(TRUE);
@@ -839,12 +839,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		if ($this->forum->userIsAdmin()) {
-			$param=array_filter($param,'trim');
-			ksort($param);
-			$paramKey=serialize($param);
-			$this->parent->loadHashList(TRUE);
-			//t3lib_div::debug($this->parent->_storedHashes[$paramKey], '');
-			$nbVersions=is_array($this->parent->_storedHashes[$paramKey])?array_sum(array_map('count',$this->parent->_storedHashes[$paramKey])):0;
+			$nbVersions = count(tx_pplib_cachemgm::getHashList($param, false));
 
 			$url=$this->getLink(
 				FALSE,
