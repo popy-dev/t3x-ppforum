@@ -491,10 +491,10 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		/* Begin */
 		if ($this->id) {
-			$paramKey=array('forum'=>intval($this->id));
+			$paramKey = array('forum'=>intval($this->id));
 		}
 
-		$this->parent->clearHashList($paramKey);
+		tx_pplib_cachemgm::clearItemCaches($paramKey, false);
 
 		$this->parent->pp_playHookObjList('forum_event_onUpdateInForum', $null, $this);
 
@@ -870,11 +870,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		}
 
 		if ($this->userIsAdmin()) {
-			$param=array_filter($param,'trim');
-			ksort($param);
-			$paramKey=serialize($param);
-			$this->parent->loadHashList(TRUE);
-			$nbVersions=is_array($this->parent->_storedHashes[$paramKey])?array_sum(array_map('count',$this->parent->_storedHashes[$paramKey])):0;
+			$nbVersions = count(tx_pplib_cachemgm::getHashList($param, false));
 
 			$url=$this->getLink(
 				FALSE,

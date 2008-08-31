@@ -103,9 +103,26 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		'user' => Array(),	
 	);
 
+	/**
+	 * Internal cache
+	 * @access protected
+	 * @var tx_pplib_picache
+	 */
+	var $cache = null;
+
 	/****************************************/
 	/************* Main funcs ***************/
 	/****************************************/
+
+	/**
+	 * Class constructor
+	 */
+	function __construct() {
+		parent::__construct();
+
+		// Init plugin internal cache object
+		$this->cache = &tx_pplib_div::makeInstance('tx_pplib_picache');
+	}
 
 	/**
 	 * The main method of the PlugIn
@@ -119,7 +136,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		//*** Basic init
 		$this->init($conf);
-		$this->loadHashList(true);
 
 		$printRest = true;
 
@@ -160,7 +176,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj(intval($topic));
 				if ($obj->id) {
-					$this->storeHash(array('topic' => $topic));
+					tx_pplib_cachemgm::storeHash(array('topic' => $topic));
 					$content .= $obj->display();
 				} else {
 					$GLOBALS['TSFE']->set_no_cache();
@@ -183,7 +199,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 					$obj = &$this->getForumObj($forum);
 					if ($obj->id) {
-						$this->storeHash(array('forum' => $forum));
+						tx_pplib_cachemgm::storeHash(array('forum' => $forum));
 						$content .= $obj->display();
 					} else {
 						$content .= 'Forum inexistant ->@TODO message d\'erreur';
@@ -198,7 +214,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 						$content .= $obj[$key]->display();
 					}
 				}
-				$this->storeHash(array());
+				tx_pplib_cachemgm::storeHash(array());
 			}
 
 			$content .= $this->printRootLine();
@@ -221,7 +237,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$this->intPartList = Array();
 
 
-		$this->saveHashList(TRUE);
 		$this->close();
 
 		return $this->pp_wrapInBaseClass($content);
@@ -306,37 +321,30 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	
 		/* Begin */
 		$this->init();
-		$this->loadHashList(TRUE);
-		$this->storeHash(array());
-		$this->saveHashList(TRUE);
+		tx_pplib_cachemgm::storeHash(Array());
 
 		//Force altdPageId when links will be build
 		$this->_displayPage = reset(explode(',',$this->config['pidList']));
 		//$page = $ref->getPage();
 
 		//Get latest message list
-		$messages = $this->doCachedQuery(
-			array(
-				'select' => 'uid,crdate',
-				'from'   => $this->tables['message'],
-				//'where'  => '1'.$this->getEnableFields('message'),
-				'where'  => '1'.$this->pp_getEnableFields($this->tables['message']),
-				'orderby'=> $this->getOrdering('message','reverse'),
-//				'limit'  => max(intval($ref->feed['select_key']),5)
-				)
-			);
+		$messages = $this->db->exec_SELECTgetRows(
+			'uid,crdate',
+			$this->tables['message'],
+			'1=1' . $this->pp_getEnableFields($this->tables['message']),
+			'',
+			$this->getOrdering('message', 'reverse')
+		);
 
 		//Get latest topic list
-		$topics = $this->doCachedQuery(
-			array(
-				'select' => 'uid,crdate',
-				'from'   => $this->tables['topic'],
-				//'where'  => 'forum>0'.$this->getEnableFields('topic'),
-				'where'  => 'forum>0'.$this->pp_getEnableFields($this->tables['topic']),
-				'orderby'=> $this->getOrdering('topic','nopinned'),
-				'limit'  => max(intval($ref->feed['select_key']),5)
-				)
-			);
+		$topics = $this->db->exec_SELECTgetRows(
+			'uid,crdate',
+			$this->tables['topic'],
+			'forum > 0' . $this->pp_getEnableFields($this->tables['topic']),
+			'',
+			$this->getOrdering('topic','nopinned'),
+			max(intval($ref->feed['select_key']),5)
+		);
 
 		//Merge them
 		foreach ($messages as $val) {
@@ -968,15 +976,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return array 
 	 */
 	function getForumChilds($id = 0 , $clearCache = false) {
-		$res = $this->doCachedQuery(
-			Array(
-				'select'     => 'uid',
-				'from'       => $this->tables['forum'],
-				'where'      => 'parent = '.tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['forum']),
-				'orderby'    => $this->getOrdering('forum'),
-				'indexField' => 'uid'
-			),
-			$clearCache
+		$res = $this->db->exec_SELECTgetRows(
+			'uid',
+			$this->tables['forum'],
+			'parent = ' . tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['forum']),
+			'',
+			$this->getOrdering('forum'),
+			'',
+			'uid'
 		);
 		if (is_array($res)) {
 			return array_keys($res);
@@ -998,15 +1005,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if ($id < 0) {
 			return $this->getUserTopics(-$id, $clearCache, $options);
 		} else {
-			$res = $this->doCachedQuery(
-				Array(
-					'select'  => 'uid',
-					'from'    => $this->tables['topic'],
-					'where'   => 'forum = ' . intval($id) . $this->pp_getEnableFields($this->tables['topic']),
-					'orderby' => $this->getOrdering('topic', $options),
-					'indexField' => 'uid',
-				),
-				$clearCache
+			$res = $this->db->exec_SELECTgetRows(
+				'uid',
+				$this->tables['topic'],
+				'forum = ' . intval($id) . $this->pp_getEnableFields($this->tables['topic']),
+				'',
+				$this->getOrdering('topic', $options),
+				'',
+				'uid'
 			);
 			if (is_array($res)) {
 				return array_keys($res);
@@ -1033,15 +1039,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		} else {
 			$query = '(forum = '.strval(-$id).' AND author = '.strval($this->currentUser->id).')';
 		}
-		$res = $this->doCachedQuery(
-			Array(
-				'select'     => 'uid',
-				'from'       => $this->tables['topic'],
-				'where'      => $query . $this->pp_getEnableFields($this->tables['topic']),
-				'orderby'    => $this->getOrdering('topic', $options),
-				'indexField' => 'uid',
-			),
-			$clearCache
+		$res = $this->db->exec_SELECTgetRows(
+			'uid',
+			$this->tables['topic'],
+			$query . $this->pp_getEnableFields($this->tables['topic']),
+			'',
+			$this->getOrdering('topic', $options),
+			'',
+			'uid'
 		);
 		if (is_array($res)) {
 			return array_keys($res);
@@ -1111,15 +1116,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	function getTopicMessages($id , $clearCache = false) {
 		$res = array();
 		if (intval($id)) {
-			$res = $this->doCachedQuery(
-				Array(
-					'select'     => 'uid',
-					'from'       => $this->tables['message'],
-					'where'      => 'topic = ' . tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['message']),
-					'orderby'    => $this->getOrdering('message'),
-					'indexField' => 'uid'
-				),
-				$clearCache
+			$res = $this->db->exec_SELECTgetRows(
+				'uid',
+				$this->tables['message'],
+				'topic = ' . tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['message']),
+				'',
+				$this->getOrdering('message'),
+				'',
+				'uid'
 			);
 			
 			$res = is_array($res) ? array_keys($res) : array();
@@ -1201,7 +1205,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	function &getRecordObject($id, $type, $clearCache = false, $delayed = false) {
 		/* Declare */
-		$cacheKey = $this->pluginId.':recordObjects_'.$type.':'.strval($id);
+		$cacheKey = $this->generateCacheKey($id, $type);
 		$classKey = $type;
 		$className = false;
 		$res = null;
@@ -1213,7 +1217,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		//*** Determine classname
 		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
 
-		if ($clearCache || !tx_pplib_instantcache::isInCache($cacheKey)) {
+		if ($clearCache || !$this->cache->isInCache($cacheKey)) {
 			//** if a valid class is found, build object and init it
 			if (trim($className)) {
 				//* Instanciate object
@@ -1236,9 +1240,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				}
 			}
 
-			tx_pplib_instantcache::storeInCache($res, $cacheKey);
+			$this->cache->storeInCache($res, $cacheKey);
 		} else {
-			$res = &tx_pplib_instantcache::getFromCache($cacheKey);
+			$res = &$this->cache->getFromCache($cacheKey);
 		}
 
 		//*** Increment query counter
@@ -1291,9 +1295,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
 
 		foreach ($idList as $id) {
-			$cacheKeys[$id] = $this->pluginId.':recordObjects_'.$type.':'.strval($id);
+			$cacheKeys[$id] = $this->generateCacheKey($id, $type);
 
-			if (!isset($GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]) || $justLoadData) {
+			if (!$this->cache->isInCache($cacheKeys[$id]) || $justLoadData) {
 				$loadIdList[] = $id;
 			}
 		}
@@ -1302,7 +1306,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			return ;
 		}
 
-		$tabRes = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+		$tabRes = $this->db->exec_SELECTgetRows(
 			'*',
 			$this->tables[$type],
 			'uid IN (' . implode(',', $loadIdList) . ')' . $this->pp_getEnableFields($this->tables[$type]),
@@ -1317,17 +1321,32 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		foreach ($loadIdList as $id) {
 			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
 
-			if (!$justLoadData) {
+			if (!$this->cache->isInCache($cacheKeys[$id])) {
 				//* Instanciate object
-				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]] = &$this->pp_makeInstance($className);
+				$res = &$this->pp_makeInstance($className);
 				
 				//* Force the type proprety value
-				$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->type = $type;
+				$res->type = $type;
+
+				$this->cache->storeInCache($res, $cacheKeys[$id]);
+			} else {
+				$res = &$this->cache->getFromCache($cacheKeys[$id]);
 			}
 
 			//* Load data
-			$GLOBALS['T3_VAR']['CACHE'][$this->extKey][$cacheKeys[$id]]->loadData($row, true);
+			$res->loadData($row, true);
 		}
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function generateCacheKey($id, $type) {
+		return $type . ',' . strval($id);
 	}
 
 	/**
