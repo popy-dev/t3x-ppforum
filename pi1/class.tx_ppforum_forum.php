@@ -1022,9 +1022,9 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function userCanEditTopic($topicId,$res) {
-		$res=$res && $this->access['restrict']['edit'];
+		$res = $res && $this->access['restrict']['edit'];
 		if (is_object($this->forum)) {
-			$res=$this->forum->userCanEditTopic($topicId,$res);
+			$res = $this->forum->userCanEditTopic($topicId,$res);
 		}
 		return $res;
 	}
@@ -1036,7 +1036,14 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onNewPostInTopic($topicId,$messageId) {
+	function event_onNewPostInTopic($topicId, $messageId) {
+		$param = Array(
+			'topicId' => $topicId,
+			'messageId' => $messageId,
+		);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('forum_event_onNewPostInTopic', $param, $this);
 	}
 
 	/**
@@ -1047,6 +1054,12 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function event_onTopicDisplay($topicId) {
+		$param = Array(
+			'topicId' => $topicId,
+		);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('forum_event_onTopicDisplay', $param, $this);
 	}
 
 	/**
@@ -1056,7 +1069,14 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onMessageDisplay($topicId,$messageId) {
+	function event_onMessageDisplay($topicId, $messageId) {
+		$param = Array(
+			'topicId' => $topicId,
+			'messageId' => $messageId,
+		);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('forum_event_onMessageDisplay', $param, $this);
 	}
 
 	/**

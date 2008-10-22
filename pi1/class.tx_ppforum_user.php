@@ -579,7 +579,8 @@ class tx_ppforum_user extends tx_ppforum_base {
 	function displayProfile_main_part($infoArray) {
 		/* Declare */
 		$content = '';
-		$toolkit = &tx_pplib_div::getFormToolkit();
+		//$toolkit = &tx_pplib_div::getFormToolkit();
+		$toolkit = &$this->parent->pp_makeInstance('tx_pplib_formtoolkit'); // berk
 		$incomingData = is_array($this->parent->piVars['profile']) ? $this->parent->piVars['profile'] : false;
 		$profileData = $this->getUserPreference('profil');
 		$parserList = Array();
