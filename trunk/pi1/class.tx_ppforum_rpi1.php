@@ -139,7 +139,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$printRest = true;
 
-		//Hook list : if a hook reurn something and switch $printRest to true, the plugin will return this content instead of the normal content
+		//Hook list : if a hook return something and switch $printRest to true, the plugin will return this content instead of the normal content
 		$hookRes = $this->pp_playHookObjList('main_alternateRendering', $printRest, $this);
 
 		if (!$printRest) {
@@ -176,7 +176,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj(intval($topic));
 				if ($obj->id) {
-					tx_pplib_cachemgm::storeHash(array('topic' => $topic));
+					tx_pplib_cachemgm::storeHash($obj->getCacheParam());
 					$content .= $obj->display();
 				} else {
 					$GLOBALS['TSFE']->set_no_cache();
@@ -199,7 +199,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 					$obj = &$this->getForumObj($forum);
 					if ($obj->id) {
-						tx_pplib_cachemgm::storeHash(array('forum' => $forum));
+						tx_pplib_cachemgm::storeHash($obj->getCacheParam());
 						$content .= $obj->display();
 					} else {
 						$content .= 'Forum inexistant ->@TODO message d\'erreur';
@@ -416,7 +416,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if (!$keepMicrotime || !$this->startTime) {
 			$this->startTime = microtime();
 		}
-		
+
 		//*** Load given conf
 		if (!is_array($this->conf) || !count($this->conf)) {
 			$this->conf = $conf;
@@ -534,14 +534,16 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function getCurrent() {
-		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'])) {
+	function getCurrent($clearCache = false) {
+		if (!$clearCache && $this->cache->isInCache('currentItems', 'DIV')) {
+			$res = $this->cache->getFromCache('currentItems', 'DIV');
+		} else {
 			/* Declare */
 			$forumId = intval($this->getVars['forum']);
 			$topicId = intval($this->getVars['topic']);
 			$topic = NULL;
 			$forum = NULL;
-			$dataChecked = FALSE;
+			$dataChecked = false;
 		
 			/* Begin */
 			if ($topicId) {
@@ -556,7 +558,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					if ($topic->isVisibleRecursive()) {
 						//Then we can check updates
 						if ($this->getVars['edittopic'] || $this->getVars['deletetopic']) {
-							$dataChecked = TRUE;
+							$dataChecked = true;
 							$topic->checkTopicData();
 
 							if (!$topic->isVisibleRecursive()) {
@@ -569,7 +571,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 
 				} else {
-					//Unable to load topic, we can do nothing there
+					//Unable to load topic, we can't do anything else
 					$topicId = 0;
 				}
 			}
@@ -584,9 +586,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					//Maybe this forum isn't visible, we need to fall back to the first visible parent
 					while (is_object($forum) && !$forum->isVisible()) {
 						$forum = &$forum->forum;
-						//If we come hre, it means that the given "forum" GET var is NOT valid, but if user has try to post in this forum
+						//If we come here, it means that the given "forum" GET var is NOT valid, but if user has try to post in this forum
 						//We don't want this new topic to appear on first visible forum
-						$dataChecked = TRUE;
+						$dataChecked = true;
 					}
 
 					if (is_object($forum)) {
@@ -597,7 +599,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 						$forumId = 0;
 					}
 				} else {
-					//Unable to load forum, we can do nothing there
+					//Unable to load forum, we can't do anything else
 				}
 			}
 
@@ -617,22 +619,25 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 				if (intval($topic->id)) {
 					// Clearing object cache (because now the topic has an id !)
-					$this->getTopicObj(0,TRUE);
+					$this->getTopicObj(0, true);
 				}
 			}
 
 			unset($topic);
 			unset($forum);
 
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'] = Array(
+			$res = Array(
 				'topic' => $topicId,
 				'forum' => $forumId
-				);
+			);
+
+			$this->cache->storeInCache($res, 'currentItems', 'DIV');
+
 			$this->getVars['topic'] = $topicId;
 			$this->getVars['forum'] = $forumId;
 		}
 
-		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CURRENT'];
+		return $res;
 	}
 
 	/**
@@ -799,10 +804,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return string 
 	 */
-	function printRootLine($id=0) {
-		$id=intval($id)?intval($id):$this->getCurrentForum();
+	function printRootLine($id = null) {
+		if (is_null($id)) {
+			$id = $this->getCurrentForum();
+		}
 
-		if (!isset($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id])) {
+		if ($this->cache->isInCache('rootlineDraw:' . strval($id), 'DIV')) {
+			$res = $this->cache->getFromCache('rootlineDraw:' . strval($id), 'DIV');
+		} else {
 			/* Declare */
 			$rootLine = $this->getForumRootline($id);
 			$obj      = &$this->getForumObj(0);
@@ -819,9 +828,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$root[] = $obj->getTitleLink();
 			}
 
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id] = '<div class="rootline">' . implode(' &gt; ',$root) . '</div>';
+			$res = '<div class="rootline">' . implode(' &gt; ',$root) . '</div>';
+			$this->cache->storeInCache($res, 'rootlineDraw:' . strval($id), 'DIV');
 		}
-		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['CONTENT']['ROOTLINE'][$id];
+		return $res;
 	}
 
 	/**
@@ -833,7 +843,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	function printUserBar() {
 		/* Declare */
-		$conf=array();
+		$conf = Array();
 	
 		/* Begin */
 		if ($this->getCurrentUser()) {
@@ -855,22 +865,23 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	function _printUserBar() {
 		/* Declare */
-		$content='<div class="user-bar">';
+		$content = '<div class="user-bar">';
 	
 		/* Begin */
-		$content.='<div class="left part">'.
-			$this->pp_getLL('user.loguedas','Logued as',TRUE).
+		$content .= '<div class="left part">'.
+			$this->pp_getLL('user.loguedas', 'Logued as', true).
 			$this->currentUser->displayLight();
+
 		if ($this->currentUser->id) {
-			$content.=' ('.
+			$content .= ' ('.
 				$this->currentUser->displayLogout().' / '.
 				$this->currentUser->displayEditLink().' / '.
 				$this->currentUser->displayInboxLink().')';
 		}
 
-		$content.='</div>';
+		$content .= '</div>';
 
-		$content.='</div>';
+		$content .= '</div>';
 
 		return $content;
 	}
@@ -909,13 +920,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return void 
 	 */
 	function printJs() {
-		tx_pplib_div::addJs(
-			$this->cObj->cObjGetSingle(
-				$this->conf['javascript'],
-				$this->conf['javascript.'],
-				'pp_forum->addjs'
-				)
-			);
+		foreach ($this->conf['javascript.'] as $path) {
+			tx_pplib_headmgr::addJsFile($path);
+		}
 	}
 
 
@@ -943,28 +950,37 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return array
 	 */
-	function &getForumRootline($id = 0, $clearCache = false) {
+	function &getForumRootline($id = null, $clearCache = false) {
 		/* Declare */
-		$id = intval($id) ? intval($id) : $this->getCurrentForum();
-		$temp = array();
+		$res = array();
 		$forum = null;
 	
 		/* Begin */
-		if (!$id) {
-			return array();
-		} elseif ($clearCache || !is_array($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id])) {
-			$forum = &$this->getForumObj($id);
-
-			while ($forum->id) {
-				$temp[] = &$forum;
-				$forum = &$forum->forum;
-			}
-
-			$GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id] = array_reverse($temp);
+		if (is_null($id)) {
+			$id = $this->getCurrentForum();
 		}
 
-		$this->internalLogs['querys'] += count($GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id]);
-		return $GLOBALS['CACHE']['PP_FORUM'][$this->cObj->data['uid']]['DATA']['ROOTLINE'][$id];
+		if ($this->cache->isInCache('rootline:' . strval($id), 'DIV')) {
+			$res = &$this->cache->getFromCache('rootline:' . strval($id), 'DIV');
+		} elseif($id) {
+			$forum = &$this->getForumObj($id);
+			if ($forum->forum->id) {
+				$parentRootline = &$this->getForumRootline($forum->forum->id, $clearCache);
+
+				foreach (array_keys($parentRootline) as $key) {
+					$res[] = &$parentRootline[$key];
+				}
+			}
+
+			$res[] = &$forum;
+
+			$this->cache->storeInCache($res, 'rootline:' . strval($id), 'DIV');
+		} else {
+			$res = Array();
+		}
+
+		$this->internalLogs['querys'] += count($res);
+		return $res;
 	}
 
 	/**
@@ -985,6 +1001,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'',
 			'uid'
 		);
+		$this->internalLogs['querys']++;
+		$this->internalLogs['realQuerys']++;
+
 		if (is_array($res)) {
 			return array_keys($res);
 		} else {
@@ -1014,6 +1033,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				'',
 				'uid'
 			);
+			$this->internalLogs['querys']++;
+			$this->internalLogs['realQuerys']++;
+
 			if (is_array($res)) {
 				return array_keys($res);
 			} else {
@@ -1048,6 +1070,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'',
 			'uid'
 		);
+		$this->internalLogs['querys']++;
+		$this->internalLogs['realQuerys']++;
+
 		if (is_array($res)) {
 			return array_keys($res);
 		} else {
@@ -1100,8 +1125,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return int 
 	 */
-	function getCurrentTopic($clearCache=FALSE) {
-		$temp = $this->getCurrent();
+	function getCurrentTopic($clearCache = false) {
+		$temp = $this->getCurrent($clearCache);
 		return $temp['topic'];
 	}
 	
@@ -1125,7 +1150,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				'',
 				'uid'
 			);
-			
+			$this->internalLogs['querys']++;
+			$this->internalLogs['realQuerys']++;
+
 			$res = is_array($res) ? array_keys($res) : array();
 		}
 
@@ -1236,6 +1263,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 						$res->loadData($rData);
 					} else {
 						$res->load($id);
+						$this->internalLogs['querys']++;
+						$this->internalLogs['realQuerys']++;
 					}
 				}
 			}

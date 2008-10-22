@@ -181,17 +181,22 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return int/boolean = the message uid or false when an error occurs 
 	 */
-	function save($forceReload=TRUE) {
+	function save($forceReload = true) {
 		/* Declare */
 		$null = null;
 		$result = false;
+		$tstampField = isset($GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp']) ? $GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp'] : false;
+		$crdateField = isset($GLOBALS['TCA'][$this->tablename]['ctrl']['crdate']) ? $GLOBALS['TCA'][$this->tablename]['ctrl']['crdate'] : false;
 
 		/* Begin */
 		// Plays hook list : Allow to change some field before saving
 		$this->parent->pp_playHookObjList('message_save', $null, $this);
 		
 		// Updating tstamp field
-		$this->mergedData['tstamp'] = $GLOBALS['SIM_EXEC_TIME'];
+		if ($tstampField) {
+			// Updating tstamp field
+			$this->mergedData[$tstampField] = $GLOBALS['SIM_EXEC_TIME'];
+		}
 		$this->mergedData['author'] = $this->author->id;
 
 		if ($this->type == 'message') {
@@ -204,7 +209,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			//** Optimistic update :
 			$result = $GLOBALS['TYPO3_DB']->exec_UPDATEquery(
 				$this->tablename,
-				'uid='.strval($this->id),
+				'uid=' . strval($this->id),
 				array_diff_assoc(
 					$this->mergedData,
 					$this->data
@@ -213,7 +218,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 			$this->parent->log('UPDATE');
 		} else {
-			$this->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
+			if ($crdateField) {
+				$this->mergedData[$crdateField] = $GLOBALS['SIM_EXEC_TIME'];
+			}
 
 			//** Set pid
 			$this->mergedData['pid'] = $this->parent->config['savepage'];
@@ -254,7 +261,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return int/boolean @see tx_ppforum_message::save 
 	 */
-	function delete($forceReload=TRUE) {
+	function delete($forceReload = true) {
 		if ($this->id) {
 			//check if topic can delete message
 			if ($this->topic->deleteMessage($this->id)) {
@@ -262,7 +269,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 			} else {
 				//Normal delete
 				$this->mergedData['deleted'] = 1;
-				if ($forceReload) $this->forceReload['list'] = true;
+				if ($forceReload) {
+					$this->forceReload['list'] = true;
+				}
 				return $this->save($forceReload);
 			}
 		} else {
@@ -297,7 +306,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		if ($this->forceReload['data']) $this->load($this->id, true);
 
 		//Launch topic event function only if needed (eg: don't enter here when deleting messages from topic::delete)
-		if ($this->forceReload['topic']) $this->topic->event_onUpdateInTopic($this->isNew, $this->id);
+		if ($this->forceReload['topic']) $this->topic->event_onMessageModify($this->id, $this->isNew);
 
 		//Resets directives
 		$this->forceReload = array();
@@ -722,7 +731,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			if (is_object($this->parent->parsers[$key])) {
 				$optionTitle = $this->parent->parsers[$key]->parser_getTitle(true);
 				$data['right'] .= '<div class="parser-toolbar parser-toolbar-'.htmlspecialchars($key).'"'.$display.'>'.
-					$this->parent->parsers[$key]->printToolbar().
+					$this->parent->parsers[$key]->printToolbar($this->datakey).
 					'</div>';
 				
 			} else {

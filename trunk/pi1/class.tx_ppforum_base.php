@@ -100,6 +100,17 @@ class tx_ppforum_base {
 		return $this->id;
 	}
 
+	/**
+	 * Generates the item's cache identifier
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function getCacheParam() {
+		return array(
+			$this->type => $this->id
+		);
+	}
 }
 
 

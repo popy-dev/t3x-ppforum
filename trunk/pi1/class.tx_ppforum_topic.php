@@ -82,9 +82,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return int = the loaded id 
 	 */
 	function loadData($data, $delaySubs = false) {
-		if (parent::loadData($data)) {
+		if ($res = parent::loadData($data)) {
 			$this->forum = &$this->parent->getRecordObject(intval($this->data['forum']), 'forum', false,$delaySubs);
 		}
+
+		return $res;
 	}
 
 	/**
@@ -94,29 +96,31 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return int/boolean @see tx_ppforum_topic::save 
 	 */
-	function delete($forceReload=TRUE) {
+	function delete($forceReload = true) {
 		if ($this->id) {
 			if ($this->forum->deleteTopic($this->id)) {
-				return TRUE;
+				return true;
 			} else {
-				$this->mergedData['deleted']=1;
+				$this->mergedData['deleted'] = 1;
 
-				$this->loadMessages(TRUE,TRUE);
+				$this->loadMessages(true, true);
 
 				//Deleting topic messages
 				foreach ($this->messageList as $messageId) {
-					$temp=&$this->parent->getMessageObj($messageId);
-					$temp->delete(FALSE);
+					$temp = &$this->parent->getMessageObj($messageId);
+					$temp->delete(false);
 					unset($temp);
 				}
 
 				//Clear topic message list
-				$this->parent->getTopicMessages($this->id,'clearCache');
-				if ($forceReload) $this->forceReload['list']=1;
+				$this->parent->getTopicMessages($this->id, 'clearCache');
+				if ($forceReload) {
+					$this->forceReload['list'] = true;
+				}
 				return $this->save($forceReload);
 			}
 		} else {
-			return FALSE;
+			return false;
 		}
 	}
 
@@ -131,37 +135,53 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onUpdateInTopic($isNewMessage=FALSE,$messageId=0) {
-		$null=NULL;
-		if ($messageId) {
-			$this->save(); //Will re-launch this function !!
-			if ($isNewMessage) {
-				$this->forum->event_onNewPostInTopic($this->id,$messageId);
-			}
-		} else {
-			//Playing hook list
-			$this->parent->pp_playHookObjList('topic_event_onUpdateInTopic', $null, $this);
+	function event_onUpdateInTopic($isNewTopic = false) {
+		$null = null;
+		//Playing hook list
+		$this->parent->pp_playHookObjList('topic_event_onUpdateInTopic', $null, $this);
 
-			//Clear cached page (but only where this topic is displayed !)
-			tx_pplib_cachemgm::clearItemCaches(Array('topic' => intval($this->id)), false);
+		//Clear cached page (but only where this topic is displayed !)
+		tx_pplib_cachemgm::clearItemCaches(Array('topic' => intval($this->id)), false);
 
-			//If needed (deletion/creation of a message), clear the message list query cache
-			if ($this->forceReload['list']) $this->forum->loadTopicList(TRUE);
+		//If needed (deletion/creation of a message), clear the message list query cache
+		if ($this->forceReload['list']) $this->forum->loadTopicList(true);
 
-			//Forcing data and object reload. Could be used to ensure that data is "as fresh as possible"
-			//Useless if oject wasn't builded with 'getMessageObj' function
-			//In this case, you should use $this->parent->getSingleMessage($this->id,'clearCache');
-			if ($this->forceReload['data']) $this->load($this->id,TRUE);
+		//Forcing data and object reload. Could be used to ensure that data is "as fresh as possible"
+		//Useless if oject wasn't builded with 'getMessageObj' function
+		//In this case, you should use $this->parent->getSingleMessage($this->id,'clearCache');
+		if ($this->forceReload['data']) $this->load($this->id, true);
 
-			if ($isNewMessage) {
-				$this->forum->event_onNewTopic($this->id);
-			} elseif ($this->forceReload['forum']) {
-				$this->forum->event_onUpdateInForum();
-			}
-
-			//Resets directives
-			$this->forceReload=array();
+		if ($isNewTopic) {
+			$this->forum->event_onNewTopic($this->id);
+		} elseif ($this->forceReload['forum']) {
+			$this->forum->event_onUpdateInForum();
 		}
+
+		//Resets directives
+		$this->forceReload = array();
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageModify($messageId, $isNewMessage = true) {
+		$param = Array(
+			'messageId' => $messageId,
+			'isNewMessage' =>$isNewMessage,
+		);
+
+		if ($isNewMessage) {
+			$this->forum->event_onNewPostInTopic($this->id, $messageId);
+		}
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('topic_event_onNewPostInTopic', $param, $this);
+
+		$this->save();
 	}
 
 	/**
@@ -172,7 +192,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return void 
 	 */
 	function event_onMessageDisplay($messageId) {
-		$this->forum->event_onMessageDisplay($topicId,$messageId);
+		$param = Array(
+			'messageId' => $messageId,
+		);
+
+		$this->forum->event_onMessageDisplay($this->id, $messageId);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('topic_event_onMessageDisplay', $param, $this);
 	}
 	/****************************************/
 	/*********** Links functions ************/
@@ -203,7 +230,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$title,
 			$addParams, //overrule piVars
 			$parameter // Message anchor
-			);
+		);
 	}
 
 	/**
@@ -643,8 +670,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->checkIncommingData();
 
 			if ($this->parent->getVars['clearCache'] && $this->forum->userIsAdmin()) {
-				$this->forceReload['forum']=1;
-				$this->event_onUpdateInTopic(FALSE,FALSE);
+				$this->forceReload['forum'] = true;
+				$this->event_onUpdateInTopic();
 				unset($this->parent->getVars['clearCache']);
 			}
 		}
