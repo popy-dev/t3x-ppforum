@@ -156,7 +156,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		}
 
 		if (is_object($this->forum)) {
-			$this->metaData = $this->forum->metaData + $this->metaData;
+			$this->metaData = array_merge($this->forum->metaData, $this->metaData);
 		}
 	}
 
