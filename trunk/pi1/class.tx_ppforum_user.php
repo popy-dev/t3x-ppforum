@@ -137,23 +137,23 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 */
 	function getUserPreference($prefkey) {
 		list($firstKey,$path)=explode('|',$prefkey,2);
-		if (isset($this->uc['ppforum/userprefs/'.$firstKey])) {
-			$val=$this->uc['ppforum/userprefs/'.$firstKey];
+		if (isset($this->uc['pp_forum'][$firstKey])) {
+			$val = $this->uc['pp_forum'][$firstKey];
 
 			//Get the value form the array. Path is used as a list of keys separated by the | char
 			if (trim($path)) {
-				foreach (explode('|',$path) as $key) {
+				foreach (explode('|', $path) as $key) {
 					if (is_array($val) && isset($val[$key])) {
-						$val=$val[$key];
+						$val = $val[$key];
 					} else {
-						$val=NULL;
+						$val = null;
 						break;
 					}
 				}
 			}
 			return $val;
 		} else {
-			return NULL;
+			return null;
 		}
 	}
 
@@ -166,10 +166,10 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 */
 	function setUserPreference($prefkey,$data) {
 		if ($this->id) {
-			$this->uc['ppforum/userprefs/'.$prefkey]=$data;
+			$this->uc['pp_forum'][$prefkey]=$data;
 			if (!$this->ucSave) {
 				$this->parent->registerCloseFunction('save',$this);
-				$this->ucSave = TRUE;
+				$this->ucSave = true;
 			}
 		}
 	}
