@@ -112,8 +112,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 			foreach ($idList as $topicId) {
 				$topic = &$this->parent->getTopicObj($topicId);
-				if ($topic->isVisible() && $this->topicIsVisible($topicId)) {
-					$this->topicList[$topicId]=&$topic;
+				if ($topic->isVisible()) {
+					$this->topicList[$topicId] = &$topic;
 				}
 			}
 		}
@@ -805,7 +805,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$data['counters'] = $data['topic']->getCounters($topic->id);
 		$data['topic']->loadMessages();
 
-		$data['conf']['topic-title']=$data['topic']->getTitleLink();
+		$data['conf']['topic-title']=$data['topic']->getTitleLink(true);
 		$data['conf']['topic-posts']=$data['counters']['posts'];
 		$data['conf']['topic-author']=$data['topic']->author->displayLight();
 
@@ -1057,6 +1057,24 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$param = Array(
 			'topicId' => $topicId,
 		);
+
+		if ($topicId && intval($topicId) && $this->parent->currentUser->id) {
+			// Topic has been read :
+			$topic = &$this->parent->getTopicObj($topicId);
+
+			// Step 1 : recalculate read / unread messages if needed
+			if ($this->parent->currentUser->getUserPreference('latestVisitDate') <= intval($topic->data['tstamp'])) {
+				$handler = &$this->parent->getUnreadTopicsHandler();
+				$handler->loadTopicList();
+			}
+
+			// Step 2 : Get unread topic list and remove current from them
+			$topicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
+			if (isset($topicList[$topicId])) {
+				unset($topicList[$topicId]);
+			}
+			$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
+		}
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('forum_event_onTopicDisplay', $param, $this);

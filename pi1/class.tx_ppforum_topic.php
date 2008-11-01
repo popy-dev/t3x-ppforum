@@ -124,6 +124,24 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 	}
 
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function isUnread() {
+		if ($this->id && $this->parent->currentUser->id) {
+			$topicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
+			if (isset($topicList[$this->id])) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	/****************************************/
 	/********** Events functions ************/
 	/****************************************/
@@ -251,15 +269,18 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return string 
 	 */
-	function getTitleLink() {
-		$addText='';
-		if ($this->data['pinned']) {
-			$addText.='(pinned) ';
-		}
-		if ($this->data['status']==1) {
-			$addText.='(hidden) ';
-		} elseif ($this->data['status']==2) {
-			$addText.='(closed) ';
+	function getTitleLink($withIcons = false) {
+		if ($withIcons) {	
+			$altclass = $this->isUnread() ? ' unread-topic-icon' : '';
+			$addText = '<img src="clear.gif" class="topic-icon' . $altclass . '" alt="" title="" />';
+			if ($this->data['pinned']) {
+				$addText .= '<img src="clear.gif" class="pinned-topic" alt="pinned" title="pinned" /> ';
+			}
+			if ($this->data['status']==1) {
+				$addText .= '<img src="clear.gif" class="hidden-topic" alt="hidden" title="hidden" /> ';
+			} elseif ($this->data['status']==2) {
+				$addText .= '<img src="clear.gif" class="closed-topic" alt="closed" title="closed" /> ';
+			}
 		}
 		return $addText . $this->getLink(tx_pplib_div::htmlspecialchars($this->mergedData['title']));
 	}
