@@ -154,11 +154,15 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 			$this->getCurrent();
 
+			$content .= '<div class="forum-head-part">';
 			$content .= $this->printRootLine();
 			$content .= $this->printUserBar();
+			$content .= '</div>';
 
 			$editProfile = isset($this->getVars['editProfile']) ? intval($this->getVars['editProfile']) : false;
 			$viewProfile = isset($this->getVars['viewProfile']) ? intval($this->getVars['viewProfile']) : false;
+			$viewLatests = isset($this->getVars['mode']) ? ($this->getVars['mode'] == 'latest') : false;
+			$viewLatests = $viewLatests && $this->currentUser->id;
 
 			if ($editProfile || $viewProfile) {
 				$lConf = Array(
@@ -173,6 +177,15 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 				$content .= $this->callINTPlugin($lConf);
 
+			} elseif ($viewLatests) {
+					$lConf = Array(
+						'cmd'  => 'self',
+						'cmd.' => Array(
+							'method' => '_printUnreadTopics',
+						)
+					);
+
+					$content .= $this->callINTPlugin($lConf);
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj(intval($topic));
 				if ($obj->id) {
@@ -217,7 +230,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				tx_pplib_cachemgm::storeHash(array());
 			}
 
+			$content .= '<div class="forum-bottom-part">';
 			$content .= $this->printRootLine();
+			$content .= '</div>';
 
 			if ($this->config['display']['printStats']) {
 				$content .= $this->printStats();
@@ -281,13 +296,18 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			}
 			//$theObj->parent = &$this;//Force backref to this
 			if (method_exists($theObj,$method = $this->conf['cmd.']['method'])) {
-				$content .= $theObj->$method($this->conf['cmd.']); //Call the specified method
+				$content = $theObj->$method($this->conf['cmd.']); //Call the specified method
 			}
 			break;
 		case 'self':
 			if (method_exists($this,$method = $this->conf['cmd.']['method'])) {
-				$content .= $this->$method($this->conf['cmd.']);
+				$content = $this->$method($this->conf['cmd.']);
 			}
+			break;
+		case 'object':
+			$theObj = &$this->pp_makeInstance($this->conf['cmd.']['classname']);
+			$method = $this->conf['cmd.']['method'];
+			$content = $theObj->$method($this->conf['cmd.']); //Call the specified method
 			break;
 		}
 
@@ -868,7 +888,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$content = '<div class="user-bar">';
 	
 		/* Begin */
-		$content .= '<div class="left part">'.
+		$content .= '<div class="left-part">'.
 			$this->pp_getLL('user.loguedas', 'Logued as', true).
 			$this->currentUser->displayLight();
 
@@ -881,9 +901,29 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$content .= '</div>';
 
+		$content .= '<div class="right-part">' . $this->pp_linkTP_piVars(
+			$this->pp_getLL('user.latestMessages'),
+			array('mode' => 'latest')
+		) . '</div>';
+
 		$content .= '</div>';
 
 		return $content;
+	}
+
+	/**
+	 * Displays unread topic list
+	 *
+	 * @param array $cmd = callback parameters
+	 * @access public
+	 * @return string 
+	 */
+	function _printUnreadTopics($cmd) {
+		/* Declare */
+		$handler = &$this->getUnreadTopicsHandler();
+	
+		/* Begin */
+		return $handler->display();
 	}
 
 	/**
@@ -1160,6 +1200,32 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function getLatestsTopics($since) {
+		/* Declare */
+		$finalRes = Array();
+		$res = $this->db->exec_SELECTgetRows(
+			'uid, crdate',
+			$this->tables['topic'],
+			'crdate > ' . $since . $this->pp_getEnableFields($this->tables['topic']),
+			'',
+			'crdate DESC'
+		);
+	
+		/* Begin */
+		foreach ($res as $val) {
+			$finalRes[intval($val['uid'])] = intval($val['crdate']);
+		}
+
+		return $finalRes;
+	}
+
+	/**
 	 * Return a tx_ppforum_topic object and cache it (a user should be requested
 	 *   many times during the rendering of a topic)
 	 *
@@ -1175,6 +1241,32 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	/****************************************/
 	/************ Messages funcs ************/
 	/****************************************/
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function getLatestsMessages($since) {
+		/* Declare */
+		$finalRes = Array();
+		$res = $this->db->exec_SELECTgetRows(
+			'uid, crdate',
+			$this->tables['message'],
+			'crdate > ' . $since . $this->pp_getEnableFields($this->tables['message']),
+			'',
+			'crdate DESC'
+		);
+	
+		/* Begin */
+		foreach ($res as $val) {
+			$finalRes[intval($val['uid'])] = intval($val['crdate']);
+		}
+
+		return $finalRes;
+	}
 
 	/**
 	 * Return a tx_ppforum_message object and cache it (a user should be requested
@@ -1218,6 +1310,25 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	/****************************************/
 	/*************** Div funcs **************/
 	/****************************************/
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function &getUnreadTopicsHandler() {
+		if ($this->cache->isInCache('tx_ppforum_latests', 'SINGLETON')) {
+			$res = &$this->cache->getFromCache('tx_ppforum_latests', 'SINGLETON');
+		} else {
+			$res = &$this->pp_makeInstance('tx_ppforum_latests');
+			$res->initialize();
+			$this->cache->storeInCache($res, 'tx_ppforum_latests', 'SINGLETON');			
+		}
+
+		return $res;
+	}
 
 	/**
 	 * Get a record object

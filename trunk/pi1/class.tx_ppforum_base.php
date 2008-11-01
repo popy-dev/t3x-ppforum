@@ -90,6 +90,10 @@ class tx_ppforum_base {
 	 * @return void 
 	 */
 	function loadData($data, $delaySubs = false) {
+		if (!$this->tablename && $this->type) {
+			$this->tablename = $this->parent->tables[$this->type];
+		}
+
 		if (is_array($data) && isset($data['uid']) && trim($data['uid'])) {
 			$this->id = intval($data['uid']);
 			$this->data = $data;

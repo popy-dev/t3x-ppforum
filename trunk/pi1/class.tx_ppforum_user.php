@@ -341,13 +341,13 @@ class tx_ppforum_user extends tx_ppforum_base {
 				'author='.intval($this->id)
 			))));
 
-		$rows[] = $this->parent->pp_getLL('user.nbmessages').$nbMessages;
-
-		$rows[] = $this->parent->pp_getLL('user.mainUserGroup','Group: ').$this->getMainUserGroupLabel();
-
 		if ($image = $this->print_avatarImg()) {
 			$rows[] = $image;
 		}
+
+		$rows[] = $this->parent->pp_getLL('user.mainUserGroup','Group: ').$this->getMainUserGroupLabel();
+
+		$rows[] = $this->parent->pp_getLL('user.nbmessages').$nbMessages;
 
 		$this->parent->pp_playHookObjList('user_printSmallProfile', $rows, $this);
 
