@@ -920,6 +920,22 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$content.='</div>';
 		}
 
+		if ($this->id && intval($this->id) && $this->parent->currentUser->id) {
+			
+			// Step 1 : recalculate read / unread messages if needed
+			if ($this->parent->currentUser->getUserPreference('latestVisitDate') <= intval($this->data['tstamp'])) {
+				$handler = &$this->parent->getUnreadTopicsHandler();
+				$handler->loadTopicList();
+			}
+
+			// Step 2 : Get unread topic list and remove current from them
+			$topicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
+			if (isset($topicList[$this->id])) {
+				unset($topicList[$this->id]);
+			}
+			$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
+		}
+
 		return $content;
 	}
 

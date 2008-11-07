@@ -1058,24 +1058,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			'topicId' => $topicId,
 		);
 
-		if ($topicId && intval($topicId) && $this->parent->currentUser->id) {
-			// Topic has been read :
-			$topic = &$this->parent->getTopicObj($topicId);
-
-			// Step 1 : recalculate read / unread messages if needed
-			if ($this->parent->currentUser->getUserPreference('latestVisitDate') <= intval($topic->data['tstamp'])) {
-				$handler = &$this->parent->getUnreadTopicsHandler();
-				$handler->loadTopicList();
-			}
-
-			// Step 2 : Get unread topic list and remove current from them
-			$topicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
-			if (isset($topicList[$topicId])) {
-				unset($topicList[$topicId]);
-			}
-			$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
-		}
-
 		//Playing hook list
 		$this->parent->pp_playHookObjList('forum_event_onTopicDisplay', $param, $this);
 	}

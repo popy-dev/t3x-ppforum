@@ -124,6 +124,25 @@ plugin.tx_ppforum_pi1 {
       40.file = EXT:pp_forum/css_templates/green/messages.css
     }
 
+    //Default template :
+    archetype =COA
+    archetype {
+      10 = FILE
+      10.file = EXT:pp_forum/css_templates/archetype/global.css
+
+      20 = FILE
+      20.file = EXT:pp_forum/css_templates/archetype/forums.css
+
+      30 = FILE
+      30.file = EXT:pp_forum/css_templates/archetype/topics.css
+
+      40 = FILE
+      40.file = EXT:pp_forum/css_templates/archetype/messages.css
+
+      50 = FILE
+      50.file = EXT:pp_forum/css_templates/archetype/users.css
+    }
+
   }
 
 

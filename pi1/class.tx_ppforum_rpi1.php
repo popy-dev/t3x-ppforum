@@ -397,7 +397,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				if ($obj->topic->forum->id<0) {
 					continue;
 				}
-				$obj->loadAuthor();
+
 				$result['title'] = $obj->topic->data['title'].' ('.htmlspecialchars(strip_tags($obj->author->displayLight())).')';
 			} else {
 				$obj = &$this->getTopicObj($uid);
@@ -460,6 +460,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			}
 
 			$this->currentUser = &$this->getUserObj($this->getCurrentUser());
+
+			if ($this->currentUser->id && !$this->currentUser->getUserPreference('latestVisitDate')) {
+				$this->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
+			}
 			$this->autoDisableCache();
 			$this->smileys = &$this->pp_makeInstance('tx_ppforum_smileys');
 			$this->_displayPage = $GLOBALS['TSFE']->id;
@@ -894,18 +898,15 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		if ($this->currentUser->id) {
 			$content .= ' ('.
-				$this->currentUser->displayLogout().' / '.
-				$this->currentUser->displayEditLink().' / '.
-				$this->currentUser->displayInboxLink().')';
+				$this->currentUser->displayLogout() . ' / ' .
+				$this->currentUser->displayEditLink() . ' / ' .
+				$this->currentUser->displayInboxLink() . ' / ' .
+				$this->currentUser->displayUnreadMessagesLink() . 
+			')';
 		}
 
 		$content .= '</div>';
-
-		$content .= '<div class="right-part">' . $this->pp_linkTP_piVars(
-			$this->pp_getLL('user.latestMessages'),
-			array('mode' => 'latest')
-		) . '</div>';
-
+	
 		$content .= '</div>';
 
 		return $content;
