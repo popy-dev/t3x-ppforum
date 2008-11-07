@@ -437,6 +437,24 @@ class tx_ppforum_user extends tx_ppforum_base {
 	}
 
 	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function displayUnreadMessagesLink() {
+		if ($this->id) {
+			return $this->parent->pp_linkTP_piVars(
+				$this->parent->pp_getLL('user.latestMessages'),
+				array('mode' => 'latest')
+			);
+		} else {
+			return '';
+		}
+	}
+
+	/**
 	 * 
 	 * 
 	 * @param 

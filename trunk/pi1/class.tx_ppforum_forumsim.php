@@ -84,6 +84,16 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
+	function readAccess() {
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
 	function displayTopicListHead() {
 		/* Declare */
 		$data=array(
@@ -124,7 +134,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			return '';
 		}
 		$data['counters']=$data['topic']->getCounters($topic->id);
-		$data['topic']->loadAuthor();
 		$data['topic']->loadMessages();
 
 		$data['conf']['topic-with']='';
@@ -142,7 +151,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		$data['conf']['topic-lastmessage']='';
 		if ($messageId=$topic->getLastMessage()) {
 			$data['lastMessage']=&$this->parent->getMessageObj($messageId);
-			$data['lastMessage']->loadAuthor();
 		}
 		if ($data['lastMessage']->id) {
 			$data['conf']['topic-lastmessage']=$this->parent->pp_getLL('message.postedby','By ',TRUE).
@@ -209,12 +217,24 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return void 
 	 */
 	function topicIsVisible($topicId,$userId=0) {
+		$topic = &$this->parent->getTopicObj($topicId);
 		if ($userId) {
-			$user=$this->parent->getUserObj($userId);
-			return $user->pmIsVisible($topicId,'topic');
+			$user = &$this->parent->getUserObj($userId);
 		} else {
-			return $this->parent->currentUser->pmIsVisible($topicId,'topic');
+			$user = &$this->parent->currentUser;
 		}
+
+		$res = false;
+
+		if ($user->id == $topic->author->id) {
+			$res = true;
+		} elseif ($user->id == $this->userId) {
+			$res = true;
+		}
+
+		$res = $res && $user->pmIsVisible($topic->id, 'topic');
+		
+		return $res;
 	}
 
 	/**
@@ -250,7 +270,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function event_onNewTopic($topicId) {
 		if ($this->parent->currentUser->id==$this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
-			$topic->loadAuthor();
 			
 			$topic->author->registerNewPm($topicId,'topic');
 		} else {
@@ -270,7 +289,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function event_onNewPostInTopic($topicId,$messageId=0) {
 		if ($this->parent->currentUser->id == $this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
-			$topic->loadAuthor();
 
 			$topic->author->unDeletePm($topicId,'topic');
 			$topic->author->registerNewPm($messageId,'message',$topicId);
@@ -319,7 +337,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function deleteMessage($messageId) {
 		$message=&$this->parent->getMessageObj($messageId);
 		if ($this->parent->currentUser->id == $this->userId) {
-			$message->loadAuthor();
 
 			//** Real delete if other user has already deleted this message
 			if (!$message->author->pmIsVisible($messageId,'message') || !$message->topic->isVisible()) {
@@ -351,7 +368,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function deleteTopic($topicId) {
 		$topic=&$this->parent->getTopicObj($topicId);
 		if ($this->parent->currentUser->id == $this->userId) {
-			$topic->loadAuthor();
 
 			//** Real delete if other user has already deleted this message
 			if (!$topic->author->pmIsVisible($topicId,'topic')) {

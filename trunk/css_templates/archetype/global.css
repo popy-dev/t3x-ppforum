@@ -1,0 +1,242 @@
+/********************************************
+ * Css template for the pp_forum extension
+ * @see http://typo3.org
+ *
+ * @author: macmade
+ * @co-author: popy
+ *
+ * Global part
+ */
+
+
+
+/*** BEGIN Base */
+	.tx-ppforum-pi1 {
+		width: 100%;
+	}
+
+	/* Rootline */
+	.tx-ppforum-pi1 .rootline {
+		padding: 5px;
+	}
+
+	.tx-ppforum-pi1 img {
+		border: none;
+		vertical-align: top;
+	}
+/*** END Base */
+
+/*** BEGIN general styles */
+
+	.tx-ppforum-pi1 form {
+		margin: 0px;
+	}
+
+	.tx-ppforum-pi1 a {
+		color: rgb(202, 141, 61);
+		text-decoration: none;
+	}
+	.tx-ppforum-pi1 a:hover {
+		text-decoration: underline;
+	}
+
+/*
+	.tx-ppforum-pi1 .forum-title {
+		font-size: 2em;
+		margin: 0.5em 0px;
+		font-weight: bold;
+	}
+*/
+	.tx-ppforum-pi1 table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+/* END general style */
+
+
+/* BEGIN Rows layout */
+	.tx-ppforum-pi1 div.row, .tx-ppforum-pi1 div.row-alt {
+		overflow: hidden;
+		height: 100%;
+	}
+
+	.tx-ppforum-pi1 .left-col {
+		float: left;
+		width: 200px;
+	}
+
+	.tx-ppforum-pi1 .right-col, .tx-ppforum-pi1 .left-col {
+		overflow: hidden;
+		padding: 5px 5px 5px 5px;
+	}
+
+	/* For IE6, the overflow:hidden; will not prevent the right col to go under the left col :( */
+	* html .tx-ppforum-pi1 .right-col {
+		margin-left: 200px;
+	}
+
+	/* Fixing left col height */
+	
+	.tx-ppforum-pi1 .left-col {
+		padding-bottom: 32767px;
+		margin-bottom: -32762px;
+	}
+
+	
+	
+/* END Rows layout */
+
+/*** BEGIN Buttons */
+	.tx-ppforum-pi1 .button {
+		float: left;
+		width: auto;
+	}
+
+	.tx-ppforum-pi1 .button {
+		display: block;
+		color: inherit;
+
+		padding: 2px 4px 3px 3px;
+		margin: 2px;
+		background: #555;
+		border: 2px outset buttonface;
+		border-color: #444 #333 #333 #444;
+		cursor: pointer;
+	}
+
+	/* IE doesn't support inherit ... */
+	* html .tx-ppforum-pi1 .button, * + html .tx-ppforum-pi1 .button {
+		color: #eee;
+	}
+
+	/* Remove hover link underline */
+	.tx-ppforum-pi1 .button:hover {
+		text-decoration: none;
+	}
+
+	* html .tx-ppforum-pi1 .button {
+		border-style: solid;
+		border-color: #444 #333 #333 #444;
+	}
+
+	.tx-ppforum-pi1 .button:hover:active {
+		padding: 3px 3px 2px 4px;
+		border: 2px inset buttonface;
+	}
+/*** END Buttons */
+
+
+.tx-ppforum-pi1 textarea {
+	color: inherit;
+	border: 1px #ccc solid;
+	background: #ddd;
+	color: #444;
+
+	width: 500px;
+	height: 150px;
+}
+
+.tx-ppforum-pi1 textarea:focus {
+	background: #eee;
+	color: #333;
+	border-color: #ddd;
+}
+
+.tx-ppforum-pi1 .belink-resizable-corner {
+	background-image: url(EXT:pp_forum/res/resizable-corner.png);
+}
+
+.tx-ppforum-pi1 .pinned-topic {
+	background-image: url(EXT:pp_forum/css_templates/archetype/sticky.gif);
+	width: 22px;
+	height: 15px;
+}
+
+.tx-ppforum-pi1 .closed-topic {
+	background-image: url(EXT:pp_forum/css_templates/archetype/lock-icon.gif);
+	width: 15px;
+	height: 15px;
+}
+
+.tx-ppforum-pi1 .hidden-topic {
+	background: yellow;
+	width: 15px;
+	height: 15px;
+}
+
+
+.tx-ppforum-pi1 .topic-icon {
+	background-image: url(EXT:pp_forum/css_templates/archetype/square.gif);
+	width: 15px;
+	height: 15px;
+}
+
+.tx-ppforum-pi1 img.unread-topic-icon {
+	background-image: url(EXT:pp_forum/css_templates/archetype/square-update.gif);
+}
+
+/*** BEGIN Tools part */
+	.tx-ppforum-pi1 .toolbar {
+		background-color: #444;
+		padding: 2px;
+		overflow: hidden;
+	}
+	* html .tx-ppforum-pi1 .toolbar {
+		height: 100%;
+	}
+/*** END Tools part */
+
+/*** BEGIN Hidden tools part */
+
+.tx-ppforum-pi1 .hiddentools .single-tool {
+	margin-top: 10px;
+}
+
+.tx-ppforum-pi1 .hiddentools .single-tool .tool-title {
+	background: #333;
+	font-weight: bold;
+	padding: 5px;
+}
+
+/*** END Hidden tools part */
+
+/*** BEGIN Stats part */
+.tx-ppforum-pi1 .stats {
+	margin-top: 10px;
+	padding: 5px;
+	background: #666;
+}
+/*** END Stats part */
+
+.tx-ppforum-pi1 .forum-head-part, .tx-ppforum-pi1 .forum-bottom-part {
+	overflow: hidden;
+}
+
+.tx-ppforum-pi1 .rootline {
+	float: left;
+}
+/* User bar */
+.tx-ppforum-pi1 .user-bar {
+	float: right;
+}
+
+.tx-ppforum-pi1 .user-bar div {
+	padding: 5px;
+	float: right;
+}
+
+/* Author style */
+.tx-ppforum-pi1 .author {
+	font-weight: bold;
+	color: rgb(255, 135, 0);
+	text-decoration: underline;
+}
+
+/* browsers */
+.tx-ppforum-pi1 .browser {
+	padding: 5px;
+}
+
+.tx-ppforum-pi1 .error {
+	color: red;
+}

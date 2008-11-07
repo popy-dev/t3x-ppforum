@@ -130,7 +130,7 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 			foreach ($topicList as $topicId => $crdate) {
 				$topic = &$this->parent->getTopicObj($topicId);
 
-				if ($topic->isVisible()) {
+				if ($topic->isVisibleRecursive()) {
 					$this->topicList[$topicId] = &$topic;
 				}
 			}
