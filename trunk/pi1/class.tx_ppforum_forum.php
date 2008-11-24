@@ -277,7 +277,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title='', $addParams=Array(), $parameter = null) {
+	function getLink($title = false, $addParams=Array(), $parameter = null) {
 		if (!isset($addParams['forum']) && $this->id) {
 			$addParams['forum'] = $this->id;
 		}
@@ -309,7 +309,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return string 
 	 */
-	function getTopicLink($title='', $addParams=array(), $parameter = null) {
+	function getTopicLink($title = false, $addParams=array(), $parameter = null) {
 		if (!isset($addParams['forum'])) {
 			if ($this->options['keepCurrentForumId']) {
 				$addParams['forum']=$this->parent->getCurrentForum();

@@ -410,28 +410,68 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		if (trim($curParser)) {
 			$text = $this->parent->parsers[$curParser]->parse($text);
-			//t3lib_div::debug($text, 'text');
 		} else {
 			// Escape html
 			$text = tx_pplib_div::htmlspecialchars($text);
 
 			// Clean CR/LF
-			$text = str_replace(
-				array("\r\n", "\r"),
-				array("\n"  , "\n"),
-				$text
-			);
+			$text = tx_pplib_div::normalizeLineBreaks($text);
 
 			// Paragraphs splitting
-			$text = preg_replace("/\n[[:space:]]\n[\n[:space:]]+/",'</p><p>',$text);
-			$text = '<p>'.nl2br($text).'</p>';
+			$text = preg_replace('/\n[[:space:]]*\n[\n[:space:]]+/','</p><p>',$text);
+			$text = '<p>' . nl2br($text) . '</p>';
 		}
+
+		$text = preg_replace_callback('/<a\s[^>]+>/i', array(&$this, 'processMessage_linkCallback'), $text);
+
+		$this->parent->pp_playHookObjList('processMessage', $text, $this);
+
 
 		if (!$this->mergedData['nosmileys']) {
 			$text = $this->parent->smileys->processMessage($text);
 		}
 
 		return $text;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function processMessage_linkCallback($matches) {
+		/* Declare */
+		$attributes = t3lib_div::get_tag_attributes($matches[0]);
+		$res = null;
+	
+		/* Begin */
+		$this->parent->pp_playHookObjList('processMessage_linkCallback', $attributes, $this);
+
+		if (isset($attributes['href'])) {
+			$linkParts = explode(':', $attributes['href']);
+
+			switch ($linkParts[0]) {
+			case 'forum':
+				$res = &$this->parent->getForumObj(intval($linkParts[1]));
+				$attributes['href'] = $res->getLink();
+				break;
+			case 'topic':
+				$res = &$this->parent->getTopicObj(intval($linkParts[1]));
+				$attributes['href'] = $res->getLink();
+				break;
+			case 'message':
+				$res = &$this->parent->getMessageObj(intval($linkParts[1]));
+				$attributes['href'] = $res->getLink();
+				break;
+			}
+
+			$matches[0] = tx_pplib_div::buildXHTMLTag('a', $attributes);
+
+		}
+
+		return $matches[0];
 	}
 
 	/**
