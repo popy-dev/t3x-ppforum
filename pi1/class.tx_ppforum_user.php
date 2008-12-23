@@ -739,6 +739,10 @@ class tx_ppforum_user extends tx_ppforum_base {
 				$infoContent[] = $this->parent->pp_linkTP($this->parent->pp_getLL('profile.user-info.email','Email'), array(), true, $this->data['email']);
 			}
 
+			if ($this->data['is_online']) {
+				$infoContent[] = $this->parent->pp_getLL('profile.user-info.is_online','Last login : ') . $this->parent->renderDate($this->data['is_online']);
+			}
+
 			$image = $this->print_avatarImg();
 			if ($image) {
 				$conf['data']['informations'] = Array(
