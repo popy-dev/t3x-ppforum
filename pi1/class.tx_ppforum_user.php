@@ -740,7 +740,7 @@ class tx_ppforum_user extends tx_ppforum_base {
 			}
 
 			if ($this->data['is_online']) {
-				$infoContent[] = $this->parent->pp_getLL('profile.user-info.is_online','Last login : ') . $this->parent->renderDate($this->data['is_online']);
+				$infoContent[] = $this->parent->pp_getLL('profile.user-info.last-login', 'Last login : ') . $this->parent->renderDate($this->data['is_online']);
 			}
 
 			$image = $this->print_avatarImg();
