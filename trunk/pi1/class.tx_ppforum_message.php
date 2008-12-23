@@ -1170,6 +1170,25 @@ class tx_ppforum_message extends tx_ppforum_base {
 		return $res;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function isMessage() {
+		return true;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function isTopic() {
+		return false;
+	}
 
 	/**
 	 * Return TRUE if user has basic write access on this topic : he is the author, or he is a guard
