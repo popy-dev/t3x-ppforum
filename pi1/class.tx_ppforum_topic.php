@@ -191,6 +191,27 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		return false;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function isMessage() {
+		return false;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function isTopic() {
+		return true;
+	}
+
+
 	/****************************************/
 	/********** Events functions ************/
 	/****************************************/
