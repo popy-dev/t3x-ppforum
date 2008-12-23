@@ -112,7 +112,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 			foreach ($idList as $topicId) {
 				$topic = &$this->parent->getTopicObj($topicId);
-				if ($topic->isVisible()) {
+				if ($topic->isVisible() && $this->topicIsVisible($topic->id)) {
 					$this->topicList[$topicId] = &$topic;
 				}
 			}
