@@ -587,6 +587,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 							if (!$topic->isVisibleRecursive()) {
 								$topicId = 0;
+							} else {
+								$forumId = $topic->forum->id;
 							}
 						}
 					} else {

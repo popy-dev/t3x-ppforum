@@ -185,24 +185,49 @@ class tx_ppforum_message extends tx_ppforum_base {
 		/* Declare */
 		$null = null;
 		$result = false;
-		$tstampField = isset($GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp']) ? $GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp'] : false;
-		$crdateField = isset($GLOBALS['TCA'][$this->tablename]['ctrl']['crdate']) ? $GLOBALS['TCA'][$this->tablename]['ctrl']['crdate'] : false;
 
 		/* Begin */
 		// Plays hook list : Allow to change some field before saving
 		$this->parent->pp_playHookObjList('message_save', $null, $this);
-		
+
+		$this->mergedData['author'] = $this->author->id;
+		$this->mergedData['topic'] = $this->topic->id;
+
+		$result = $this->basic_save();
+
+		if ($forceReload) {
+			$this->forceReload['topic'] = true;
+
+			if ($this->isNew) {
+				// Reloading list (may have change because of the new row)
+				$this->forceReload['list'] = true;
+			}
+		}
+
+		//Launch topic event handler
+		$this->event_onUpdateInMessage();
+
+		return $result;
+	}
+
+	/**
+	 * Saves the message to the DB
+	 *
+	 * @access public
+	 * @return int/boolean = the record uid or false when an error occurs 
+	 */
+	function basic_save() {
+		/* Declare */
+		$result = false;
+		$CTRL = isset($GLOBALS['TCA'][$this->tablename]['ctrl']) ? $GLOBALS['TCA'][$this->tablename]['ctrl'] : array();
+		$tstampField = isset($CTRL['tstamp']) ? $CTRL['tstamp'] : false;
+		$crdateField = isset($CTRL['crdate']) ? $CTRL['crdate'] : false;
+
+		/* Begin */
 		// Updating tstamp field
 		if ($tstampField) {
 			// Updating tstamp field
 			$this->mergedData[$tstampField] = $GLOBALS['SIM_EXEC_TIME'];
-		}
-		$this->mergedData['author'] = $this->author->id;
-
-		if ($this->type == 'message') {
-			$this->mergedData['topic'] = $this->topic->id;
-		} else {
-			$this->mergedData['forum'] = $this->forum->id;
 		}
 
 		if ($this->id) {
@@ -226,30 +251,19 @@ class tx_ppforum_message extends tx_ppforum_base {
 			$this->mergedData['pid'] = $this->parent->config['savepage'];
 
 			// Insert db row
-			$result = $GLOBALS['TYPO3_DB']->exec_INSERTquery($this->tablename,$this->mergedData);
+			$result = $GLOBALS['TYPO3_DB']->exec_INSERTquery(
+				$this->tablename,
+				$this->mergedData
+			);
 			$this->parent->log('INSERT');
 
 			// Initialize id. Maybe we should load the full row, but no need for now
 			$this->id = $this->mergedData['uid'] = $GLOBALS['TYPO3_DB']->sql_insert_id();
 			$this->isNew = true;
-
-			// Reloading list (may have change because of the new row)
-			if ($forceReload) $this->forceReload['list'] = true;
 		}
 
 		// As we have save mergedData, the item data now equals mergedData
 		$this->data = $this->mergedData;
-
-		//Launch the event func
-		if ($this->type == 'message') {
-			//Launch topic event handler
-			if ($forceReload) $this->forceReload['topic'] = true;
-			$this->event_onUpdateInMessage();
-		} else {
-			//Launch forum event handler
-			if ($forceReload) $this->forceReload['forum'] = true;
-			$this->event_onUpdateInTopic($this->isNew, false);
-		}
 
 		return $result ? $this->id : false;
 	}
@@ -876,6 +890,39 @@ class tx_ppforum_message extends tx_ppforum_base {
 			'right' => array()
 		);
 		
+		// Topic move
+		if (($this->type == 'topic') && ($mode == 'edit') && $this->forum->userIsGuard()) {
+			$data['right']['move-topic'] = $this->parent->pp_getLL('topic.fields.move-topic', 'Move topic :') . chr(10);
+
+			// Build forum flat tree
+			$forumTree = array();
+			$this->display_optionsRow_addForumItems(
+				$forumTree,
+				$this->parent->getForumObj(0)
+			);
+			unset($forumTree[0]);
+
+			// Generate select field
+			$data['right']['move-topic'] .= '<select name="' . $baseName . '[move-topic]">' . chr(10);
+			$data['right']['move-topic'] .= chr(9) . '<option value=""></option>' . chr(10);
+
+			foreach ($forumTree as $k => $v) {
+				if ($v['forum']->userIsGuard()) {
+					$temp_selected = ($v['id'] == $this->forum->id) ? ' selected="selected"' : '';
+					$temp_indent = str_repeat('-', $v['level']) . ' ';
+					$data['right']['move-topic'] .= chr(9) .
+						'<option value="' . $v['id'] . '">' .
+						$temp_indent . tx_pplib_div::htmlspecialchars($v['forum']->data['title']) .
+						'</option>' . chr(10);
+				}
+			}
+
+			unset($temp_selected);
+			unset($temp_indent);
+
+			$data['right']['move-topic'] .= '</select>' . chr(10);
+		}
+
 		if (isset($this->mergedData['nosmileys'])) {
 			$checked = $this->mergedData['nosmileys'] ? ' checked="checked"' : '';
 		} else {
@@ -927,6 +974,30 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		return $this->display_stdPart($data);
+	}
+
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function display_optionsRow_addForumItems(&$items, &$forum, $level = -1) {
+		$items[] = array(
+			'id' => $forum->id,
+			'forum' => &$forum,
+			'level' => $level,
+		);
+
+		foreach ($this->parent->getForumChilds($forum->id) as $child) {
+			$theChild = &$this->parent->getForumObj($child);
+
+			$this->display_optionsRow_addForumItems($items, $theChild , $level + 1);
+
+			unset($theChild);
+		}
 	}
 
 	/**

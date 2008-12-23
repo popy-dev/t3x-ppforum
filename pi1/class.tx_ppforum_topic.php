@@ -66,12 +66,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @var array
 	 */
 	var $allowedFields=Array(
-		'title'     => '',
-		'message'   => '',
-		'nosmileys' => '',
-		'parser'    => '',
-		'pinned'    => 'guard',
-		'status'    => 'guard',
+		'title'      => '',
+		'message'    => '',
+		'nosmileys'  => '',
+		'parser'     => '',
+		'pinned'     => 'guard',
+		'status'     => 'guard',
+		'move-topic' => 'guard',
 	);
 
 	/**
@@ -87,6 +88,54 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		return $res;
+	}
+
+
+	/**
+	 * Saves the message to the DB (and call event function)
+	 *
+	 * @access public
+	 * @return int/boolean = the message uid or false when an error occurs 
+	 */
+	function save($forceReload = true) {
+		/* Declare */
+		$null = null;
+		$result = false;
+		$tstampField = isset($GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp']) ? $GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp'] : false;
+
+		/* Begin */
+		// Special case for topics : only status is changed, don't refresh it
+		if ($tstampField && $this->id) {
+			$diffData = array_diff_assoc(
+				$this->mergedData,
+				$this->data
+			);
+
+			if (count($diffData) == 1 && isset($diffData['status'])) {
+				$this->data[$tstampField] = $GLOBALS['SIM_EXEC_TIME'];
+			}
+		}
+
+		$this->mergedData['author'] = $this->author->id;
+		$this->mergedData['forum'] = $this->forum->id;
+
+		// Plays hook list : Allow to change some field before saving
+		$this->parent->pp_playHookObjList('topic_save', $null, $this);
+
+		$result = $this->basic_save();
+
+		if ($forceReload) {
+			$this->forceReload['forum'] = true;
+
+			if ($this->isNew) {
+				// Reloading list (may have change because of the new row)
+				$this->forceReload['list'] = true;
+			}
+		}
+		//Launch forum event handler
+		$this->event_onUpdateInTopic($this->isNew, false);
+
+		return $result;
 	}
 
 	/**
@@ -559,8 +608,30 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$this->checkData($data['errors']);
 			}
 
-			if ($data['mode'] == 'new') {
-				$this->mergedData['crdate'] = $GLOBALS['SIM_EXEC_TIME'];
+			if ($data['mode'] == 'edit' && isset($this->mergedData['move-topic']) && intval($this->mergedData['move-topic'])) {
+				$destinationForum = &$this->parent->getForumObj(intval($this->mergedData['move-topic']));
+
+				if (
+					$destinationForum->id &&
+					$destinationForum->id != $this->forum->id &&
+					$destinationForum->userIsGuard() &&
+					$destinationForum->userCanPostInForum()
+					) {
+					// Clearing caches of old forum
+					$this->forum->loadTopicList(true);
+					$this->forum->event_onUpdateInForum();
+
+					unset($this->forum);
+					$this->forum = &$destinationForum;
+
+					// Clearing caches of the new forum
+					$this->forum->loadTopicList(true);
+					$this->forum->event_onNewTopic($this->id);
+				}
+			}
+
+			if (isset($this->mergedData['move-topic'])) {
+				unset($this->mergedData['move-topic']);
 			}
 
 			//Playing hook list : Allows to fill other fields
