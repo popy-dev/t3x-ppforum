@@ -21,10 +21,10 @@
 *
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
-
 require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
 require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
 
+tx_pplib_div::dynClassLoad('tx_pplib_feuser');
 
 /**
  * Class 'tx_ppforum_user' for the 'pp_forum' extension.
@@ -33,15 +33,37 @@ require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php
  * @package TYPO3
  * @subpackage tx_ppforum
  */
-class tx_ppforum_user extends tx_ppforum_base {
-	var $ucSave = FALSE;
+class tx_ppforum_user extends tx_pplib_feuser {
 
 	/**
-	 * Store user data as it was at load time
+	 * Pointer to caller object (the plugin object)
 	 * @access public
-	 * @var array
+	 * @var &object
 	 */
-	var $oldData = array();
+	var $parent = null;
+
+	/**
+	 * Record type
+	 * @access public
+	 * @var string
+	 */
+	var $type = '';
+
+	/**
+	 * Loads the record's data from DB
+	 *
+	 * @param int $id = Record's uid
+	 * @param boolean $clearCache = if TRUE, cached data will be overrided
+	 * @param boolean $delaySubs = if TRUE, sub object loading should be delayed.
+	 *           This option is used by the list loader (loadRecordObjectList) to load all sub objects at same time
+	 * @access public
+	 * @return int = loaded uid
+	 */
+	function load($id, $clearCache = false, $delaySubs = false) {
+		$this->tablename = $this->parent->tables[$this->type];
+
+		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename), $delaySubs);
+	}
 
 	/**
 	 * 
@@ -51,15 +73,11 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function loadData($data, $delaySubs = false) {
-		if (parent::loadData($data, $delaySubs)) {
-			$this->uc = unserialize($this->data['uc']);
-			if (!is_array($this->uc)) {
-				$this->uc = Array();
-			}
-
-			$this->oldData = $this->data;
+		if (!$this->tablename && $this->type) {
+			$this->tablename = $this->parent->tables[$this->type];
 		}
-		return $this->id;
+
+		return parent::loadData($data);
 	}
 
 	/**
@@ -69,42 +87,15 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @return int/boolean = the message uid or false when an error occurs 
 	 */
 	function save() {
-		/* Declare */
-		$null=NULL;
-		$result=FALSE;
-
-		/* Begin */
 		//Plays hook list : Allow to change some field before saving
 		$this->parent->pp_playHookObjList('user_save', $null, $this);
 
-		//Updating tstamp field
-		$this->data['tstamp']=$GLOBALS['SIM_EXEC_TIME'];
-
-
 		if ($this->id) {
-			//*** Optimistic update :
-			//*** Updating uc
-			if ($this->ucSave) {
-				$this->data['uc']=serialize($this->uc);
-			}
-			$this->ucSave=FALSE;
-
-			//Updating db row
-			$result=$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
-				'fe_users',
-				'uid='.$this->id,
-				array_diff_assoc(
-					$this->data,
-					$this->oldData
-					)
-				);
-
 			$this->parent->log('UPDATE');
+			return parent::save();
 		} else {
-			//Nothing
+			return false;
 		}
-
-		return $result?$this->id:FALSE;
 	}
 
 	/**
@@ -125,7 +116,6 @@ class tx_ppforum_user extends tx_ppforum_base {
 		} else {
 			return $GLOBALS['T3_VAR']['CACHE']['pp_forum']['fegroups'][$groupUid]['title'];
 		}
-
 	}
 
 	/**
@@ -136,22 +126,8 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function getUserPreference($prefkey) {
-		list($firstKey,$path)=explode('|',$prefkey,2);
-		if (isset($this->uc['pp_forum'][$firstKey])) {
-			$val = $this->uc['pp_forum'][$firstKey];
-
-			//Get the value form the array. Path is used as a list of keys separated by the | char
-			if (trim($path)) {
-				foreach (explode('|', $path) as $key) {
-					if (is_array($val) && isset($val[$key])) {
-						$val = $val[$key];
-					} else {
-						$val = null;
-						break;
-					}
-				}
-			}
-			return $val;
+		if (isset($this->_uc['pp_forum'][$prefkey])) {
+			return $this->_uc['pp_forum'][$prefkey];
 		} else {
 			return null;
 		}
@@ -164,64 +140,84 @@ class tx_ppforum_user extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function setUserPreference($prefkey,$data) {
-		if ($this->id) {
-			$this->uc['pp_forum'][$prefkey]=$data;
-			if (!$this->ucSave) {
-				$this->parent->registerCloseFunction('save',$this);
-				$this->ucSave = true;
-			}
+	function setUserPreference($prefkey, $data) {
+		$this->_uc['pp_forum'][$prefkey] = $data;
+
+		if (!$this->_saveUc) {
+			$this->parent->registerCloseFunction(array(&$this, 'save'));
+			$this->_saveUc = true;
 		}
 	}
 
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param int $id = PM id
+	 * @param string $table = PM table
 	 * @access public
 	 * @return void 
 	 */
-	function registerNewPm($id,$table,$parent=0) {
-		$GLOBALS['TYPO3_DB']->exec_INSERTquery('tx_ppforum_userpms',array('rel_id'=>$id,'rel_table'=>$table,'rel_type'=>'new','user_id'=>$this->id,'parent'=>$parent));
+	function registerNewPm($id, $table, $parent = 0) {
+		$GLOBALS['TYPO3_DB']->exec_INSERTquery(
+			'tx_ppforum_userpms',
+			array(
+				'rel_id' => $id,
+				'rel_table' => $table,
+				'rel_type' => 'new',
+				'user_id' => $this->id,
+				'parent' => $parent
+			)
+		);
 	}
 
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param int $id = PM id
+	 * @param string $table = PM table
 	 * @access public
 	 * @return void 
 	 */
-	function viewPm($id,$table) {
+	function viewPm($id, $table) {
 		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
 			'tx_ppforum_userpms',
-			'rel_id='.strval(intval($id)).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms').' AND rel_type=\'new\' AND user_id='.strval($this->id)
-			);
+			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms') . ' AND rel_type=\'new\' AND user_id=' . strval($this->id)
+		);
 	}
 
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param int $id = PM id
+	 * @param string $table = PM table
 	 * @access public
 	 * @return void 
 	 */
-	function clearPmData($id,$table) {
+	function clearPmData($id, $table) {
 		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
 			'tx_ppforum_userpms',
-			'rel_id='.strval(intval($id)).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms')
-			);
+			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms')
+		);
 	}
 
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param int $id = PM id
+	 * @param string $table = PM table
 	 * @access public
 	 * @return void 
 	 */
-	function deletePm($id,$table) {
-		$GLOBALS['TYPO3_DB']->exec_INSERTquery('tx_ppforum_userpms',array('rel_id'=>$id,'rel_table'=>$table,'rel_type'=>'delete','user_id'=>$this->id));
+	function deletePm($id, $table) {
+		$GLOBALS['TYPO3_DB']->exec_INSERTquery(
+			'tx_ppforum_userpms',
+			array(
+				'rel_id' => $id,
+				'rel_table' => $table,
+				'rel_type' => 'delete',
+				'user_id' => $this->id
+			)
+		);
 	}
 
 	/**
@@ -234,22 +230,24 @@ class tx_ppforum_user extends tx_ppforum_base {
 	function unDeletePm($id,$table) {
 		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
 			'tx_ppforum_userpms',
-			'rel_id='.strval($id).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id='.strval($this->id)
-			);
+			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms') . ' AND rel_type=\'delete\' AND user_id=' . strval($this->id)
+		);
 	}
+
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param int $id = PM id
+	 * @param string $table = PM table
 	 * @access public
-	 * @return void 
+	 * @return bool 
 	 */
-	function pmIsVisible($id,$table) {
+	function pmIsVisible($id, $table) {
 		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'rel_id',
 			'tx_ppforum_userpms',
-			'rel_id='.strval($id).' AND rel_table='.$GLOBALS['TYPO3_DB']->fullQuoteStr($table,'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id='.strval($this->id)
-			);
+			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id=' . strval($this->id)
+		);
 
 		return !(is_array($tabRes) && count($tabRes));
 	}

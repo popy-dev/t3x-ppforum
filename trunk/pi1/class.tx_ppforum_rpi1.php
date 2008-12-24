@@ -1697,8 +1697,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function registerCloseFunction($method,&$obj) {
-		$this->callbackList[]=Array(&$obj,$method);
+	function registerCloseFunction($callback) {
+		$this->callbackList[] = $callback;
 	}
 
 	/****************************************/

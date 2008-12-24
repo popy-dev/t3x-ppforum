@@ -161,25 +161,45 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function initAccesses() {
+		if (empty($this->access)) {
+			$this->parent->currentUser->loadUserGroups();
+			$this->access = $this->readAccess($this->parent->currentUser);
+		}
+	}
+
+	/**
 	 * Determine current user's role
 	 *
 	 * @access public
 	 * @return void 
 	 */
-	function readAccess() {
-		if (empty($this->access)) {
-			// Load parent access to be able to inherit from him
-			if ($this->id) {
-				$this->forum->readAccess();
-			}
+	function readAccess(&$user) {
+		$result = array();
+		$parentAccess = array();
 
-			$this->access['admin'] = $this->readSingleAccess('admin', false);
-			$this->access['guard'] = $this->access['admin'] || $this->readSingleAccess('guard', false);
-			$this->access['write'] = $this->access['guard'] || $this->readSingleAccess('write', true);
-			$this->access['read']  = $this->access['guard'] || $this->readSingleAccess('read', true);
-
-			$this->readRestricts();
+		// Load parent access to be able to inherit from him
+		if ($this->id) {
+			$parentAccess = $this->forum->readAccess($user);
 		}
+
+		$result['admin'] = $this->readSingleAccess($user, $parentAccess, 'admin', false);
+		$result['guard'] = $result['admin'] || $this->readSingleAccess($user, $parentAccess, 'guard', false);
+		$result['write'] = $result['guard'] || $this->readSingleAccess($user, $parentAccess, 'write', true);
+		$result['read']  = $result['guard'] || $this->readSingleAccess($user, $parentAccess, 'read', true);
+
+		$result['restrict'] = array();
+		foreach (array('newtopic','reply','edit','delete') as $name) {
+			$result['restrict'][$name] = $this->readSingleRestrict($name, $result, $parentAccess);
+		}
+
+		return $result;
 	}
 
 	/**
@@ -190,7 +210,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access protected
 	 * @return boolean
 	 */
-	function readSingleAccess($access, $noneIsEverybody) {
+	function readSingleAccess(&$user, $parentAccess, $access, $noneIsEverybody) {
 		/* Declare */
 		$res  = false;
 		$mode = isset($this->data[$access . 'access_mode']) ? $this->data[$access . 'access_mode'] : 'erase';
@@ -198,16 +218,17 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		global $TSFE;
 
 		/* Begin */
+
 		if ($mode != 'inherit' || !$this->id) { //Mode erase (forum 0 is always set to erase)
 			if (count($list)) {
-				if ($this->parent->getCurrentUser() && is_array($TSFE->fe_user->groupData['uid']) && count(array_intersect($list, $TSFE->fe_user->groupData['uid']))) {
+				if ($user->id && count(array_intersect($list, array_keys($user->userGroups)))) {
 					$res = true;
 				}
 			} elseif ($noneIsEverybody) {
 				$res = true;
 			}
 		} else { //Inherit mode
-			$res = $this->forum->access[$access];
+			$res = $parentAccess[$access];
 		}
 
 		return $res;
@@ -218,31 +239,9 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 *
 	 * @param 
 	 * @access public
-	 * @return void 
-	 */
-	function readRestricts() {
-		if (!isset($this->access['restrict']) || empty($this->access['restrict'])) {
-			$this->access['restrict'] = Array();
-
-			// Loads parent restrictions to be able to inherit for him
-			if ($this->id) {
-				$this->forum->readRestricts();
-			}
-
-			foreach (array('newtopic','reply','edit','delete') as $name) {
-				$this->access['restrict'][$name] = $this->readSingleRestrict($name);
-			}
-		}
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
 	 * @return boolean 
 	 */
-	function readSingleRestrict($name) {
+	function readSingleRestrict($name, $currentAccess, $parentAccess) {
 		/* Declare */
 		$result   = false;
 		$fieldVal = isset($this->data[$name.'_restrict']) ? $this->data[$name.'_restrict'] : 'inherit';
@@ -256,13 +255,13 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			$result = true;
 			break;
 		case 'guard': 
-			$result = $this->access['guard'];
+			$result = $currentAccess['guard'];
 			break;
 		case 'admin': 
-			$result = $this->access['admin'];
+			$result = $currentAccess['admin'];
 			break;
 		case 'inherit':
-			$result = $this->forum->access['restrict'][$name];
+			$result = $parentAccess['restrict'][$name];
 			break;
 		default:
 			break;
@@ -373,7 +372,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function userCanWriteInForum() {
 		//Load basic access
-		$this->readAccess();
+		$this->initAccesses();
 		$res = $this->access['write'];
 
 		//Plays hook list : Allows to change the result
@@ -429,7 +428,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		// Check cached result
 		if (is_null($this->userIsGuard)) {
 			//Load basic access
-			$this->readAccess();
+			$this->initAccesses();
 			$this->userIsGuard = $this->access['guard'] ? true : false;
 
 			//Plays hook list : Allows to change the result
@@ -450,7 +449,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		// Check cached result
 		if (is_null($this->userIsAdmin)) {
 			//Load basic access
-			$this->readAccess();
+			$this->initAccesses();
 			$this->userIsAdmin = $this->access['admin'];
 
 			//Plays hook list : Allows to change the result
@@ -934,7 +933,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	function isVisible() {
 		$res=FALSE;
 
-		$this->readAccess();
+		$this->initAccesses();
 
 		if (!$this->data['deleted']) {
 			if ((!is_object($this->forum) || $this->forum->isVisible()) && $this->access['read']) {
@@ -942,7 +941,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			}
 
 		}
-
 		return $res;
 	}
 
