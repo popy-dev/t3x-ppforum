@@ -860,7 +860,8 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 */
 	function print_avatarImg($forceImg=FALSE) {
 		/* Declare */
-		$avatarImg=$forceImg?$forceImg:$this->getUserPreference('profil|avatar');
+		$profileData = $this->getUserPreference('profil');
+		$avatarImg = $forceImg ? $forceImg : $profileData['avatar'];
 		$image='';
 		$attribs=array();
 		$maxH=$this->parent->config['avatar']['maxHeight'];
