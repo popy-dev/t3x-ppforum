@@ -96,18 +96,16 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	/**
 	 *
 	 *
-	 * @param 
+	 * @param bool $clearCache = 
 	 * @access public
 	 * @return void 
 	 */
 	function loadTopicList($clearCache = false) {
 		if (!is_array($this->topicList) || $clearCache) {
-			$this->topicList=Array();
-
-			$idList = $this->parent->getForumTopics($this->id);
+			$this->topicList = array();
+			$idList = $this->parent->getForumTopics($this->id, $clearCache);
 
 			$this->parent->loadRecordObjectList($idList, 'topic');
-
 			$this->parent->flushDelayedObjects();
 
 			foreach ($idList as $topicId) {
@@ -122,9 +120,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	/**
 	 *
 	 *
-	 * @param 
 	 * @access public
-	 * @return void 
+	 * @return int 
 	 */
 	function getLastTopic() {
 		$listIds=$this->parent->getForumTopics($this->id,FALSE,'nopinned');
@@ -161,9 +158,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	}
 
 	/**
+	 * Init user's access
 	 * 
-	 * 
-	 * @param 
 	 * @access public
 	 * @return void 
 	 */
@@ -175,10 +171,11 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	}
 
 	/**
-	 * Determine current user's role
+	 * Determine given user's role & permissions
 	 *
+	 * @param tx_ppforum_user $user = 
 	 * @access public
-	 * @return void 
+	 * @return array 
 	 */
 	function readAccess(&$user) {
 		$result = array();
@@ -196,15 +193,17 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		$result['restrict'] = array();
 		foreach (array('newtopic','reply','edit','delete') as $name) {
-			$result['restrict'][$name] = $this->readSingleRestrict($name, $result, $parentAccess);
+			$result['restrict'][$name] = $this->readSingleRestrict($result, $parentAccess, $name);
 		}
 
 		return $result;
 	}
 
 	/**
-	 * Read a list of fe_groups and fe_users and return TRUE if the current user (or one of his groups) is in
+	 * Check an access right for an user in the current forum
 	 *
+	 * @param tx_ppforum_user $user = the user
+	 * @param array $parentAccess = inherited rights
 	 * @param string $str = The access key to "determine"
 	 * @param bool $noneIsEverybody = defines what means an empty selection (false mean nobody, true mean everybody
 	 * @access protected
@@ -215,10 +214,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$res  = false;
 		$mode = isset($this->data[$access . 'access_mode']) ? $this->data[$access . 'access_mode'] : 'erase';
 		$list = array_filter(t3lib_div::intExplode(',', $this->data[$access.'access']));
-		global $TSFE;
 
 		/* Begin */
-
 		if ($mode != 'inherit' || !$this->id) { //Mode erase (forum 0 is always set to erase)
 			if (count($list)) {
 				if ($user->id && count(array_intersect($list, array_keys($user->userGroups)))) {
@@ -241,7 +238,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return boolean 
 	 */
-	function readSingleRestrict($name, $currentAccess, $parentAccess) {
+	function readSingleRestrict($currentAccess, $parentAccess, $name) {
 		/* Declare */
 		$result   = false;
 		$fieldVal = isset($this->data[$name.'_restrict']) ? $this->data[$name.'_restrict'] : 'inherit';
@@ -287,7 +284,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			$addParams,
 			TRUE,
 			$parameter
-			);
+		);
 	}
 
 	/**

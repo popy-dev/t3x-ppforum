@@ -991,7 +991,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 			'level' => $level,
 		);
 
-		foreach ($this->parent->getForumChilds($forum->id) as $child) {
+		$forumIdList = $this->parent->getForumChilds($forum->id);
+		$this->parent->loadRecordObjectList($forumIdList, 'forum');
+		$this->parent->flushDelayedObjects();
+
+		foreach ($forumIdList as $child) {
 			$theChild = &$this->parent->getForumObj($child);
 
 			$this->display_optionsRow_addForumItems($items, $theChild , $level + 1);
