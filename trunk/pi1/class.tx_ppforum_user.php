@@ -106,15 +106,25 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @return void 
 	 */
 	function getMainUserGroupLabel($hsc = true) {
-		$groupUid = reset(t3lib_div::intExplode(',', $this->data['usergroup']));
-		if (!isset($GLOBALS['T3_VAR']['CACHE']['pp_forum']['fegroups'][$groupUid])) {
-			$GLOBALS['T3_VAR']['CACHE']['pp_forum']['fegroups'][$groupUid] = $this->parent->pp_getRecord($groupUid, 'fe_groups');
+		if (!count($this->userGroups)) {
+			$this->loadUserGroups();
+		}
+		reset($this->userGroups);
+		$groupUid = key($this->userGroups);
+
+		$cacheKey = 'fe_groups:' . $groupUid;
+		if (tx_pplib_instantcache::isInCache($cacheKey, 'RECORDS')) {
+			$res = tx_pplib_instantcache::getFromCache($cacheKey, 'RECORDS');
+		} else {
+			$res = $this->parent->pp_getRecord($groupUid, 'fe_groups');
+
+			tx_pplib_instantcache::storeInCache($res, $cacheKey, 'RECORDS');
 		}
 		
 		if ($hsc) {
-			return tx_pplib_div::htmlspecialchars($GLOBALS['T3_VAR']['CACHE']['pp_forum']['fegroups'][$groupUid]['title']);
+			return tx_pplib_div::htmlspecialchars($res['title']);
 		} else {
-			return $GLOBALS['T3_VAR']['CACHE']['pp_forum']['fegroups'][$groupUid]['title'];
+			return $res['title'];
 		}
 	}
 

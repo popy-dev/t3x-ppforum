@@ -1431,7 +1431,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$cacheKeys = Array();
 
 		/* Begin */
-		if (!in_array($type, array('message', 'topic', 'user'))) {
+		if (!in_array($type, array('message', 'topic', 'user', 'forum'))) {
 			return ;
 		}
 		//*** Determine classname
@@ -1459,7 +1459,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'uid'
 		);
 
-		$this->internalLogs['realQuerys']++;
+		$this->log('SELECT');
 
 		foreach ($loadIdList as $id) {
 			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
@@ -1579,6 +1579,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		switch ($type){
 		case 'UPDATE': 
 		case 'INSERT': 
+		case 'SELECT': 
 			$this->internalLogs['querys']++;
 			break;
 		default:
