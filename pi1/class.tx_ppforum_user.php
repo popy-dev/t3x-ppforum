@@ -98,6 +98,40 @@ class tx_ppforum_user extends tx_pplib_feuser {
 		}
 	}
 
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function loadUserGroups() {
+		/* Declare */
+		$feUserObj = &tx_pplib_div::makeInstance('tslib_feuserauth');
+		$this->userGroups = Array();
+
+		/* Begin */
+		// Init object
+		$feUserObj->user = $this->data;
+		$feUserObj->loginType = 'FE';
+
+		// Group loading
+		$feUserObj->fetchGroupData();
+
+		// Reading result
+		foreach ($feUserObj->groupData['title'] as $k => $v) {
+			$this->userGroups[intval($k)] = Array(
+				'uid' => intval($k),
+				'pid' => intval($feUserObj->groupData['pid'][$k]),
+				'title' => $v,
+			);
+		}
+
+		unset($feUserObj);
+	}
+
+
 	/**
 	 * 
 	 * 
@@ -109,8 +143,12 @@ class tx_ppforum_user extends tx_pplib_feuser {
 		if (!count($this->userGroups)) {
 			$this->loadUserGroups();
 		}
-		reset($this->userGroups);
-		$groupUid = key($this->userGroups);
+
+		$groupUid = reset(t3lib_div::intExplode(',', $this->data['usergroup']));
+		if (!isset($this->userGroups[$groupUid])) {
+			reset($this->userGroups);
+			$groupUid = key($this->userGroups);
+		}
 
 		$cacheKey = 'fe_groups:' . $groupUid;
 		if (tx_pplib_instantcache::isInCache($cacheKey, 'RECORDS')) {
