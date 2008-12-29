@@ -79,7 +79,7 @@ class tx_ppforum_base {
 	function load($id, $clearCache = false, $delaySubs = false) {
 		$this->tablename = $this->parent->tables[$this->type];
 
-		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename, $clearCache), $delaySubs);
+		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename), $delaySubs);
 	}
 
 	/**
