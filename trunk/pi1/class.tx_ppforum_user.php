@@ -133,37 +133,23 @@ class tx_ppforum_user extends tx_pplib_feuser {
 
 
 	/**
+	 * Returns the main user group label
 	 * 
-	 * 
-	 * @param 
+	 * @param bool $hsc = 
 	 * @access public
-	 * @return void 
+	 * @return string 
 	 */
 	function getMainUserGroupLabel($hsc = true) {
-		if (!count($this->userGroups)) {
-			$this->loadUserGroups();
-		}
+		/* Declare */
+		$groupUid = $this->getMainUserGroupId();
+		$label = $this->userGroups[$groupUid]['title'];
 
-		$groupUid = reset(t3lib_div::intExplode(',', $this->data['usergroup']));
-		if (!isset($this->userGroups[$groupUid])) {
-			reset($this->userGroups);
-			$groupUid = key($this->userGroups);
-		}
-
-		$cacheKey = 'fe_groups:' . $groupUid;
-		if (tx_pplib_instantcache::isInCache($cacheKey, 'RECORDS')) {
-			$res = tx_pplib_instantcache::getFromCache($cacheKey, 'RECORDS');
-		} else {
-			$res = $this->parent->pp_getRecord($groupUid, 'fe_groups');
-
-			tx_pplib_instantcache::storeInCache($res, $cacheKey, 'RECORDS');
-		}
-		
+		/* Begin */
 		if ($hsc) {
-			return tx_pplib_div::htmlspecialchars($res['title']);
-		} else {
-			return $res['title'];
+			$label = tx_pplib_div::htmlspecialchars($label);
 		}
+
+		return $label;
 	}
 
 	/**
@@ -1063,15 +1049,8 @@ class tx_ppforum_user extends tx_pplib_feuser {
 		}
 
 		return array($fileName, $reason);
-
 	}
-
 }
 
-
-
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_user.php'])	{
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_user.php']);
-}
-
+tx_pplib_div::XCLASS('ext/pp_forum/pi1/class.tx_ppforum_user.php');
 ?>
