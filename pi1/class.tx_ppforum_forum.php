@@ -270,6 +270,24 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	/**
 	 * 
 	 * 
+	 * @access public
+	 * @return tx_ppforum_forum 
+	 */
+	function &getFirstVisibleParent() {
+		/* Declare */
+		$res = &$this;
+	
+		/* Begin */
+		while (is_object($res) && !$res->isVisible()) {
+			$res = &$res->forum;
+		}
+
+		return $res;
+	}
+
+	/**
+	 * 
+	 * 
 	 * @param 
 	 * @access public
 	 * @return void 

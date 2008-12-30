@@ -567,55 +567,36 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$topicId = intval($this->getVars['topic']);
 			$topic = NULL;
 			$forum = NULL;
-			$dataChecked = false;
 		
 			/* Begin */
 			if ($topicId) {
 				//Load topic
 				$topic = &$this->getTopicObj($topicId);
 
-				if ($topic->id && is_object($topic->forum) && $topic->forum->id) {
-					//For now, we have a valid topic, so we keep its parent forum
-					$forumId = $topic->forum->id;
-
-					//Check visibility of the topic
-					if ($topic->isVisibleRecursive()) {
-						//Then we can check updates
-						if ($dataChecked = $topic->haveToCheckData()) {
-							$topic->checkTopicData();
-
-							if (!$topic->isVisibleRecursive()) {
-								$topicId = 0;
-							} else {
-								$forumId = $topic->forum->id;
-							}
-						}
-					} else {
-						$topicId = 0;
-					}
-
-
-				} else {
-					//Unable to load topic, we can't do anything else
+				if (!$topic->checkUpdatesAndVisibility()) {
 					$topicId = 0;
 				}
+
+				// keep its parent forum
+				$forumId = $topic->forum->id;
+
+				unset($topic);
 			}
 
 
 			//Now checking current forum
 			if ($forumId) {
-				//Load forum
-				$forum = &$this->getForumObj($forumId);
+				$newForumId = $forumId;
 
-				if ($forum->id) {
-					//Maybe this forum isn't visible, we need to fall back to the first visible parent
-					while (is_object($forum) && !$forum->isVisible()) {
-						$forum = &$forum->forum;
-						//If we come here, it means that the given "forum" GET var is NOT valid, but if user has try to post in this forum
-						//We don't want this new topic to appear on first visible forum
-						$dataChecked = true;
-					}
+				while ($newForumId) {
+					//Load forum
+					$tempForum = &$this->getForumObj($newForumId);
+					$newForumId = 0;
 
+					// Check visibility
+					$forum = &$tempForum->getFirstVisibleParent();
+					unset($tempForum);
+					
 					if (is_object($forum)) {
 						//We have a valid parent
 						$forumId = $forum->id;
@@ -628,25 +609,27 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 							//Load topic
 							$topic = &$this->getTopicObj($topicId);
+
+							if (!$topic->checkUpdatesAndVisibility()) {
+								$topicId = 0;
+							}
+
 							$forumId = $topic->forum->id;
-					} elseif ($changes['forumId']) {
-							$forumId = $changes['forumId'];
+						} elseif ($changes['forumId']) {
+							$newForumId = $changes['forumId'];
 						}
 					} else {
-						//No visible parent : fall back to root
 						$forumId = 0;
 					}
-				} else {
-					//Unable to load forum, we can't do anything else
+
+					unset($forum);
 				}
 			}
 
 			//Check for new topic
-			if ($forumId && !$dataChecked && $this->getVars['edittopic']) {
+			if ($forumId && $this->getVars['edittopic']) {
 				//Load forum
-				if (!is_object($forum)) {
-					$forum = &$this->getForumObj($forumId);
-				}
+				$forum = &$this->getForumObj($forumId);
 				
 				$topic = &$this->getTopicObj(0);
 				$topic->forum = &$forum;
