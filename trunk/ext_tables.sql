@@ -22,6 +22,7 @@ CREATE TABLE tx_ppforum_forums (
 	parent int(11) DEFAULT '0' NOT NULL,
 	notopic tinyint(4) DEFAULT '0' NOT NULL,
 	notoolbar tinyint(4) DEFAULT '0' NOT NULL,
+	ftype varchar(50) DEFAULT '' NOT NULL,
 
 	hidetopic tinyint(4) DEFAULT '0' NOT NULL,
 	hidemessage tinyint(4) DEFAULT '0' NOT NULL,
