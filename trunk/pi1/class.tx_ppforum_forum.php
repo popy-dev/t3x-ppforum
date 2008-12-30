@@ -268,6 +268,39 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function alternateRendering($topicId) {
+		/* Declare */
+		$res = array(
+			'topicId' => null,
+			'forumId' => null,
+		);
+
+		/* Begin */
+		switch ($this->data['ftype']) {
+		case 'topic_shortcut':
+			// Shortcut to first topic : only if no current topic
+			if (!$topicId) {
+				$this->loadTopicList();
+
+				if (count($this->topicList)) {
+					$res['topicId'] = reset(array_keys($this->topicList));
+				}
+			}
+			break;
+		default:
+			break;
+		}
+
+		return $res;
+	}
+
+	/**
 	 * Generate a link to this forum
 	 *
 	 * @access public

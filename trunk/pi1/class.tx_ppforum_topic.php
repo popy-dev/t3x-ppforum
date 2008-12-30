@@ -543,6 +543,16 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 * Check if we have to process incomming POST data
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function haveToCheckData() {
+		return $this->getVars['edittopic'] || $this->getVars['deletetopic'];
+	}
+
+	/**
 	 * Check if topic is modified/created/deleted and update it (if needed)
 	 *
 	 * @access public
