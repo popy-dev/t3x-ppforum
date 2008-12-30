@@ -581,8 +581,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					//Check visibility of the topic
 					if ($topic->isVisibleRecursive()) {
 						//Then we can check updates
-						if ($this->getVars['edittopic'] || $this->getVars['deletetopic']) {
-							$dataChecked = true;
+						if ($dataChecked = $topic->haveToCheckData()) {
 							$topic->checkTopicData();
 
 							if (!$topic->isVisibleRecursive()) {
@@ -620,6 +619,19 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					if (is_object($forum)) {
 						//We have a valid parent
 						$forumId = $forum->id;
+
+						//Now checking for alternate mode
+						$changes = $forum->alternateRendering($topicId);
+
+						if ($changes['topicId']) {
+							$topicId = $changes['topicId'];
+
+							//Load topic
+							$topic = &$this->getTopicObj($topicId);
+							$forumId = $topic->forum->id;
+					} elseif ($changes['forumId']) {
+							$forumId = $changes['forumId'];
+						}
 					} else {
 						//No visible parent : fall back to root
 						$forumId = 0;
