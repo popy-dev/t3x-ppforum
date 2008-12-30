@@ -75,6 +75,19 @@ $TCA['tx_ppforum_forums'] = Array (
 				'maxitems' => 1,
 			)
 		),
+		'ftype' => Array (		
+			'exclude' => 1,		
+			'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.ftype',		
+			'l10n_mode' => 'exclude',
+			'config' => Array (
+				'type' => 'select',
+				'size' => 1,
+				'items' => array(
+					array(),
+					array('LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.ftype.topic_shortcut', 'topic_shortcut'),
+				),
+			)
+		),
 		'notopic' => Array (		
 			'exclude' => 1,
 			'label' => 'LLL:EXT:pp_forum/locallang_db.xml:tx_ppforum_forums.notopic',		
@@ -123,7 +136,7 @@ $TCA['tx_ppforum_forums'] = Array (
 		),
 	),
 	'types' => Array (
-		'0' => Array('showitem' => 'hidden;;;;1-1-1, sys_language_uid, l18n_parent, title;;;;2-2-2,description, parent, notopic, notoolbar, hidetopic, hidemessage, force_language')
+		'0' => Array('showitem' => 'hidden;;;;1-1-1, sys_language_uid, l18n_parent, title;;;;2-2-2,description, parent, ftype, notopic, notoolbar, hidetopic, hidemessage, force_language')
 	),
 	'palettes' => Array (
 		'1' => Array('showitem' => '')
