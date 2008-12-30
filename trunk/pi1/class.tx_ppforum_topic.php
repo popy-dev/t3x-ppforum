@@ -543,6 +543,38 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function checkUpdatesAndVisibility() {
+		// Test if topic object is valid
+		if (!$this->id || !$this->forum->id) {
+			return false;
+		}
+
+		// Check if current user has access to this topic
+		if (!$this->isVisibleRecursive()) {
+			return false;
+		}
+
+		// Process updates if needed
+		if ($this->haveToCheckData()) {
+			$this->checkTopicData();
+
+			// Topic is not visible after updates
+			if (!$this->isVisibleRecursive()) {
+				return false;
+			}
+		}
+
+		// Topic is visible
+		return true;
+	}
+
+	/**
 	 * Check if we have to process incomming POST data
 	 * 
 	 * @access public
