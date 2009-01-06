@@ -466,6 +466,72 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		
 		return $res;
 	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function userCanEditMessage($messageId, $res) {
+		$res = $res && $this->access['restrict']['edit'];
+
+		return $res;
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function userCanDeleteMessage($messageId,$res) {
+		$res=$res && $this->access['restrict']['delete'];
+
+		return $res;
+	}
+
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function topicIsVisible($topicId) {
+		return in_array($topicId,$this->parent->getForumTopics($this->id));
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function userCanDeleteTopic($topicId,$res) {
+		$res=$res && $this->access['restrict']['delete'];
+
+		return $res;
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function userCanEditTopic($topicId,$res) {
+		$res = $res && $this->access['restrict']['edit'];
+
+		return $res;
+	}
+
+
 	/**
 	 * Access check : Check if user is a "Guard"
 	 *
@@ -1001,78 +1067,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function messageIsVisible($messageId) {
 		return TRUE;
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function userCanEditMessage($messageId,$res) {
-		$res=$res && $this->access['restrict']['edit'];
-		if (is_object($this->forum)) {
-			$res=$this->forum->userCanEditMessage($messageId,$res);
-		}
-		return $res;
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function userCanDeleteMessage($messageId,$res) {
-		$res=$res && $this->access['restrict']['delete'];
-		if (is_object($this->forum)) {
-			$res=$this->forum->userCanDeleteMessage($messageId,$res);
-		}
-		return $res;
-	}
-
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function topicIsVisible($topicId) {
-		return in_array($topicId,$this->parent->getForumTopics($this->id));
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function userCanDeleteTopic($topicId,$res) {
-		$res=$res && $this->access['restrict']['delete'];
-		if (is_object($this->forum)) {
-			$res=$this->forum->userCanDeleteTopic($topicId,$res);
-		}
-		return $res;
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function userCanEditTopic($topicId,$res) {
-		$res = $res && $this->access['restrict']['edit'];
-		if (is_object($this->forum)) {
-			$res = $this->forum->userCanEditTopic($topicId,$res);
-		}
-		return $res;
 	}
 
 	/**
