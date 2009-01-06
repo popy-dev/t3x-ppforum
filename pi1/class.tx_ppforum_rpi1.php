@@ -572,7 +572,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			if ($topicId) {
 				//Load topic
 				$topic = &$this->getTopicObj($topicId);
-
 				if (!$topic->checkUpdatesAndVisibility()) {
 					$topicId = 0;
 				}
@@ -582,7 +581,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 				unset($topic);
 			}
-
 
 			//Now checking current forum
 			if ($forumId) {

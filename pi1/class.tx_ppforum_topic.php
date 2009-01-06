@@ -76,6 +76,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	);
 
 	/**
+	 * 
+	 * @access public
+	 * @var string
+	 */
+	var $mode = '';
+
+	/**
 	 * Loads the topic
 	 * 
 	 * @param array $data = the record row
@@ -581,7 +588,17 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return bool 
 	 */
 	function haveToCheckData() {
-		return $this->getVars['edittopic'] || $this->getVars['deletetopic'];
+		if ($this->parent->getVars['edittopic']) {
+			$this->mode = 'edit';
+			unset($this->parent->getVars['edittopic']);
+		} elseif ($this->parent->getVars['deletetopic']) {
+			$this->mode = 'delete';
+			unset($this->parent->getVars['deletetopic']);
+		} else {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
@@ -602,16 +619,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		/* Begin */
 		if (isset($this->parent->piVars[$this->datakey])) {
 			$postData = &$this->parent->piVars[$this->datakey];
+			unset($this->parent->piVars[$this->datakey]);
 		}
 
-		//If we have no data it's useless to continue
-		if (!count($postData)) return false;
-
-		//If current topic isn't valid AND parent forum too, exit function
-		if (!($this->id || $this->forum->id)) return false;
-
-
-		$this->mergeData($postData);
+		//If we have no data it's useless to continue / or if forum is not valid
+		if (!count($postData) || !$this->forum->id) {
+			return false;
+		}
 
 		//Store errors in forum object
 		$data['errors'] = &$this->validErrors;
@@ -619,21 +633,29 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		//Checking mode (permissions will be checked later)
 		if (!$this->id) {
 			$this->author = &$this->parent->currentUser;
-		} elseif ($this->parent->getVars['edittopic']) {
+		} elseif ($this->mode == 'edit') {
 			$data['mode'] = 'edit';
-		} elseif ($this->parent->getVars['deletetopic']) {
+		} elseif ($this->mode == 'delete') {
 			$data['mode'] = 'delete';
 		}
 
 		//Checking data validity
-		if (($data['mode']!='delete') && ($GLOBALS['TSFE']->fe_user->getKey('ses','ppforum/lastTopic')==$postData)) {
-			unset($this->parent->piVars[$this->datakey]);
-			unset($this->parent->getVars['edittopic']);
-			unset($this->parent->getVars['deletetopic']);
+		if ($data['mode'] != 'delete') {
+			$lastPostedData = $GLOBALS['TSFE']->fe_user->getKey('ses', 'ppforum/lastTopic');
 
-			if ($data['mode']=='new') $this->getTopicObj(0, true);
-			return FALSE;
+			if (is_array($lastPostedData) && !count(array_diff_assoc($lastPostedData, $postData))) {
+				$this->mode = '';
+				
+				// Clear object cache
+				if ($data['mode'] == 'new') {
+					$this->getTopicObj(0, true);
+				}
+
+				return false;
+			}
 		}
+
+		$this->mergeData($postData);
 
 		//Checking permissions
 		switch ($data['mode']){
@@ -717,8 +739,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 				//Cleaning incomming data
 				$this->parent->piVars[$this->datakey]=array();
-				unset($this->parent->getVars['edittopic']);
-				unset($this->parent->getVars['deletetopic']);
+				$this->mode = '';
 			}
 		}
 	}
@@ -742,15 +763,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if ($this->forum->id < 0) {
 			$GLOBALS['TSFE']->set_no_cache();
 		}
-
 		if (!$this->id) {
 			$data['mode'] = 'new';
 		} elseif (!intval($this->id)) {
 			$data['mode'] = 'preview';
 			$this->id=0;
-		} elseif ($this->parent->getVars['edittopic'] && $this->userCanEdit()) {
+		} elseif ($this->mode == 'edit' && $this->userCanEdit()) {
 			$data['mode'] = 'edit';
-		} elseif ($this->parent->getVars['deletetopic'] && $this->userCanDelete()) {
+		} elseif ($this->mode == 'delete' && $this->userCanDelete()) {
 			$data['mode'] = 'delete';
 		} elseif (count(array_diff_assoc($this->data,$this->mergedData))) {
 			$data['mode'] = 'preview';
