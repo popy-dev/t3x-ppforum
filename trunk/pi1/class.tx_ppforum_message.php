@@ -1080,40 +1080,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 			if ($this->userCanDelete()) $temp[]=$this->getDeleteLink($this->parent->pp_getLL('message.delete','Delete',TRUE));
 
 			if (count($temp)) $data['right']['toolbar-2']=implode(' ',$temp);
-			$data['right']['toolbar-3'] = '<!-- ' . print_r($temp, true) . ' -->';
-
-			if ($this->isMessage()) {
-				//Check if user can write in parent topic (can be closed, etc...)
-				if ($this->topic->userCanWriteInTopic()) {
-					$data['right']['toolbar-3'] = '<!-- userCanWriteInTopic -->';
-					//If user is author is author or guard
-					if ($this->parent->getCurrentUser() && (intval($this->data['author'])==$this->parent->getCurrentUser())) {
-						$data['right']['toolbar-3'] = '<!-- userCanWriteInTopic && isUser -->';
-					} elseif ($this->topic->forum->userIsGuard()) {
-						$data['right']['toolbar-3'] = '<!-- userCanWriteInTopic && isGuard -->';
-					}
-				}
-			} else {
-				if ($this->getBasicWriteAccess()) {
-					$data['right']['toolbar-3'] = '<!-- getBasicWriteAccess -->';
-					if ($this->forum->userCanEditTopic($this->id, true)) {
-						$data['right']['toolbar-3'] = '<!-- getBasicWriteAccess && userCanEditTopic -->';
-					} else {
-
-						$temp = array();
-						$forum = &$this->forum;
-						$this->forum->forum->initAccesses();
-
-						while (is_object($forum)) {
-							$temp['forum: ' . $forum->id] = $forum->access;
-
-							$forum = &$forum->forum;
-						}
-						$data['right']['toolbar-3'] = '<!-- ' . print_r($temp, true) . '-->';
-					}
-				}
-			}
-
 
 		}
 
@@ -1267,8 +1233,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @return boolean = TRUE if user can edit 
 	 */
 	function userCanEdit() {
-		$res=$this->getBasicWriteAccess();
-		$res=$this->topic->userCanEditMessage($this->id,$res);
+		$res = $this->getBasicWriteAccess();
+		$res = $res && $this->topic->userCanEditMessage($this->id);
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('message_userCanEdit', $res, $this);
@@ -1284,8 +1250,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function userCanDelete() {
-		$res=$this->getBasicWriteAccess();
-		$res=$this->topic->userCanDeleteMessage($this->id,$res);
+		$res = $this->getBasicWriteAccess();
+		$res = $res && $this->topic->userCanDeleteMessage($this->id);
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('message_userCanDelete', $res, $this);

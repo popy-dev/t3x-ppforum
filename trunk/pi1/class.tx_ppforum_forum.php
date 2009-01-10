@@ -193,7 +193,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		$result['restrict'] = array();
 		foreach (array('newtopic','reply','edit','delete') as $name) {
-			$result['restrict'][$name] = $this->readSingleRestrict($result, $parentAccess, $name);
+			$result['restrict'][$name] = $this->readSingleRestrict($result, $name);
 		}
 
 		return $result;
@@ -238,7 +238,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return boolean 
 	 */
-	function readSingleRestrict($currentAccess, $parentAccess, $name) {
+	function readSingleRestrict($currentAccess, $name) {
 		/* Declare */
 		$result   = false;
 		$fieldVal = isset($this->data[$name.'_restrict']) ? $this->data[$name.'_restrict'] : 'inherit';
@@ -247,6 +247,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if (!$this->id && $fieldVal == 'inherit') {
 			$fieldVal = 'everybody'; // Root forum can't inherit
 		}
+
 		switch ($fieldVal) {
 		case 'everybody': 
 			$result = true;
@@ -258,7 +259,11 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			$result = $currentAccess['admin'];
 			break;
 		case 'inherit':
-			$result = $parentAccess['restrict'][$name];
+			if ($this->id) {
+				$result = $this->forum->readSingleRestrict($currentAccess, $name);
+			} else {
+				$result = true;
+			}
 			break;
 		default:
 			break;
@@ -474,10 +479,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanEditMessage($messageId, $res) {
-		$res = $res && $this->access['restrict']['edit'];
-
-		return $res;
+	function userCanEditMessage($messageId) {
+		return $this->userCanWriteInForum() && $this->access['restrict']['edit'];
 	}
 
 	/**
@@ -487,10 +490,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanDeleteMessage($messageId,$res) {
-		$res=$res && $this->access['restrict']['delete'];
-
-		return $res;
+	function userCanDeleteMessage($messageId) {
+		return $this->userCanWriteInForum() && $this->access['restrict']['delete'];
 	}
 
 
@@ -502,7 +503,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function topicIsVisible($topicId) {
-		return in_array($topicId,$this->parent->getForumTopics($this->id));
+		return in_array($topicId, $this->parent->getForumTopics($this->id));
 	}
 
 	/**
@@ -512,10 +513,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanDeleteTopic($topicId,$res) {
-		$res=$res && $this->access['restrict']['delete'];
-
-		return $res;
+	function userCanDeleteTopic($topicId) {
+		return $this->userCanWriteInForum() && $this->access['restrict']['delete'];
 	}
 
 	/**
@@ -525,10 +524,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanEditTopic($topicId,$res) {
-		$res = $res && $this->access['restrict']['edit'];
-
-		return $res;
+	function userCanEditTopic($topicId) {
+		return $this->userCanWriteInForum() && $this->access['restrict']['edit'];
 	}
 
 
