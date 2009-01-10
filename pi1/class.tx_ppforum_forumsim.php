@@ -205,8 +205,8 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanEditMessage($messageId,$res) {
-		return FALSE;
+	function userCanEditMessage($messageId) {
+		return false;
 	}
 
 	/**

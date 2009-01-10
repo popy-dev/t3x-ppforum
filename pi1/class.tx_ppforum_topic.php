@@ -1295,8 +1295,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return boolean 
 	 */
-	function userCanEditMessage($messageId,$res) {
-		$res=$this->forum->userCanEditMessage($messageId,$res);
+	function userCanEditMessage($messageId) {
+		$res = $this->forum->userCanEditMessage($messageId);
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('topic_userCanEditMessage', $res, $this);
@@ -1312,8 +1312,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return boolean 
 	 */
-	function userCanDeleteMessage($messageId,$res) {
-		$res=$this->forum->userCanDeleteMessage($messageId,$res);
+	function userCanDeleteMessage($messageId) {
+		$res = $this->forum->userCanDeleteMessage($messageId);
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('topic_userCanDeleteMessage', $res, $this);
