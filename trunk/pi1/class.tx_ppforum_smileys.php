@@ -159,14 +159,7 @@ class tx_ppforum_smileys {
 
 		return '<div class="smileys-buttons">'.implode(' ',$list).'</div>';
 	}
-
-
 }
 
-
-
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_smileys.php'])	{
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/pp_forum/pi1/class.tx_ppforum_smileys.php']);
-}
-
+tx_pplib_div::XCLASS('ext/pp_forum/pi1/class.tx_ppforum_smileys.php');
 ?>
