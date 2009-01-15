@@ -1198,8 +1198,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function userCanEdit() {
 		# /!\ User based check /!\
-		$res=$this->getBasicWriteAccess();
-		$res=$this->forum->userCanEditTopic($this->id,$res);
+		$res = $this->getBasicWriteAccess();
+		$res = $res && $this->forum->userCanEditTopic($this->id);
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('topic_userCanReplyInTopic', $res, $this);
@@ -1217,8 +1217,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function userCanDelete() {
 		# /!\ User based check /!\
-		$res=$this->getBasicWriteAccess();
-		$res=$this->forum->userCanDeleteTopic($this->id,$res);
+		$res = $this->getBasicWriteAccess();
+		$res = $res && $this->forum->userCanDeleteTopic($this->id,$res);
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('topic_userCanDelete', $res, $this);
