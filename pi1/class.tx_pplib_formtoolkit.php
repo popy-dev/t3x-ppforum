@@ -546,10 +546,7 @@ class tx_pplib_formtoolkit {
 			return '';
 		}
 	}
-
-
 }
-
 
 tx_pplib_div::XCLASS('ext/pp_lib/tools/class.tx_pplib_formtoolkit.php');
 ?>
