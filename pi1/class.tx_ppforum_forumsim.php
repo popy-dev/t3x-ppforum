@@ -194,7 +194,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanDeleteMessage($messageId,$res) {
+	function userCanDeleteMessage($messageId) {
 		return TRUE;
 	}
 
@@ -244,7 +244,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanDeleteTopic($topicId,$res) {
+	function userCanDeleteTopic($topicId) {
 		return TRUE;
 	}
 
@@ -255,7 +255,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanEditTopic($topicId,$res) {
+	function userCanEditTopic($topicId) {
 		return FALSE;
 	}
 
