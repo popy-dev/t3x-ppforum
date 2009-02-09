@@ -1124,13 +1124,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return bool 
 	 */
 	function userCanWriteInTopic() {
-		$res=FALSE;
+		$res = false;
 
 		//Checking write access in parent forum
 		if ($this->forum->userCanWriteInForum()) {
 			//Then, checking topic status
-			if ($this->data['status']!=2 || $this->forum->userIsGuard()) {
-				$res=TRUE;
+			if ($this->data['status'] == 0 || $this->forum->userIsGuard()) {
+				$res = true;
 			}
 		}
 
