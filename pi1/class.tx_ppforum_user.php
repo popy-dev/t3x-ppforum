@@ -309,6 +309,30 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	}
 
 	/**
+	 * Returns the user's "title"
+	 * 
+	 * @param bool $hsc = if true, title will be passed throught htmlspecialchars
+	 * @access public
+	 * @return string 
+	 */
+	function getTitle($hsc = true) {
+		return $hsc ? tx_pplib_div::htmlspecialchars($this->data['username']) : $this->data['username'];
+	}
+
+	/**
+	 * Returns the user's title especially for the page's title
+	 * 
+	 * @access public
+	 * @return string 
+	 */
+	function getPageTitle() {
+		return sprintf(
+			$this->parent->pp_getLL('user.profilePageTitle', null, false),
+			$this->getTitle(false)
+		);
+	}
+
+	/**
 	 *
 	 *
 	 * @param 
