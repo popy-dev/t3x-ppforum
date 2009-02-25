@@ -178,18 +178,20 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$content .= $this->callINTPlugin($lConf);
 
 			} elseif ($viewLatests) {
-					$lConf = Array(
-						'cmd'  => 'self',
-						'cmd.' => Array(
-							'method' => '_printUnreadTopics',
-						)
-					);
+				$lConf = Array(
+					'cmd'  => 'self',
+					'cmd.' => Array(
+						'method' => '_printUnreadTopics',
+					)
+				);
 
-					$content .= $this->callINTPlugin($lConf);
+				$content .= $this->callINTPlugin($lConf);
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj(intval($topic));
 				if ($obj->id) {
 					tx_pplib_cachemgm::storeHash($obj->getCacheParam());
+					$this->setPageTitle($obj);
+
 					$content .= $obj->display();
 				} else {
 					$GLOBALS['TSFE']->set_no_cache();
@@ -213,6 +215,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					$obj = &$this->getForumObj($forum);
 					if ($obj->id) {
 						tx_pplib_cachemgm::storeHash($obj->getCacheParam());
+						$this->setPageTitle($obj);
+
 						$content .= $obj->display();
 					} else {
 						$content .= 'Forum inexistant ->@TODO message d\'erreur';
@@ -237,7 +241,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			if ($this->config['display']['printStats']) {
 				$content .= $this->printStats();
 			}
-
 		}
 		
 		$lConf = Array(
@@ -757,6 +760,25 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		return $finalResult;
+	}
+
+	/**
+	 * Modifiys the page title (using a record object to determine the new title)
+	 * 
+	 * @param object $object =
+	 * @access public
+	 * @return void 
+	 */
+	function setPageTitle(&$object) {
+		/* Declare */
+		$currentPageTitle = $GLOBALS['TSFE']->page['title'];
+	
+		/* Begin */
+		if (method_exists($object, 'getPageTitle')) {
+			$GLOBALS['TSFE']->altPageTitle = $currentPageTitle . ' -> ' . $object->getPageTitle();
+		} elseif (method_exists($object, 'getTitle')) {
+			$GLOBALS['TSFE']->altPageTitle = $currentPageTitle . ' -> ' . $object->getTitle();
+		}
 	}
 
 	/****************************************/
