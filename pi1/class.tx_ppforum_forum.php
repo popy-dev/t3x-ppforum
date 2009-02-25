@@ -350,7 +350,28 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return string 
 	 */
 	function getTitleLink() {
-		return $this->getLink(tx_pplib_div::htmlspecialchars($this->data['title']));
+		return $this->getLink($this->getTitle());
+	}
+
+	/**
+	 * Returns the forum's title
+	 * 
+	 * @param bool $hsc = if true, title will be passed throught htmlspecialchars
+	 * @access public
+	 * @return string 
+	 */
+	function getTitle($hsc = true) {
+		return $hsc ? tx_pplib_div::htmlspecialchars($this->data['title']) : $this->data['title'];
+	}
+
+	/**
+	 * Returns the forum's title especially for the page's title
+	 * 
+	 * @access public
+	 * @return string 
+	 */
+	function getPageTitle() {
+		return $this->getTitle(false);
 	}
 
 	/**
@@ -623,15 +644,16 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function display() {
 		/* Declare */
-		$content.='<div class="top-level-forum">';
+		$content = '';
 	
 		/* Begin */
+		$content .= '<div class="top-level-forum">';
 		if ($this->parent->getVars['clearCache'] && $this->userIsAdmin()) {
 			$this->event_onUpdateInForum();
 			unset($this->parent->getVars['clearCache']);
 		}
-		$content.=$this->displayHeader();
-		$content.=$this->displayChildList();
+		$content .= $this->displayHeader();
+		$content .= $this->displayChildList();
 		if (!$this->data['notopic']) $content.=$this->displayTopicList();
 		if (!$this->data['notoolbar']) $content.=$this->displayForumTools();
 

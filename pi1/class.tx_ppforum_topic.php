@@ -363,6 +363,27 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 * Returns the topic's title
+	 * 
+	 * @param bool $hsc = if true, title will be passed throught htmlspecialchars
+	 * @access public
+	 * @return string 
+	 */
+	function getTitle($hsc = true) {
+		return $hsc ? tx_pplib_div::htmlspecialchars($this->mergedData['title']) : $this->mergedData['title'];
+	}
+
+	/**
+	 * Returns the topic's title especially for the page's title
+	 * 
+	 * @access public
+	 * @return string 
+	 */
+	function getPageTitle() {
+		return $this->forum->getPageTitle() . ' / ' . $this->getTitle(false);
+	}
+
+	/**
 	 * Builds a link to the Topic edit form
 	 *
 	 * @param string $title = The link text. If empty, the function will return the url (instead of the A tag)
