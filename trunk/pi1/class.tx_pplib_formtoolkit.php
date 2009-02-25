@@ -377,7 +377,7 @@ class tx_pplib_formtoolkit {
 		if (trim($others['class'])) $others['class'].=' '.$others['type'];
 		else $others['class']=$others['type'];
 
-		return '<input'.$this->getAttribs($others).' />'.$this->getFieldError($name);
+		return '<input type="hidden" name="' . htmlspecialchars($others['name']) . '" /><input'.$this->getAttribs($others).' />'.$this->getFieldError($name);
 	}
 
 	function getTextarea($name,$cols=60,$rows=3,$others=array()) {
