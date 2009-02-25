@@ -161,15 +161,19 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 			$editProfile = isset($this->getVars['editProfile']) ? intval($this->getVars['editProfile']) : false;
 			$viewProfile = isset($this->getVars['viewProfile']) ? intval($this->getVars['viewProfile']) : false;
+			$userProfileId = $editProfile ? $editProfile : $viewProfile;
 			$viewLatests = isset($this->getVars['mode']) ? ($this->getVars['mode'] == 'latest') : false;
 			$viewLatests = $viewLatests && $this->currentUser->id;
 
-			if ($editProfile || $viewProfile) {
+			if ($userProfileId) {
+				$obj = &$this->getUserObj($userProfileId);
+				$this->setPageTitle($obj);
+
 				$lConf = Array(
 					'cmd'  => 'callObj',
 					'cmd.' => Array(
 						'object' => 'user',
-						'uid'    => ($editProfile ? $editProfile : $viewProfile),
+						'uid'    => $userProfileId,
 						'method' => 'displayProfile',
 						'mode'   => $editProfile ? 'edit' : 'view',
 					)
@@ -178,12 +182,16 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$content .= $this->callINTPlugin($lConf);
 
 			} elseif ($viewLatests) {
+				$obj = &$this->getUnreadTopicsHandler();
+				$this->setPageTitle($obj);
+
 				$lConf = Array(
 					'cmd'  => 'self',
 					'cmd.' => Array(
 						'method' => '_printUnreadTopics',
 					)
 				);
+
 
 				$content .= $this->callINTPlugin($lConf);
 			} elseif ($topic = $this->getCurrentTopic()) {

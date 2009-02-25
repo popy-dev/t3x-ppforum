@@ -74,6 +74,17 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 	/****************************************/
 
 	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function getPageTitle() {
+		return $this->parent->pp_getLL('latest.pageTitle', null, false);
+	}
+
+	/**
 	 * Load's this virtual forum topic list (unread topics)
 	 *
 	 * @param bool $clearCache = set to true to bypass cache
