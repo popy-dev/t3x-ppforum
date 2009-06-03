@@ -216,7 +216,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return int/boolean = the record uid or false when an error occurs 
 	 */
-	function basic_save() {
+	function basic_save($noTstamp = false) {
 		/* Declare */
 		$result = false;
 		$CTRL = isset($GLOBALS['TCA'][$this->tablename]['ctrl']) ? $GLOBALS['TCA'][$this->tablename]['ctrl'] : array();
@@ -225,7 +225,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		/* Begin */
 		// Updating tstamp field
-		if ($tstampField) {
+		if ($tstampField && !$noTstamp) {
 			// Updating tstamp field
 			$this->mergedData[$tstampField] = $GLOBALS['SIM_EXEC_TIME'];
 		}

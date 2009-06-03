@@ -133,7 +133,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		if (!$data['topic']->id) {
 			return '';
 		}
-		$data['counters']=$data['topic']->getCounters($topic->id);
+		$data['counters'] = $topic->getCounters($topic);
 		$data['topic']->loadMessages();
 
 		$data['conf']['topic-with']='';
@@ -419,7 +419,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return array 
 	 */
-	function getCounters($forumId=0,$clearCache=FALSE) {
+	function getCounters($clearCache=FALSE) {
 		return array();
 	}
 
