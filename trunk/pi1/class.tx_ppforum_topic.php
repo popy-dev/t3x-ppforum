@@ -83,6 +83,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	var $mode = '';
 
 	/**
+	 * 
+	 * @access protected
+	 * @var array
+	 */
+	var $counters = null;
+
+	/**
 	 * Loads the topic
 	 * 
 	 * @param array $data = the record row
@@ -104,11 +111,10 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return int/boolean = the message uid or false when an error occurs 
 	 */
-	function save($forceReload = true) {
+	function save($forceReload = true, $noTstamp = false) {
 		/* Declare */
 		$null = null;
 		$result = false;
-		$tstampField = isset($GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp']) ? $GLOBALS['TCA'][$this->tablename]['ctrl']['tstamp'] : false;
 
 		/* Begin */
 		// Special case for topics : only status is changed, don't refresh it
@@ -119,7 +125,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			);
 
 			if (count($diffData) == 1 && isset($diffData['status'])) {
-				$this->data[$tstampField] = $GLOBALS['SIM_EXEC_TIME'];
+				$noTstamp = true;
 			}
 		}
 
@@ -129,7 +135,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		// Plays hook list : Allow to change some field before saving
 		$this->parent->pp_playHookObjList('topic_save', $null, $this);
 
-		$result = $this->basic_save();
+		$result = $this->basic_save($noTstamp);
 
 		if ($forceReload) {
 			$this->forceReload['forum'] = true;
@@ -169,7 +175,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				}
 
 				//Clear topic message list
-				$this->parent->getTopicMessages($this->id, 'clearCache');
+				$this->parent->getTopicMessages($this->id, false, 'clearCache');
 				if ($forceReload) {
 					$this->forceReload['list'] = true;
 				}
@@ -271,12 +277,36 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		if ($isNewMessage) {
 			$this->forum->event_onNewPostInTopic($this->id, $messageId);
+
+			$this->mergedData['message_counter']++;
+
+			$this->save();
 		}
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('topic_event_onNewPostInTopic', $param, $this);
 
-		$this->save();
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageDelete($messageId) {
+		/* Declare */
+		$this->forceReload['forum'] = true;
+	
+		/* Begin */
+		$this->mergedData['message_counter']--;
+		$this->save(false, true);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('topic_event_onMessageModify', $param, $this);
+
+		$this->event_onUpdateInTopic();
 	}
 
 	/**
@@ -422,19 +452,22 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return array()
 	 */
-	function getCounters($topicId,$clearCache=FALSE) {
-		if (!$topicId) $topicId=$this->id;
-		if ($clearCache || !is_array($GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId])) {
-			$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId]=array('posts'=>0);
-			$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId]['posts']=count($this->parent->getTopicMessages($topicId));
+	function getCounters($clearCache = false) {
 
-			$data=array(
-				'counters'=>&$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId],
-				'topic'=>$topicId
-				);
-			$this->parent->pp_playHookObjList('topic_getCounters', $data, $this);
+		if ($clearCache || is_null($this->counters)) {
+			$this->counters = array(
+				'posts' => $this->parent->getTopicMessages($this->id, true),
+			);
+
+			// @ Todo : remove this lines and rely only on the message_counter field
+			$this->mergedData['message_counter'] = $this->counters['posts'];
+			$this->save(false, true);
+			
+			$this->parent->pp_playHookObjList('topic_getCounters', $this->counters, $this);
+		} else {
+			tx_pplib_div::debug('topic:' . $this->id, 'cached counter');
 		}
-		return $GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['TOPICS'][$topicId];
+		return $this->counters;
 	}
 
 
@@ -1264,7 +1297,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->messageList = Array();
 
 			//Get raw list
-			$idList = $this->parent->getTopicMessages($this->id, $clearCache);
+			$idList = $this->parent->getTopicMessages($this->id, false, $clearCache);
 
 			// Message list preload
 			$this->parent->loadRecordObjectList($idList, 'message');

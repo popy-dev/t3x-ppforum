@@ -79,6 +79,13 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 	/**
 	 * 
+	 * @access protected
+	 * @var array
+	 */
+	var $counters = null;
+
+	/**
+	 * 
 	 * 
 	 * @param 
 	 * @access public
@@ -407,35 +414,27 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return array 
 	 */
-	function getCounters($forumId=0,$clearCache=FALSE) {
-		if (!$forumId) $forumId=$this->id;
-		if (!strcmp($clearCache,'clearCache')) {
-			unset($GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]);
-		} elseif ($clearCache || !is_array($GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId])) {
-			$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]=array('topics'=>0,'posts'=>0,'newposts'=>0);
-			foreach ($this->parent->getForumChilds($forumId,$clearCache) as $child) {
-				$tmp=$this->getCounters($child,$clearCache);
-				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['topics']+=$tmp['topics'];
-				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['posts']+=$tmp['posts'];
-				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['newposts']+=$tmp['newposts'];
-			}
+	function getCounters($clearCache = false) {
+		if ($clearCache || is_null($this->counters)) {
+			$this->counters = array(
+				'topics' => 0,
+				'posts'  => 0,
+			);
 
-			$obj = $this->parent->getTopicObj(0);
-			foreach ($this->parent->getForumTopics($forumId,$clearCache) as $topic) {
-				$tmp=$obj->getCounters($topic,$clearCache);
-				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['topics']++;
-				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['posts']+=$tmp['posts'];
-				$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId]['newposts']+=$tmp['newposts'];
-			}
+			$subForums = $this->parent->getRecursiveForumChilds($this->id, $clearCache);
+			$subForums[] = $this->id;
 
-			$data=Array(
-				'counters'=>&$GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId],
-				'forum'=>$forumId
-				);
+			$fullTopicList = $this->parent->getForumTopics($subForums, $clearCache);
 
-			$this->parent->pp_playHookObjList('forum_getCounters', $data, $this);
+			$this->counters['topics'] = count($fullTopicList);
+			$this->counters['posts'] = $this->parent->getTopicMessages($fullTopicList, true);
+
+			$this->parent->pp_playHookObjList('forum_getCounters', $this->counters, $this);
+		} else {
+			tx_pplib_div::debug('forum:' . $this->id, 'cached counter');
 		}
-		return $GLOBALS['CACHE']['PP_FORUM'][$this->parent->cObj->data['uid']]['COUNTERS']['FORUMS'][$forumId];
+
+		return $this->counters;
 	}
 
 	/**
@@ -781,7 +780,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	function displaySingleChild(&$child,$addClasses) {
 		/* Declare */
 		$data=Array(
-			'counters'=>$this->getCounters($child->id),
+			'counters' => $child->getCounters(),
 			'cols'=>array(),
 			'child'=>&$child,
 			'lastTopic'=>NULL,
@@ -934,7 +933,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if (!$data['topic']->id) {
 			return '';
 		}
-		$data['counters'] = $data['topic']->getCounters($topic->id);
+		$data['counters'] = $topic->getCounters();
 		$data['topic']->loadMessages();
 
 		$data['conf']['topic-title']=$data['topic']->getTitleLink(true);

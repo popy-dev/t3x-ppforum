@@ -1053,7 +1053,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * Return a uid array of forum's childs (if id=0 then giving the list of root forums)
 	 *
 	 * @param int $id = forum's uid
-	 * @param boolean $clearCache = @see pp_lib
+	 * @param boolean $clearCache = 
 	 * @access public
 	 * @return array 
 	 */
@@ -1078,22 +1078,50 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Return the uid-list of a forum topics
+	 * Return a uid array of forum's childs and deep childs
 	 *
 	 * @param int $id = forum's uid
+	 * @param boolean $clearCache = 
+	 * @access public
+	 * @return array 
+	 */
+	function getRecursiveForumChilds($id = 0 , $clearCache = false) {
+		/* Declare */
+		$res = $this->getForumChilds($id , $clearCache);
+	
+		/* Begin */
+		foreach ($res as $subId) {
+			$res = array_merge($res, $this->getRecursiveForumChilds($subId , $clearCache));
+		}
+
+		return $res;
+	}
+
+	/**
+	 * Return the uid-list of a forum topics
+	 *
+	 * @param mixed $id = forum's uid
 	 * @param boolean $clearCache = @see pp_lib
 	 * @access public
 	 * @return array 
 	 */
 	function getForumTopics($id, $clearCache = false, $options=  '') {
-		$id = intval($id);
 		if ($id < 0) {
 			return $this->getUserTopics(-$id, $clearCache, $options);
 		} else {
+
+			$where = '';
+
+			if (is_array($id)) {
+				$where = 'forum IN (' . implode(',', $id) . ')';
+			} else {
+				$where = 'forum = ' . $id;
+			}
+
 			$res = $this->db->exec_SELECTgetRows(
 				'uid',
 				$this->tables['topic'],
-				'forum = ' . intval($id) . $this->pp_getEnableFields($this->tables['topic']),
+				$where . $this->pp_getEnableFields($this->tables['topic']),
 				'',
 				$this->getOrdering('topic', $options),
 				'',
@@ -1195,31 +1223,97 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$temp = $this->getCurrent($clearCache);
 		return $temp['topic'];
 	}
-	
+
 	/**
 	 * Return the uid-list of a topic messages
 	 *
 	 * @param int $id = topic's uid
 	 * @param boolean $clearCache = @see pp_lib
 	 * @access public
-	 * @return array 
+	 * @return mixed 
 	 */
-	function getTopicMessages($id , $clearCache = false) {
+	function getTopicMessages($id, $countOnly = false, $clearCache = false) {
+		/* Declare */
+		$countOnly = !!$countOnly;
+		$res = null;
+	
+		/* Begin */
+		if (!is_array($id)) {
+			$id = array($id);
+		}
+
+		$cacheKey = 'pi-getTopicMessages;' . implode(',', $id) . ';' . $countOnly;
+
+		if ($clearCache == 'clearCache') {
+			$this->cache->storeInCache(null, $cacheKey, 'relations');
+		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
+			$res = $this->cache->getFromCache($cacheKey, 'relations');
+			tx_pplib_div::debug('getTopicMessages:' . implode(',', $id), 'cached');
+		} else {
+			$res = $this->getTopicMessages_cached($id, $countOnly);
+			$this->cache->storeInCache($res, $cacheKey, 'relations');
+		}
+
+		return $res;
+	}
+	
+	/**
+	 * Return the uid-list of a topic messages
+	 *
+	 * @param array $id = topic's id list
+	 * @param boolean $clearCache = @see pp_lib
+	 * @access public
+	 * @return mixed 
+	 */
+	function getTopicMessages_cached($id, $countOnly = false) {
+		/* Declare */
 		$res = array();
-		if (intval($id)) {
+		$fields = 'uid';
+		$indexField = 'uid';
+		$isValidId = false;
+
+		/* Begin */
+		if ($countOnly) {
+			$fields = 'count(uid) as count_messages';
+			$indexField = null;
+		}
+
+		if (is_array($id)) {
+			$where = 'topic IN (' . implode(',', $id) . ')';
+			$isValidId = count($id);
+		} else {
+			$where = 'topic = ' . $id;
+			$isValidId = intval($id);
+		}
+
+		if ($isValidId) {
 			$res = $this->db->exec_SELECTgetRows(
-				'uid',
+				$fields,
 				$this->tables['message'],
-				'topic = ' . tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['message']),
+				$where . $this->pp_getEnableFields($this->tables['message']),
 				'',
 				$this->getOrdering('message'),
 				'',
-				'uid'
+				$indexField
 			);
 			$this->internalLogs['querys']++;
 			$this->internalLogs['realQuerys']++;
+		}
 
-			$res = is_array($res) ? array_keys($res) : array();
+
+		if ($countOnly) {
+			if (is_array($res) && count($res)) {
+				$res = reset($res);
+				$res = intval($res['count_messages']);
+			} else {
+				$res = 0;
+			}
+		} else {
+			if (is_array($res) && count($res)) {
+				$res = array_keys($res);
+			} else {
+				$res = array();
+			}
 		}
 
 		return $res;
