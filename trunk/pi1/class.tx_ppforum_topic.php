@@ -1300,6 +1300,10 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$idList = $this->parent->getTopicMessages($this->id, false, $clearCache);
 
 			// Message list preload
+			if (!is_array($idList)) {
+				tx_pplib_div::debug(t3lib_div::debug_trail(), 'loadRecordObjectList:$idList');
+				$idList = array();
+			}
 			$this->parent->loadRecordObjectList($idList, 'message');
 
 			$this->parent->flushDelayedObjects();

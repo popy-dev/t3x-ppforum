@@ -1244,8 +1244,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$cacheKey = 'pi-getTopicMessages;' . implode(',', $id) . ';' . $countOnly;
 
-		if ($clearCache == 'clearCache') {
-			$this->cache->storeInCache(null, $cacheKey, 'relations');
+		if ($clearCache === 'clearCache') {
+			$this->cache->storeInCache($res, $cacheKey, 'relations');
 		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
 			$res = $this->cache->getFromCache($cacheKey, 'relations');
 			tx_pplib_div::debug('getTopicMessages:' . implode(',', $id), 'cached');
@@ -1553,6 +1553,12 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 		//*** Determine classname
 		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
+
+		if (!is_array($idList)) {
+			tx_pplib_div::debug(t3lib_div::debug_trail(), 'loadRecordObjectList:$idList');
+
+			$idList = array();
+		}
 
 		foreach ($idList as $id) {
 			$cacheKeys[$id] = $this->generateCacheKey($id, $type);
