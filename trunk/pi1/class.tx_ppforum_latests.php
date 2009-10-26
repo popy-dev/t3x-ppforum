@@ -95,16 +95,13 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 		if (!is_array($this->topicList) || !count($this->topicList) || $clearCache) {
 			$this->topicList = Array();
 			$latestVisitDate = $this->parent->currentUser->getUserPreference('latestVisitDate');
+			$latestVisitDate = max($latestVisitDate, $this->parent->currentUser->data['crdate']);
 			$preloadedTopicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
 
 			if (!is_array($preloadedTopicList)) {
 				$preloadedTopicList = Array();
 			}
 
-			if (!$latestVisitDate) {
-				$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
-				return ;
-			}
 
 			// Get latests topics & messages
 			$topicList = $this->parent->getLatestsTopics($latestVisitDate);
@@ -134,6 +131,7 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 			}
 
 			asort($topicList);
+			$topicList = array_slice($topicList, 0, 40);
 
 			$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
 			$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
