@@ -244,7 +244,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function userCanDeleteTopic($topicId) {
+	function userCanDeleteTopic($topicId, $res) {
 		return TRUE;
 	}
 
@@ -257,6 +257,17 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 */
 	function userCanEditTopic($topicId) {
 		return FALSE;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function userIsGuard() {
+		return true;
 	}
 
 	/**
@@ -335,6 +346,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return void 
 	 */
 	function deleteMessage($messageId) {
+		tx_pplib_div::debug($messageId, 'deleteMessage');
 		$message=&$this->parent->getMessageObj($messageId);
 		if ($this->parent->currentUser->id == $this->userId) {
 
