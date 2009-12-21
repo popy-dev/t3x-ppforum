@@ -189,6 +189,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	/**
 	 *
 	 *
+	 * @uncached
 	 * @param 
 	 * @access public
 	 * @return void 
@@ -378,8 +379,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function getTitleLink($withIcons = false) {
 		if ($withIcons) {	
-			$altclass = $this->isUnread() ? ' unread-topic-icon' : '';
-			$addText = '<img src="clear.gif" class="topic-icon' . $altclass . '" alt="" title="" />';
+			$addText = '<img src="clear.gif" class="topic-icon" alt="" title="" />';
 			if ($this->data['pinned']) {
 				$addText .= '<img src="clear.gif" class="pinned-topic" alt="pinned" title="pinned" /> ';
 			}
