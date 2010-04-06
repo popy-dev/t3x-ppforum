@@ -27,7 +27,7 @@ var tx_ppforum = {
 	 * @return void
 	 */
 	initialize: function(event){
-		document.getElementsByClassName('tx-ppforum-pi1').each(function(forum){
+		$$('.tx-ppforum-pi1').each(function(forum){
 			forum = $(forum);
 			$A(forum.getElementsByTagName('form')).each(function(item){
 				tx_ppforum.initializeForm(item);
