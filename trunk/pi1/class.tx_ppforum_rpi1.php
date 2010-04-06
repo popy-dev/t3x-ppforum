@@ -1248,7 +1248,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$this->cache->storeInCache($res, $cacheKey, 'relations');
 		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
 			$res = $this->cache->getFromCache($cacheKey, 'relations');
-			tx_pplib_div::debug('getTopicMessages:' . implode(',', $id), 'cached');
 		} else {
 			$res = $this->getTopicMessages_cached($id, $countOnly);
 			$this->cache->storeInCache($res, $cacheKey, 'relations');
@@ -1265,10 +1264,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return mixed 
 	 */
-	function getTopicMessages_cached($id, $countOnly = false) {
+	function getTopicMessages_cached($id, $countOnly = false, $limit = '', $preload = false) {
 		/* Declare */
 		$res = array();
-		$fields = 'uid';
+		$fields = $preload ? '*' : 'uid';
 		$indexField = 'uid';
 		$isValidId = false;
 
@@ -1293,7 +1292,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$where . $this->pp_getEnableFields($this->tables['message']),
 				'',
 				$this->getOrdering('message'),
-				'',
+				$limit,
 				$indexField
 			);
 			$this->internalLogs['querys']++;
@@ -1451,6 +1450,50 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
+	 * Determine a record object classname based on the record type
+	 *
+	 * @param string $type = record type
+	 * @access public
+	 * @return string / null if not found 
+	 */
+	function recordObject_getClass($type) {
+		/* Declare */
+		$className = null;
+	
+		/* Begin */
+		if (isset($this->conf['recordObjects.'][$type])) {
+			$className = $this->conf['recordObjects.'][$type];
+		}
+
+		return $className;
+	}
+
+	/**
+	 * Instanciate a record object classname based on the record type
+	 *
+	 * @param string $type = record type
+	 * @access public
+	 * @return object / null 
+	 */
+	function &recordObject_instanciate($type) {
+		/* Declare */
+		$className = $this->recordObject_getClass($type);
+		$res = null;
+	
+		/* Begin */
+		//** if a valid class is found, build object and init it
+		if (trim($className)) {
+			//* Instanciate object
+			$res = &$this->pp_makeInstance($className);
+			
+			//* Force the type proprety value
+			$res->type = $type;
+		}
+
+		return $res;
+	}
+
+	/**
 	 * Get a record object
 	 * Objects are cached : every record object is also unique during the whole page generation
 	 * 
@@ -1464,27 +1507,20 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	function &getRecordObject($id, $type, $clearCache = false, $delayed = false) {
 		/* Declare */
 		$cacheKey = $this->generateCacheKey($id, $type);
-		$classKey = $type;
-		$className = false;
+		$className = null;
 		$res = null;
 
 		/* Begin */
 		//*** Special case : negative forum id means forumsim object
-		if ($type == 'forum' && $id < 0) $classKey = 'forumsim';
-
-		//*** Determine classname
-		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
+		if ($type == 'forum' && $id < 0) $type = 'forumsim';
 
 		if ($clearCache || !$this->cache->isInCache($cacheKey)) {
-			//** if a valid class is found, build object and init it
-			if (trim($className)) {
-				//* Instanciate object
-				$res = &$this->pp_makeInstance($className);
-				
-				//* Force the type proprety value
-				$res->type = $type;
+			$res = &$this->recordObject_instanciate($type);
 
+			// If object have been successfully built
+			if (is_object($res)) {
 				if ($delayed && isset($this->_delayedObjectList[$type])) {
+					// Deleyed mode : The data will not be loaded now, it will be done later trought the method "flushDelayedObjects"
 					$this->_delayedObjectList[$type][] = $id;
 				} else {
 					//* Load data
@@ -1494,8 +1530,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 						$res->loadData($rData);
 					} else {
 						$res->load($id);
-						$this->internalLogs['querys']++;
-						$this->internalLogs['realQuerys']++;
 					}
 				}
 			}
@@ -1505,24 +1539,18 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$res = &$this->cache->getFromCache($cacheKey);
 		}
 
-		//*** Increment query counter
-		if ($id > 0) {
-			$this->internalLogs['querys']++;
-		}
-
 		//*** Return the cached object
 		return $res;
 	}
 
 	/**
+	 * Flush the "Object wich have to be loaded" stack by loading them, recursively, type by type
 	 * 
-	 * 
-	 * @param 
 	 * @access public
 	 * @return void 
 	 */
 	function flushDelayedObjects() {
-		do {
+		do { // This do/while handle internal delaying (each load level can re-load childs as delayed)
 			$count = 0;
 			foreach ($this->_delayedObjectList as $type => $idList) {
 				if ($count += count($idList)) {
@@ -1534,44 +1562,41 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
+	 * Loads a list of records (query only non-loaded records)
 	 * 
-	 * 
-	 * @param 
+	 * @param array $idList = items ids
+	 * @param string $type = item type (forumsim is skipped, as their is no sense to load a list of them FOR NOW)
+	 * @param bool $justLoadData = Force loading items already cached : used ONLY by flushDelayedObjects
+	 *                               The reason is that a delayed object is cached BUT empty, so we have to fill it
 	 * @access public
 	 * @return void 
 	 */
 	function loadRecordObjectList($idList, $type, $justLoadData = false) {
 		/* Declare */
-		$classKey = $type;
-		$className = false;
 		$loadIdList = array();
 		$cacheKeys = Array();
 
 		/* Begin */
+		// Sanity check : Only for REAL data
 		if (!in_array($type, array('message', 'topic', 'user', 'forum'))) {
 			return ;
 		}
-		//*** Determine classname
-		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
 
-		if (!is_array($idList)) {
-			tx_pplib_div::debug(t3lib_div::debug_trail(), 'loadRecordObjectList:$idList');
-
-			$idList = array();
-		}
-
+		// Generate cache keys and the "Id to load" list
 		foreach ($idList as $id) {
 			$cacheKeys[$id] = $this->generateCacheKey($id, $type);
 
-			if (!$this->cache->isInCache($cacheKeys[$id]) || $justLoadData) {
+			if ($justLoadData || !$this->cache->isInCache($cacheKeys[$id])) {
 				$loadIdList[] = $id;
 			}
 		}
 
+		// Exiting if no query is needed
 		if (!count($loadIdList)) {
 			return ;
 		}
 
+		// Get items
 		$tabRes = $this->db->exec_SELECTgetRows(
 			'*',
 			$this->tables[$type],
@@ -1582,17 +1607,15 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'uid'
 		);
 
-		$this->log('SELECT');
+		$this->internalLogs['realQuerys']++;
 
+		// Init and load record objects
 		foreach ($loadIdList as $id) {
 			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
 
 			if (!$this->cache->isInCache($cacheKeys[$id])) {
 				//* Instanciate object
-				$res = &$this->pp_makeInstance($className);
-				
-				//* Force the type proprety value
-				$res->type = $type;
+				$res = &$this->recordObject_instanciate($type);
 
 				$this->cache->storeInCache($res, $cacheKeys[$id]);
 			} else {
@@ -1605,11 +1628,13 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
+	 * Generate an item (record object) unique cache key
+	 * Used for internal caching API
 	 *
-	 *
-	 * @param 
+	 * @param int $id = item's id
+	 * @param string $type = item's type
 	 * @access public
-	 * @return void 
+	 * @return string 
 	 */
 	function generateCacheKey($id, $type) {
 		return $type . ',' . strval($id);
@@ -1740,6 +1765,56 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		return parent::pp_linkTP($str,$addParams,$cache,$altPageId);
 	}
 
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function pagination_calculateBase($nbItems, $resPerPage) {
+		/* Declare */
+		$nbItems = intval($nbItems);
+		$resPerPage = max(1, $resPerPage);
+
+		/* Begin */
+		return array(
+			'itemCount' => $nbItems,
+			'itemPerPage' => $resPerPage,
+			'pageCount' => max(1, ceil($nbItems / $resPerPage)),
+		);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function pagination_parsePointer($pagination, $pointer) {
+		if ($pointer === 'last') {
+			$pointer = $pagination['pageCount'] - 1;
+		}
+		$pointer = min($pointer, $pagination['pageCount'] - 1);
+		$pointer = max($pointer, 0);
+
+		return $pointer;
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function pagination_getRange($pagination, $pointer) {
+		return array(
+			$pointer * $pagination['itemPerPage'],
+			$pagination['itemPerPage'],
+		);
+	}
 
 	/**
 	 * Build the message browser and set the recordRange var (used for display)
