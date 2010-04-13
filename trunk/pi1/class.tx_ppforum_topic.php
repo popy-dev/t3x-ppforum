@@ -89,6 +89,23 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	var $counters = null;
 
+
+	/**
+	 * Pagination infos
+	 * @access protected
+	 * @see initPaginateInfos
+	 * @var array
+	 */
+	var $_paginate = false;
+
+	/**
+	 * Topic's message list (page / id structure)
+	 * @access public
+	 * @see initPaginateInfos
+	 * @var array
+	 */
+	var $_messageList = array();
+
 	/**
 	 * Loads the topic
 	 * 
@@ -1286,27 +1303,49 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		return $res;
 	}
 
+
+	/**
+	 * Additional access check
+	 *
+	 * @param int $messageId = the message uid
+	 * @param boolean $res = the original access
+	 * @access public
+	 * @return boolean 
+	 */
+	function userCanEditMessage($messageId) {
+		$res = $this->forum->userCanEditMessage($messageId);
+
+		//Plays hook list : Allows to change the result
+		$this->parent->pp_playHookObjList('topic_userCanEditMessage', $res, $this);
+
+		return $res;
+	}
+
+	/**
+	 * Additional access check
+	 *
+	 * @param int $messageId = the message uid
+	 * @param boolean $res = the original access
+	 * @access public
+	 * @return boolean 
+	 */
+	function userCanDeleteMessage($messageId) {
+		$res = $this->forum->userCanDeleteMessage($messageId);
+
+		//Plays hook list : Allows to change the result
+		$this->parent->pp_playHookObjList('topic_userCanDeleteMessage', $res, $this);
+
+		return $res;
+	}
+
 	/****************************************/
 	/******* Messages related funcs *********/
 	/****************************************/
 
 	/**
-	 * 
-	 * @access protected
-	 * @var array
-	 */
-	var $_paginate = false;
-
-	/**
-	 * 
-	 * @access public
-	 * @var string
-	 */
-	var $_messageList = array();
-
-	/**
+	 * Initialize paginationINfo
 	 *
-	 *
+	 * @param bool $clearCache = set to true to force new calc & clearing message lists
 	 * @access public
 	 * @return void 
 	 */
@@ -1329,22 +1368,25 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 * Counts topic's messages
 	 *
-	 *
-	 * @param 
 	 * @access public
-	 * @return void 
+	 * @return int 
 	 */
 	function db_getMessageCount() {
 		return $this->db_getMessageListQuery(true);
 	}
 
 	/**
+	 * Performs a query on topic's messages ids
 	 *
-	 *
-	 * @param 
+	 * @param array $params = query parameters. Keys are :
+	 *                  - int page = "page" to load (null mean everything)
+	 *                  - bool preload = query will fetch full rows and they will be loaded into record objects
+	 *                  - bool nockech = disable access check
+	 *                  - bool clearCache = clear current query cache
 	 * @access public
-	 * @return void 
+	 * @return array 
 	 */
 	function db_getMessageList($params = array()) {
 		/* Declare */
@@ -1360,12 +1402,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		/* Begin */
 		$this->initPaginateInfos();
 		if (is_null($page)) {
+			// set special key
 			$page = '_';
 		} else {
+			// Resolve pointer and calculate LIMIT
 			$page = $this->parent->pagination_parsePointer($this->_paginate, $page);
 			$limit = implode(
 				',',
-				$this->parent->pagination_getRange($this->_paginate['itemPerPage'], $page)
+				$this->parent->pagination_getRange($this->_paginate, $page)
 			);
 		}
 
@@ -1531,40 +1575,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Plays hook list : Allows to change the result
 		$this->parent->pp_playHookObjList('topic_messageIsVisible', $res, $this);
-
-		return $res;
-	}
-
-	/**
-	 * Additional access check
-	 *
-	 * @param int $messageId = the message uid
-	 * @param boolean $res = the original access
-	 * @access public
-	 * @return boolean 
-	 */
-	function userCanEditMessage($messageId) {
-		$res = $this->forum->userCanEditMessage($messageId);
-
-		//Plays hook list : Allows to change the result
-		$this->parent->pp_playHookObjList('topic_userCanEditMessage', $res, $this);
-
-		return $res;
-	}
-
-	/**
-	 * Additional access check
-	 *
-	 * @param int $messageId = the message uid
-	 * @param boolean $res = the original access
-	 * @access public
-	 * @return boolean 
-	 */
-	function userCanDeleteMessage($messageId) {
-		$res = $this->forum->userCanDeleteMessage($messageId);
-
-		//Plays hook list : Allows to change the result
-		$this->parent->pp_playHookObjList('topic_userCanDeleteMessage', $res, $this);
 
 		return $res;
 	}
