@@ -1632,6 +1632,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	/**
 	 * Preload a recordset into data objects
 	 *   Used internally when a query did return full rows instead of just ids, to limit query count
+	 *   Loading has to be completed by flushDelayedObjects
 	 *
 	 * @param array $list = recordset (list of rows)
 	 * @param string $type = items type
@@ -1780,10 +1781,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function pagination_getRange($itemsPerPage, $pointer) {
+	function pagination_getRange($paginate, $pointer) {
 		return array(
-			$pointer * $itemsPerPage,
-			$itemsPerPage,
+			$pointer * $paginate['itemPerPage'],
+			$paginate['itemPerPage'],
 		);
 	}
 
