@@ -789,6 +789,34 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 	}
 
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function batch_updateUsersMessageCounter() {
+		$res = array_keys($this->db_queryItems(array(
+			'*',
+			'user',
+			'1=1',
+			'',
+			'',
+			'',
+			'uid'
+		), array(
+			'preload' => true,
+		)));
+		$this->flushDelayedObjects();
+
+		foreach ($res as $id) {
+			$temp = &$this->getUserObj($id);
+			$temp->batch_updateMessageCounter();
+		}
+
+	}
+
 	/****************************************/
 	/************* Print funcs **************/
 	/****************************************/
@@ -1895,7 +1923,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		$res = call_user_func_array(array(&$this->db, 'exec_SELECTgetRows'), $params);
-		$this->internalLogs['realQuerys']++;
 
 		if (!is_array($res)) {
 			$res = array();

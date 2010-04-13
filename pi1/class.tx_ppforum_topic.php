@@ -251,6 +251,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		if ($isNewTopic) {
 			$this->forum->event_onNewTopic($this->id);
+			$this->author->incrementMessageCounter();
 		} elseif ($this->forceReload['forum']) {
 			$this->forum->event_onUpdateInForum();
 		}
@@ -290,11 +291,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		);
 	
 		/* Begin */
-
 		$this->forum->event_onNewPostInTopic($this->id, $messageId);
 
-		$this->mergedData['message_counter']++;
-		$this->save();
 		$this->initPaginateInfos(true);
 
 		//Playing hook list
@@ -316,8 +314,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		);
 	
 		/* Begin */
-		$this->mergedData['message_counter']--;
-		$this->save(true, true);
 		$this->initPaginateInfos(true);
 
 		//Playing hook list
@@ -469,14 +465,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function getCounters($clearCache = false) {
 
 		if ($clearCache || is_null($this->counters)) {
-			$c = $this->db_getMessageCount();
-			if ($c != $this->mergedData['message_counter']) {
-				$this->mergedData['message_counter'] = $c;
-				$this->save(false, true);
-			}
-
 			$this->counters = array(
-				'posts' => $this->data['message_counter'],
+				'posts' => $this->db_getMessageCount(),
 			);
 			
 			$this->parent->pp_playHookObjList('topic_getCounters', $this->counters, $this);
@@ -486,7 +476,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		return $this->counters;
 	}
-
 
 	/**
 	 * Check if a message is modified/posted/deleted
@@ -982,33 +971,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
-	 * Returns the page number where the message is displayed
-	 *
-	 * @param int $messageId = message's uid
-	 * @access public
-	 * @return int/string 
-	 */
-	function getMessagePageNum($messageId=0) {
-		/* Declare */
-		$res = $this->_paginate['pageCount'] - 1; //Default value
-
-		/* Begin */
-		if (!in_array($messageId, $this->_messageList['_loaded'])) {
-			$this->db_getMessageList(array(
-				'preload' => false,
-			));
-		}
-
-		for ($i=0;$i<$this->_paginate['pageCount'];$i++) {
-			if ($this->_messageList[$i] && in_array($messageId, $this->_messageList[$i])) {
-				$res = $i;
-			}
-		}
-
-		return $res;
-	}
-
-	/**
 	 * Display message list
 	 *
 	 * @access public
@@ -1023,7 +985,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		/* Begin */
 		if ($this->_paginate['itemCount']) {
 			$messageList = $this->db_getMessageList(array(
-				'page' => intval($this->parent->getVars['pointer']),
+				'page' => isset($this->parent->getVars['pointer']) ? $this->parent->getVars['pointer'] : 0,
 			));
 
 			$this->parent->loadRecordObjectList($messageList, 'messages');
@@ -1352,7 +1314,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function initPaginateInfos($clearCache = false) {
 		if (!$clearCache && !$this->_paginate) {
 			$this->_paginate = $this->parent->pagination_calculateBase(
-				$this->data['message_counter'],
+				$this->db_getMessageCount(),
 				$this->parent->config['display']['maxMessages']
 			);
 
@@ -1560,6 +1522,33 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function getLastMessage() {
 		$res = $this->db_getLastMessage();
 		$this->parent->flushDelayedObjects();
+		return $res;
+	}
+
+	/**
+	 * Returns the page number where the message is displayed
+	 *
+	 * @param int $messageId = message's uid
+	 * @access public
+	 * @return int/string 
+	 */
+	function getMessagePageNum($messageId=0) {
+		/* Declare */
+		$res = $this->_paginate['pageCount'] - 1; //Default value
+
+		/* Begin */
+		if (!in_array($messageId, $this->_messageList['_loaded'])) {
+			$this->db_getMessageList(array(
+				'preload' => false,
+			));
+		}
+
+		for ($i=0;$i<$this->_paginate['pageCount'];$i++) {
+			if ($this->_messageList[$i] && in_array($messageId, $this->_messageList[$i])) {
+				$res = $i;
+			}
+		}
+
 		return $res;
 	}
 
