@@ -934,7 +934,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			return '';
 		}
 		$data['counters'] = $topic->getCounters();
-		$data['topic']->loadMessages();
 
 		$data['conf']['topic-title']=$data['topic']->getTitleLink(true);
 		$data['conf']['topic-posts']=$data['counters']['posts'];

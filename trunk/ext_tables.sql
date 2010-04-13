@@ -72,7 +72,9 @@ CREATE TABLE tx_ppforum_topics (
 	message_counter int(11) DEFAULT '0' NOT NULL,
 	
 	PRIMARY KEY (uid),
-	KEY parent (pid)
+	KEY parent (pid),
+	KEY author_key (deleted, author),
+	KEY enablefields (deleted, hidden, forum)
 );
 
 
@@ -95,7 +97,9 @@ CREATE TABLE tx_ppforum_messages (
 	parser varchar(20) DEFAULT '' NOT NULL,
 	
 	PRIMARY KEY (uid),
-	KEY parent (pid)
+	KEY parent (pid),
+	KEY author_key (deleted, author),
+	KEY enablefields (deleted, hidden, topic)
 );
 
 

@@ -277,7 +277,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @return bool 
 	 */
 	function pmIsVisible($id, $table) {
-		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+		$tabRes=$this->parent->db_query(
 			'rel_id',
 			'tx_ppforum_userpms',
 			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id=' . strval($this->id)
@@ -295,7 +295,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 */
 	function countNewPms($inTopic=0) {
 		$addWhere=$inTopic?' AND rel_table=\'message\' AND parent='.strval($inTopic):'';
-		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+		$tabRes=$this->parent->db_query(
 			'count(*)',
 			'tx_ppforum_userpms',
 			'rel_type=\'new\' AND user_id='.strval($this->id).$addWhere
@@ -387,11 +387,11 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	function _displaySmallProfile($conf) {
 		$rows=array();
 		//*** @TODO : should rewrite this ?
-		$nbMessages = intval(reset(reset($this->parent->db->exec_SELECTgetRows(
+		$nbMessages = intval(reset(reset($this->parent->db_query(
 			'count(uid) AS nb',
 			$this->parent->tables['message'],
 			'author='.intval($this->id)
-			))))+intval(reset(reset($this->parent->db->exec_SELECTgetRows(
+			))))+intval(reset(reset($this->parent->db_query(
 				'count(uid) AS nb',
 				$this->parent->tables['topic'],
 				'author='.intval($this->id)
