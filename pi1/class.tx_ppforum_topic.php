@@ -165,17 +165,17 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			} else {
 				$this->mergedData['deleted'] = 1;
 
-				$this->loadMessages(true, true);
+				$fullMessageList = $this->db_getMessageList(array(
+					'nocheck' => true,
+					'clearCache' => true,
+				));
 
-				//Deleting topic messages
-				foreach ($this->messageList as $messageId) {
+				foreach ($fullMessageList as $messageId) {
 					$temp = &$this->parent->getMessageObj($messageId);
 					$temp->delete(false);
 					unset($temp);
 				}
 
-				//Clear topic message list
-				$this->parent->getTopicMessages($this->id, false, 'clearCache');
 				if ($forceReload) {
 					$this->forceReload['list'] = true;
 				}
@@ -204,27 +204,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		return false;
 	}
-
-	/**
-	 * 
-	 * 
-	 * @access public
-	 * @return bool 
-	 */
-	function isMessage() {
-		return false;
-	}
-
-	/**
-	 * 
-	 * 
-	 * @access public
-	 * @return bool 
-	 */
-	function isTopic() {
-		return true;
-	}
-
 
 	/****************************************/
 	/********** Events functions ************/
@@ -273,20 +252,36 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function event_onMessageModify($messageId, $isNewMessage = true) {
 		$param = Array(
 			'messageId' => $messageId,
-			'isNewMessage' =>$isNewMessage,
 		);
 
-		if ($isNewMessage) {
-			$this->forum->event_onNewPostInTopic($this->id, $messageId);
+		//Playing hook list
+		$this->parent->pp_playHookObjList('topic_event_onMessageModify', $param, $this);
+	}
 
-			$this->mergedData['message_counter']++;
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageCreate($messageId) {
+		/* Declare */
+		$this->forceReload['forum'] = true;
+		$param = Array(
+			'messageId' => $messageId,
+		);
+	
+		/* Begin */
 
-			$this->save();
-		}
+		$this->forum->event_onNewPostInTopic($this->id, $messageId);
+
+		$this->mergedData['message_counter']++;
+		$this->save();
+		$this->initPaginateInfos(true);
 
 		//Playing hook list
-		$this->parent->pp_playHookObjList('topic_event_onNewPostInTopic', $param, $this);
-
+		$this->parent->pp_playHookObjList('topic_event_onMessageCreate', $param, $this);
 	}
 
 	/**
@@ -299,15 +294,17 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function event_onMessageDelete($messageId) {
 		/* Declare */
 		$this->forceReload['forum'] = true;
+		$param = Array(
+			'messageId' => $messageId,
+		);
 	
 		/* Begin */
 		$this->mergedData['message_counter']--;
-		$this->save(false, true);
+		$this->save(true, true);
+		$this->initPaginateInfos(true);
 
 		//Playing hook list
-		$this->parent->pp_playHookObjList('topic_event_onMessageModify', $param, $this);
-
-		$this->event_onUpdateInTopic();
+		$this->parent->pp_playHookObjList('topic_event_onMessageDelete', $param, $this);
 	}
 
 	/**
@@ -455,18 +452,21 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function getCounters($clearCache = false) {
 
 		if ($clearCache || is_null($this->counters)) {
-			$this->counters = array(
-				'posts' => $this->parent->getTopicMessages($this->id, true),
-			);
+			$c = $this->db_getMessageCount();
+			if ($c != $this->mergedData['message_counter']) {
+				$this->mergedData['message_counter'] = $c;
+				$this->save(false, true);
+			}
 
-			// @ Todo : remove this lines and rely only on the message_counter field
-			$this->mergedData['message_counter'] = $this->counters['posts'];
-			$this->save(false, true);
+			$this->counters = array(
+				'posts' => $this->data['message_counter'],
+			);
 			
 			$this->parent->pp_playHookObjList('topic_getCounters', $this->counters, $this);
 		} else {
 			tx_pplib_div::debug('topic:' . $this->id, 'cached counter');
 		}
+
 		return $this->counters;
 	}
 
@@ -589,8 +589,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 						}
 					} elseif (!$data['message']->id) {
 						//Preview mode for new topics
-						$this->loadMessages();
-						$this->messageList[] = 0;
+						//$this->loadMessages();
+						//$this->messageList[] = 0;
 						$data['message']->id = 'preview';
 					}
 				}
@@ -837,14 +837,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		if ($this->id) {
-			$this->loadMessages();
-			//Generate mesage-browser
+			$this->initPaginateInfos();
+			//Generate message-browser
 			$tempStr = $this->parent->displayPagination(
-				count($this->messageList),
-				$this->parent->config['display']['maxMessages'],
+				$this->_paginate['itemCount'],
+				$this->_paginate['itemPerPage'],
 				$this,
 				array('message-browser')
-				);
+			);
 			//Print it
 			$content .= $tempStr;
 			//Print message list
@@ -973,21 +973,18 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function getMessagePageNum($messageId=0) {
 		/* Declare */
-		$res='last'; //Default value
-		$i=0;
-		$resPerPage=0;
+		$res = $this->_paginate['pageCount'] - 1; //Default value
 
 		/* Begin */
-		$this->loadMessages();
-		if ($messageId) {
-			$resPerPage=max(1,intval($this->parent->config['display']['maxMessages']));
+		if (!in_array($messageId, $this->_messageList['_loaded'])) {
+			$this->db_getMessageList(array(
+				'preload' => false,
+			));
+		}
 
-			if (in_array($messageId,$this->messageList)) {
-				while (($i<count($this->messageList)) && ($messageId!=intval($this->messageList[$i]))) $i++;
-
-				if ($i<count($this->messageList)) {
-					$res = intval($i/$resPerPage);
-				}
+		for ($i=0;$i<$this->_paginate['pageCount'];$i++) {
+			if ($this->_messageList[$i] && in_array($messageId, $this->_messageList[$i])) {
+				$res = $i;
 			}
 		}
 
@@ -1002,43 +999,52 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function displayMessages() {
 		/* Declare */
-		$content='<div class="message-list">';
-		$counter=0;
-		$obj=NULL;
-		list($start,$length)=explode(':',$this->recordRange);
+		$content = '<div class="message-list">';
+		$counter = 0;
+		$obj = null;
 	
 		/* Begin */
-		$this->loadMessages();
-		if (count($this->messageList)) {
+		if ($this->_paginate['itemCount']) {
+			$messageList = $this->db_getMessageList(array(
+				'page' => intval($this->parent->getVars['pointer']),
+			));
+
+			$this->parent->loadRecordObjectList($messageList, 'messages');
+			$this->parent->flushDelayedObjects();
+
 			//Using recordRange to limit message list
-			foreach (array_slice($this->messageList,$start,$length) as $message) {
-				$data=array();
-				$data['message']=&$this->parent->getMessageObj($message);
-				$data['classes']=array();
-				$data['counter']=$counter;
+			foreach ($messageList as $message) {
+				$data = array(
+					'message' => null,
+					'classes' => array(),
+					'counter' => $counter,
+				);
+				$data['message'] = &$this->parent->getMessageObj($message);
 
 				//Add some classes to the child tag (may be used in CSS)
-				if (!($counter%2)) {
-					$data['classes'][]='row-alt';
+				if ($counter%2) {
+					$data['classes'][] = 'row';
 				}	else {
-					$data['classes'][]='row';
+					$data['classes'][] = 'row-alt';
 				}
 
-				if (!$counter) $data['classes'][]='row-first';
-				if ($counter==$length-1) $data['classes'][]='row-last';
+				if (!$counter) {
+					$data['classes'][] = 'row-first';
+				} elseif ($counter == $length-1) {
+					$data['classes'][] = 'row-last';
+				}
 
 				//Play a hook list : allows to add more classes to the child row
 				$this->parent->pp_playHookObjList('topic_displayMessages', $data, $this);
 
-				$content.=$data['message']->display($data['classes']);
+				$content .= $data['message']->display($data['classes']);
 
 				unset($data['message']);
 				$counter++;
 			}
 
-			$content.='</div>';
+			$content .= '</div>';
 			return $content;
-			
 		} else {
 			return '';
 		}
@@ -1285,37 +1291,220 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	/****************************************/
 
 	/**
-	 * Load the topic's message list and put it in $this->messageList (array of uids)
+	 * 
+	 * @access protected
+	 * @var array
+	 */
+	var $_paginate = false;
+
+	/**
+	 * 
+	 * @access public
+	 * @var string
+	 */
+	var $_messageList = array();
+
+	/**
 	 *
-	 * @param boolean $clearCache = Set to true to clear query cache
+	 *
 	 * @access public
 	 * @return void 
 	 */
-	function loadMessages($clearCache=FALSE,$noCheck=FALSE) {
-		if (!is_array($this->messageList) || $clearCache) {
-			//Init
-			$this->messageList = Array();
+	function initPaginateInfos($clearCache = false) {
+		if (!$clearCache && !$this->_paginate) {
+			$this->_paginate = $this->parent->pagination_calculateBase(
+				$this->data['message_counter'],
+				$this->parent->config['display']['maxMessages']
+			);
 
-			//Get raw list
-			$idList = $this->parent->getTopicMessages($this->id, false, $clearCache);
+			$this->_messageList = array();
 
-			// Message list preload
-			if (!is_array($idList)) {
-				tx_pplib_div::debug(t3lib_div::debug_trail(), 'loadRecordObjectList:$idList');
-				$idList = array();
-			}
-			$this->parent->loadRecordObjectList($idList, 'message');
+			$this->_messageList['_'] = false;
+			$this->_messageList['_loaded'] =	array();
 
-			$this->parent->flushDelayedObjects();
-
-			foreach ($idList as $messageId) {
-				$temp = &$this->parent->getMessageObj($messageId);
-				//Additional check
-				if ($noCheck || ($temp->isVisible() && $this->messageIsVisible($messageId))) {
-					$this->messageList[]=$messageId;
-				}
+			for ($i=0; $i<$this->_paginate['pageCount']; $i++) {
+				$this->_messageList[$i] = false;
 			}
 		}
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function db_getMessageCount() {
+		return $this->db_getMessageListQuery(true);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function db_getMessageList($params = array()) {
+		/* Declare */
+		$params += array(
+			'page' => null,
+			'preload' => true,
+			'nocheck' => false,
+			'clearCache' => false,
+		);
+		$page = $params['page'];
+		$limit = '';
+	
+		/* Begin */
+		$this->initPaginateInfos();
+		if (is_null($page)) {
+			$page = '_';
+		} else {
+			$page = $this->parent->pagination_parsePointer($this->_paginate, $page);
+			$limit = implode(
+				',',
+				$this->parent->pagination_getRange($this->_paginate['itemPerPage'], $page)
+			);
+		}
+
+		if (!$params['clearCache'] && is_array($this->_messageList[$page])) {
+			$idList = $this->_messageList[$page];
+		} else {
+			if ($this->_paginate['itemCount']) {
+				$idList = $this->db_getMessageListQuery(
+					false,
+					$limit,
+					$params['preload'],
+					$params['nocheck']
+				);
+			} else {
+				$idList = array();
+			}
+
+			$this->_messageList[$page] = $idList;
+
+			if ($page == '_') {
+				// As the full list has been loaded, we can determine each page id list
+				$this->_messageList = array_merge(
+					array_chunk($idList, $this->_paginate['itemPerPage']),
+					array(
+						'_' => $idList,
+						'_loaded' => $idList,
+					)
+				);
+			} elseif (!$this->_messageList['_']) {
+				$this->_messageList['_loaded'] = array_merge($this->_messageList['_loaded'], $idList);
+			}
+		}
+
+		$this->internalLogs['querys']++;
+
+		return $idList;
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function db_getLastMessage($params = array()) {
+		/* Declare */
+		$params += array(
+			'preload' => true,
+			'nocheck' => false,
+			'clearCache' => false,
+		);
+		$limit = '';
+		$id = 0;
+	
+		/* Begin */
+		$this->initPaginateInfos();
+		$limit = ($this->_paginate['itemCount'] - 1) . ',1';
+
+		if (!$params['clearCache'] && isset($this->_messageList['_last'])) {
+			$id = $this->_messageList['_last'];
+		} else {
+			if ($this->_paginate['itemCount']) {
+				$id = reset($this->db_getMessageListQuery(
+					false,
+					$limit,
+					$params['preload'],
+					$params['nocheck']
+				));
+			} else {
+				$id = 0;
+			}
+
+			$this->_messageList['_last'] = $id;
+			$this->_messageList['_loaded'][] = $id;
+		}
+
+		$this->internalLogs['querys']++;
+
+		return $id;
+	}
+
+	/**
+	 * Return the uid-list of a topic messages
+	 *
+	 * @param array $id = topic's id list
+	 * @param boolean $clearCache = @see pp_lib
+	 * @access public
+	 * @return mixed 
+	 */
+	function db_getMessageListQuery($countOnly = false, $limit = '', $preload = false, $nocheck = false) {
+		/* Declare */
+		$res = array();
+		$fields = $preload ? '*' : 'uid'; // Get every fields in case of preloading
+		$indexField = 'uid';
+
+		/* Begin */
+		if ($countOnly) {
+			$fields = 'count(uid) as count_messages';
+			$indexField = null;
+		}
+
+		$res = $this->parent->db_queryItems(array(
+			$fields,
+			'message',
+			$this->db_messagesWhere($nocheck),
+			'',
+			null,
+			$limit,
+			$indexField
+		), array(
+			'preload' => $preload && !$countOnly,
+		));
+
+		if ($countOnly) {
+			$res = intval($res[0]['count_messages']);
+		} else {
+			$res = array_keys($res);
+		}
+
+		return $res;
+	}
+
+	/**
+	 * Build the basic where statement to select topic's message
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function db_messagesWhere($nocheck = false) {
+		$where = 'topic = ' . $this->id;
+
+		if (!$nocheck) {
+			if (!$this->forum->userIsGuard()) {
+				$where .= ' AND hidden = 0';
+			}
+		}
+
+		return $where;
 	}
 
 	/**
@@ -1325,8 +1514,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return int 
 	 */
 	function getLastMessage() {
-		$this->loadMessages();
-		return end($this->messageList);
+		$res = $this->db_getLastMessage();
+		$this->parent->flushDelayedObjects();
+		return $res;
 	}
 
 	/**

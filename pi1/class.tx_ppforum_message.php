@@ -170,8 +170,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			}
 
 			//Playing hook list
-			$null = null;
-			$this->parent->pp_playHookObjList('message_mergeData', $null, $this);
+			$this->parent->pp_playHookObjList('message_mergeData', $incommingData, $this);
 		}
 	}
 
@@ -183,12 +182,18 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function save($forceReload = true) {
 		/* Declare */
-		$null = null;
 		$result = false;
+		$mode = 'update';
 
 		/* Begin */
+		if (!$this->id) {
+			$mode = 'create';
+		} elseif ($this->mergedData['deleted'] && !$this->data['deleted']) {
+			$mode = 'delete';
+		}
+
 		// Plays hook list : Allow to change some field before saving
-		$this->parent->pp_playHookObjList('message_save', $null, $this);
+		$this->parent->pp_playHookObjList('message_save', $mode, $this);
 
 		$this->mergedData['author'] = $this->author->id;
 		$this->mergedData['topic'] = $this->topic->id;
@@ -197,15 +202,10 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		if ($forceReload) {
 			$this->forceReload['topic'] = true;
-
-			if ($this->isNew) {
-				// Reloading list (may have change because of the new row)
-				$this->forceReload['list'] = true;
-			}
 		}
 
 		//Launch topic event handler
-		$this->event_onUpdateInMessage();
+		$this->event_onUpdateInMessage($mode);
 
 		return $result;
 	}
@@ -283,9 +283,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			} else {
 				//Normal delete
 				$this->mergedData['deleted'] = 1;
-				if ($forceReload) {
-					$this->forceReload['list'] = true;
-				}
+
 				return $this->save($forceReload);
 			}
 		} else {
@@ -303,16 +301,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access protected
 	 * @return void
 	 */
-	function event_onUpdateInMessage() {
+	function event_onUpdateInMessage($mode) {
 		/* Declare */
 		$null = null;
 	
 		/* Begin */
 		//Playing hook list
-		$this->parent->pp_playHookObjList('message_event_onUpdateInMessage', $null, $this);
-
-		//If needed (deletion/creation of a message), clear the message list query cache
-		if ($this->forceReload['list']) $this->topic->loadMessages(true);
+		$this->parent->pp_playHookObjList('message_event_onUpdateInMessage', $mode, $this);
 
 		//Forcing data and object reload. Could be used to ensure that data is "as fresh as possible"
 		//Useless if oject wasn't builded with 'getMessageObj' function
@@ -320,7 +315,19 @@ class tx_ppforum_message extends tx_ppforum_base {
 		if ($this->forceReload['data']) $this->load($this->id, true);
 
 		//Launch topic event function only if needed (eg: don't enter here when deleting messages from topic::delete)
-		if ($this->forceReload['topic']) $this->topic->event_onMessageModify($this->id, $this->isNew);
+		if ($this->forceReload['topic']) {
+			switch ($mode){
+			case 'create':
+				$this->topic->event_onMessageCreate($this->id);
+				break;
+			case 'update': 
+				$this->topic->event_onMessageModify($this->id);
+				break;
+			case 'delete': 
+				$this->topic->event_onMessageDelete($this->id);
+				break;
+			}
+		}
 
 		//Resets directives
 		$this->forceReload = array();
@@ -400,7 +407,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @return int = pointer value 
 	 */
 	function getPageNum() {
-		return $this->topic->getMessagePageNum($this->id);
+		if ($this->id) {
+			$this->topic->getMessagePageNum($this->id);
+		} else {
+			return 'last';
+		}
 	}
 
 	/**
@@ -1173,26 +1184,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$this->parent->pp_playHookObjList('message_isVisibleRecursive', $res, $this);
 
 		return $res;
-	}
-
-	/**
-	 * 
-	 * 
-	 * @access public
-	 * @return bool 
-	 */
-	function isMessage() {
-		return true;
-	}
-
-	/**
-	 * 
-	 * 
-	 * @access public
-	 * @return bool 
-	 */
-	function isTopic() {
-		return false;
 	}
 
 	/**

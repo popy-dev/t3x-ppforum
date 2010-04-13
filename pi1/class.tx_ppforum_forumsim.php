@@ -134,8 +134,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			return '';
 		}
 		$data['counters'] = $topic->getCounters($topic);
-		$data['topic']->loadMessages();
-
 		$data['conf']['topic-with']='';
 		if ($data['topic']->author->id==$this->parent->currentUser->id) {
 			$data['conf']['topic-with']=$data['topic']->forum->user->displayLight();
@@ -331,8 +329,10 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onMessageDisplay($topicId,$messageId) {
-		$this->parent->currentUser->viewPm($messageId,'message');
+	function event_onMessageDisplay($topicId, $messageId) {
+		if ($messageId) {
+			$this->parent->currentUser->viewPm($messageId, 'message');
+		}
 
 		parent::event_onMessageDisplay($topicId,$messageId);
 	}
@@ -365,7 +365,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 
 		//** user-delete
 		$this->parent->currentUser->deletePm($messageId,'message');
-		$message->topic->loadMessages(TRUE);
 
 		return TRUE;
 	}
@@ -397,8 +396,12 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		$this->parent->currentUser->deletePm($topicId,'topic');
 
 		//** Unread message should not be counted there !
-		$topic->loadMessages();
-		foreach ($topic->messageList as $messageId) {
+		$messageList = $this->db_getMessageList(array(
+			'nocheck' => true,
+			'clearCache' => true,
+		));
+
+		foreach ($messageList as $messageId) {
 			$this->parent->currentUser->viewPm($messageId,'message');
 		}
 		$this->loadTopicList(TRUE);
