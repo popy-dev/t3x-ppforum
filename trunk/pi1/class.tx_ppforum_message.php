@@ -318,6 +318,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		if ($this->forceReload['topic']) {
 			switch ($mode){
 			case 'create':
+				$this->author->incrementMessageCounter();
 				$this->topic->event_onMessageCreate($this->id);
 				break;
 			case 'update': 
@@ -408,7 +409,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function getPageNum() {
 		if ($this->id) {
-			$this->topic->getMessagePageNum($this->id);
+			return $this->topic->getMessagePageNum($this->id);
 		} else {
 			return 'last';
 		}

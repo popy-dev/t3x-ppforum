@@ -69,7 +69,6 @@ CREATE TABLE tx_ppforum_topics (
 	pinned tinyint(4) DEFAULT '0' NOT NULL,
 	nosmileys tinyint(4) DEFAULT '0' NOT NULL,
 	parser varchar(20) DEFAULT '' NOT NULL,
-	message_counter int(11) DEFAULT '0' NOT NULL,
 	
 	PRIMARY KEY (uid),
 	KEY parent (pid),

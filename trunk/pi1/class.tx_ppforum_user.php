@@ -384,9 +384,8 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @access public
 	 * @return void 
 	 */
-	function _displaySmallProfile($conf) {
-		$rows=array();
-		//*** @TODO : should rewrite this ?
+	function batch_updateMessageCounter() {
+		/* Declare */
 		$nbMessages = intval(reset(reset($this->parent->db_query(
 			'count(uid) AS nb',
 			$this->parent->tables['message'],
@@ -396,6 +395,38 @@ class tx_ppforum_user extends tx_pplib_feuser {
 				$this->parent->tables['topic'],
 				'author='.intval($this->id)
 			))));
+	
+		/* Begin */
+		$this->setUserPreference('messageCounter', $nbMessages);
+	}
+
+	/**
+	 *
+	 *
+	 * @access public
+	 * @return void 
+	 */
+	function incrementMessageCounter() {
+		/* Declare */
+		$nbMessages = intval($this->getUserPreference('messageCounter'));
+	
+		/* Begin */
+		$nbMessages++;
+
+		$this->setUserPreference('messageCounter', $nbMessages);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function _displaySmallProfile($conf) {
+		//$this->batch_updateMessageCounter();
+		$rows=array();
+		$nbMessages = intval($this->getUserPreference('messageCounter'));
 
 		if ($image = $this->print_avatarImg()) {
 			$rows[] = $image;
