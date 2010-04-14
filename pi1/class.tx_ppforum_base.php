@@ -79,6 +79,10 @@ class tx_ppforum_base {
 	function load($id, $clearCache = false, $delaySubs = false) {
 		$this->tablename = $this->parent->tables[$this->type];
 
+		//t3lib_div::debug(t3lib_div::debug_trail(), '->load method called');
+
+		$this->parent->internalLogs['querys']++;
+		$this->parent->internalLogs['realQuerys']++;
 		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename), $delaySubs);
 	}
 

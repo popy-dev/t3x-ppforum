@@ -93,7 +93,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function loadData($data, $delaySubs = false) {
 		if (parent::loadData($data)) {
-			$this->forum = &$this->parent->getForumObj($this->data['parent'], $delaySubs);
+			$this->forum = &$this->parent->getForumObj($this->data['parent'], false, $delaySubs);
 			$this->getMetaData();
 		}
 
@@ -694,8 +694,10 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$child=NULL;
 	
 		/* Begin */
-		foreach ($this->parent->getForumChilds($this->id) as $childId) {
-			$child=&$this->parent->getForumObj($childId);//Build sub-forum object
+		$childIdList = $this->parent->getForumChilds($this->id, true);
+		$this->parent->flushDelayedObjects();
+		foreach ($childIdList as $childId) {
+			$child = &$this->parent->getForumObj($childId);//Build sub-forum object
 			if ($child->id && $child->isVisible()) {
 				$childList[$childId]=$child;
 			}

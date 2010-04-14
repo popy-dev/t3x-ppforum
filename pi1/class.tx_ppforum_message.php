@@ -1003,8 +1003,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			'level' => $level,
 		);
 
-		$forumIdList = $this->parent->getForumChilds($forum->id);
-		$this->parent->loadRecordObjectList($forumIdList, 'forum');
+		$forumIdList = $this->parent->getForumChilds($forum->id, true);
 		$this->parent->flushDelayedObjects();
 
 		foreach ($forumIdList as $child) {
