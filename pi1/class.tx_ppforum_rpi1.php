@@ -1089,21 +1089,35 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @return array 
 	 */
 	function getForumChilds($id = 0, $preload = false, $clearCache = false) {
-		$res = $this->db_queryItems(array(
-			'uid', // Will be switched to * if preload is true
-			'forum',
-			'parent = ' . tx_pplib_div::strintval($id),
-			'',
-			null,
-			'',
-			'uid'
-		), array(
-			'preload' => $preload,
-		));
+		/* Declare */
+		$res = null;
+		$cacheKey = 'pi-getForumChilds;' . tx_pplib_div::strintval($id);
 
+		/* Begin */
+		if ($clearCache === 'clearCache') {
+			$this->cache->storeInCache($res, $cacheKey, 'relations');
+		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
+			$res = $this->cache->getFromCache($cacheKey, 'relations');
+		} else {
+			$res = $this->db_queryItems(array(
+				'uid', // Will be switched to * if preload is true
+				'forum',
+				'parent = ' . tx_pplib_div::strintval($id),
+				'',
+				null,
+				'',
+				'uid'
+			), array(
+				'preload' => $preload,
+			));
+
+			$res = array_keys($res);
+
+			$this->cache->storeInCache($res, $cacheKey, 'relations');
+		}
 		$this->internalLogs['querys']++;
 
-		return array_keys($res);
+		return $res;
 	}
 
 	/**
