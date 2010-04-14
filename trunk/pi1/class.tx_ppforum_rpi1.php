@@ -1714,28 +1714,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Do nothing for now :p
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function log($type) {
-		/* Declare */
-	
-		/* Begin */
-		switch ($type){
-		case 'UPDATE': 
-		case 'INSERT': 
-		case 'SELECT': 
-			$this->internalLogs['querys']++;
-			break;
-		default:
-			break;
-		}
-	}
-
-	/**
 	 * pp_linkTP redefinition : used to force the $altPageId param and to add some GET vars
 	 *
 	 * @param string $str = Title of the link. if none, only the URL will be returned
@@ -1932,15 +1910,19 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$queryId = md5($query);
 
 		if (isset($l[$queryId])) {
-			t3lib_div::debug(array(
+			t3lib_div::debug(array($l[$queryId], array(
 				'lastBuiltQuery' => $query,
 				'queryId' => $queryId,
 				'resCount' => count($res),
 				t3lib_div::debug_trail()
-			), 'Query');
-			
+			)), 'Query');
 		}
-		$l[$queryId] = true;
+		$l[$queryId] = array(
+			'lastBuiltQuery' => $query,
+			'queryId' => $queryId,
+			'resCount' => count($res),
+			t3lib_div::debug_trail()
+		);
 
 		return $res;
 	}

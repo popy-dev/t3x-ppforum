@@ -240,8 +240,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 					$this->data
 				)
 			);
-
-			$this->parent->log('UPDATE');
 		} else {
 			if ($crdateField) {
 				$this->mergedData[$crdateField] = $GLOBALS['SIM_EXEC_TIME'];
@@ -255,12 +253,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 				$this->tablename,
 				$this->mergedData
 			);
-			$this->parent->log('INSERT');
 
 			// Initialize id. Maybe we should load the full row, but no need for now
 			$this->id = $this->mergedData['uid'] = $GLOBALS['TYPO3_DB']->sql_insert_id();
-			$this->isNew = true;
+			if (isset($this->isNew)) $this->isNew = true;
 		}
+		$this->internalLogs['querys']++;
+		$this->internalLogs['realQuerys']++;
 
 		// As we have save mergedData, the item data now equals mergedData
 		$this->data = $this->mergedData;
@@ -346,7 +345,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title = false,$addParams = array(), $parameter = null) {
+	function getLink($title = false, $addParams = array(), $parameter = null) {
 		//** Message anchor
 		if (is_null($parameter) && $this->id) {
 			$parameter = $this->parent->_displayPage . '#ppforum_message_'.$this->id;
@@ -513,11 +512,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 			$errors['field']['message'] = $this->parent->pp_getLL('errors.fields.message');
 		} else {
 			//** Clean text (correct CR/LF)
-			$this->mergedData['message'] = str_replace(
-				array("\r\n", "\r"),
-				Array(chr(10), chr(10)),
-				$this->mergedData['message']
-			);
+			$this->mergedData['message'] = tx_pplib_div::normalizeLineBreaks($this->mergedData['message']);
 		}
 
 
