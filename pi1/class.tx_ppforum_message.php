@@ -506,7 +506,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function checkData(&$errors) {
+	function checkData() {
+		/* Declare */
+		$errors = array();
+
+		/* Begin */
 		//*** Checking message field
 		if (!trim($this->mergedData['message'])) {
 			$errors['field']['message'] = $this->parent->pp_getLL('errors.fields.message');
@@ -514,7 +518,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 			//** Clean text (correct CR/LF)
 			$this->mergedData['message'] = tx_pplib_div::normalizeLineBreaks($this->mergedData['message']);
 		}
-
 
 		if ($this->type == 'topic') {
 			//** Checking Topic fields
@@ -546,6 +549,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		//Playing hook list : Allows to fill other fields
 		$this->parent->pp_playHookObjList('message_checkData', $errors, $this);
+
+		return $errors;
 	}
 
 	/****************************************/
