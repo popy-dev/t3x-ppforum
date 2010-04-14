@@ -1347,10 +1347,19 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$this->parent->config['display']['maxMessages']
 			);
 
+			if ($this->_messageList['_last'] && !$clearCache) {
+				// Special case : last message may have been loaded before first init, so keep it
+				$last = $this->_messageList['_last'];
+			}
+
 			$this->_messageList = array();
 
 			$this->_messageList['_'] = false;
 			$this->_messageList['_loaded'] =	array();
+
+			if (isset($last)) {
+				$this->_messageList['_loaded'][] = $last;
+			}
 
 			for ($i=0; $i<$this->_paginate['pageCount']; $i++) {
 				$this->_messageList[$i] = false;
@@ -1411,8 +1420,10 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$idList = $this->db_getMessageListQuery(
 					false,
 					$limit,
-					$params['preload'],
-					$params['nocheck']
+					array(
+						'preload' => $params['preload'],
+						'nocheck' => $params['nocheck'],
+					)
 				);
 			} else {
 				$idList = array();
@@ -1453,26 +1464,21 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			'nocheck' => false,
 			'clearCache' => false,
 		);
-		$limit = '';
 		$id = 0;
 	
 		/* Begin */
-		$this->initPaginateInfos();
-		$limit = ($this->_paginate['itemCount'] - 1) . ',1';
-
 		if (!$params['clearCache'] && isset($this->_messageList['_last'])) {
 			$id = $this->_messageList['_last'];
 		} else {
-			if ($this->_paginate['itemCount']) {
-				$id = reset($this->db_getMessageListQuery(
-					false,
-					$limit,
-					$params['preload'],
-					$params['nocheck']
-				));
-			} else {
-				$id = 0;
-			}
+			$id = reset($this->db_getMessageListQuery(
+				false,
+				'1',
+				array(
+					'preload' => $params['preload'],
+					'nocheck' => $params['nocheck'],
+					'sort' => 'reverse',
+				)
+			));
 
 			$this->_messageList['_last'] = $id;
 			$this->_messageList['_loaded'][] = $id;
@@ -1491,11 +1497,16 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return mixed 
 	 */
-	function db_getMessageListQuery($countOnly = false, $limit = '', $preload = false, $nocheck = false) {
+	function db_getMessageListQuery($countOnly = false, $limit = '', $options = array()) {
 		/* Declare */
 		$res = array();
-		$fields = $preload ? '*' : 'uid'; // Get every fields in case of preloading
+		$fields = 'uid'; // Get every fields in case of preloading
 		$indexField = 'uid';
+		$options += array(
+			'preload' => false,
+			'nocheck' => false,
+			'sort' => true,
+		);
 
 		/* Begin */
 		if ($countOnly) {
@@ -1506,13 +1517,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$res = $this->parent->db_queryItems(array(
 			$fields,
 			'message',
-			$this->db_messagesWhere($nocheck),
+			$this->db_messagesWhere($options['nocheck']),
 			'',
 			null,
 			$limit,
 			$indexField
 		), array(
-			'preload' => $preload && !$countOnly,
+			'preload' => $options['preload'] && !$countOnly,
+			'sort' => $options['sort'],
 		));
 
 		if ($countOnly) {

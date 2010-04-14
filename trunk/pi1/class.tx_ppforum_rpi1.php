@@ -233,7 +233,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					
 				}
 			} else {
-				foreach ($this->getForumChilds() as $key => $forum) {
+				$tempList = $this->getForumChilds(0, true);
+				$this->flushDelayedObjects();
+				foreach ($tempList as $key => $forum) {
 					$obj[$key] = &$this->getForumObj($forum);
 					if ($obj[$key]->id && $obj[$key]->isVisible()) {
 						$content .= $obj[$key]->display();
@@ -1081,27 +1083,27 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * Return a uid array of forum's childs (if id=0 then giving the list of root forums)
 	 *
 	 * @param int $id = forum's uid
+	 * @param boolean $preload = 
 	 * @param boolean $clearCache = 
 	 * @access public
 	 * @return array 
 	 */
-	function getForumChilds($id = 0 , $clearCache = false) {
-		$res = $this->db_query(
-			'uid',
-			$this->tables['forum'],
-			'parent = ' . tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['forum']),
+	function getForumChilds($id = 0, $preload = false, $clearCache = false) {
+		$res = $this->db_queryItems(array(
+			'uid', // Will be switched to * if preload is true
+			'forum',
+			'parent = ' . tx_pplib_div::strintval($id),
 			'',
-			$this->getOrdering('forum'),
+			null,
 			'',
 			'uid'
-		);
+		), array(
+			'preload' => $preload,
+		));
+
 		$this->internalLogs['querys']++;
 
-		if (is_array($res)) {
-			return array_keys($res);
-		} else {
-			return array();
-		}
+		return array_keys($res);
 	}
 
 	/**
@@ -1112,9 +1114,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return array 
 	 */
-	function getRecursiveForumChilds($id = 0 , $clearCache = false) {
+	function getRecursiveForumChilds($id = 0, $clearCache = false) {
 		/* Declare */
-		$res = $this->getForumChilds($id , $clearCache);
+		$res = $this->getForumChilds($id, false, $clearCache);
 	
 		/* Begin */
 		foreach ($res as $subId) {
@@ -1227,8 +1229,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return object 
 	 */
-	function &getForumObj($id,$clearCache = false) {
-		return $this->getRecordObject($id, 'forum', $clearCache);
+	function &getForumObj($id,$clearCache = false, $delayed = false) {
+		return $this->getRecordObject($id, 'forum', $clearCache, $delayed);
 	}
 
 	/****************************************/
@@ -1249,7 +1251,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 	/**
 	 * Return the uid-list of a topic messages
-	 *
+	 * @deprecated
 	 * @param int $id = topic's uid
 	 * @param boolean $clearCache = @see pp_lib
 	 * @access public
@@ -1384,8 +1386,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return object 
 	 */
-	function &getTopicObj($id, $clearCache = false) {
-		return $this->getRecordObject($id, 'topic', $clearCache);
+	function &getTopicObj($id, $clearCache = false, $delayed = false) {
+		return $this->getRecordObject($id, 'topic', $clearCache, $delayed);
 	}
 
 	/****************************************/
@@ -1426,8 +1428,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return object 
 	 */
-	function &getMessageObj($id, $clearCache = false) {
-		return $this->getRecordObject($id, 'message', $clearCache);
+	function &getMessageObj($id, $clearCache = false, $delayed = false) {
+		return $this->getRecordObject($id, 'message', $clearCache, $delayed);
 	}
 
 	/****************************************/
@@ -1453,8 +1455,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function &getUserObj($id, $clearCache = false) {
-		return $this->getRecordObject($id, 'user', $clearCache);
+	function &getUserObj($id, $clearCache = false, $delayed = false) {
+		return $this->getRecordObject($id, 'user', $clearCache, $delayed);
 	}
 
 	/****************************************/
@@ -1682,7 +1684,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				//* Load data, with delayed sub-item loading
 				$res->loadData($row, true);
 
-				$this->cache->storeInCache($res, $cacheKeys[$id]);
+				$this->cache->storeInCache($res, $cacheKey);
 			} else {
 				// Already loaded : don't do anything
 			}
@@ -1901,10 +1903,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		$res = call_user_func_array(array(&$this->db, 'exec_SELECTgetRows'), $params);
+		$this->internalLogs['querys']++;
+		$this->internalLogs['realQuerys']++;
 
 		if (!is_array($res)) {
 			$res = array();
 		}
+
+		//*** Performance watch !
 
 		$query = call_user_func_array(array(&$this->db, 'SELECTquery'), $params);
 		$queryId = md5($query);
@@ -1944,7 +1950,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		);
 	
 		/* Begin */
-		if (is_null($params[0]) || ! $params[0]) {
+		if (is_null($params[0]) || ! $params[0] || $options['preload']) {
 			$params[0] = '*';
 		}
 
