@@ -87,6 +87,32 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function readAccess() {
 	}
 
+
+	/**
+	 * Build the basic where statement to select forum's topic
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function db_topicsWhere($nocheck = false) {
+		if ($this->userId == $this->parent->currentUser->id) {
+			$where = '(forum = '.strval($this->id).' OR (forum < 0 AND author = '.strval($this->userId).'))';
+		} else {
+			$where = '((forum = '.strval($this->id).' AND author = '.strval($this->parent->currentUser->id).') OR ' .
+				'(forum = '.strval(-$this->parent->currentUser->id).' AND author = '.strval($this->userId).'))';
+		}
+
+		if (!$nocheck) {
+			if (!$this->userIsGuard()) {
+				$where .= ' AND status <> 1';
+			}
+		}
+
+		return $where;
+
+	}
+
+
 	/**
 	 *
 	 *
@@ -405,7 +431,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		foreach ($messageList as $messageId) {
 			$this->parent->currentUser->viewPm($messageId,'message');
 		}
-		$this->loadTopicList(TRUE);
+		$this->initPaginateInfos(TRUE);
 		return TRUE;
 	}
 
