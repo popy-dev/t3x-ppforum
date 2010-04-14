@@ -242,7 +242,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				break;
 			case 'delete': 
 				$this->forum->event_onUpdateInForum();
-				$this->forum->loadTopicList(true);
+				$this->forum->initPaginateInfos(true);
 				break;
 			default:
 				$this->forum->event_onUpdateInForum();
@@ -792,14 +792,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					$destinationForum->userCanPostInForum()
 					) {
 					// Clearing caches of old forum
-					$this->forum->loadTopicList(true);
+					$this->forum->initPaginateInfos(true);
 					$this->forum->event_onUpdateInForum();
 
 					unset($this->forum);
 					$this->forum = &$destinationForum;
 
 					// Clearing caches of the new forum
-					$this->forum->loadTopicList(true);
+					$this->forum->initPaginateInfos(true);
 					$this->forum->event_onNewTopic($this->id);
 				}
 			}
@@ -1016,8 +1016,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$messageList = $this->db_getMessageList(array(
 				'page' => isset($this->parent->getVars['pointer']) ? $this->parent->getVars['pointer'] : 0,
 			));
-
-			$this->parent->loadRecordObjectList($messageList, 'messages');
+			$this->parent->loadRecordObjectList($messageList, 'message');
 			$this->parent->flushDelayedObjects();
 
 			//Using recordRange to limit message list
@@ -1334,7 +1333,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	/****************************************/
 
 	/**
-	 * Initialize paginationINfo
+	 * Initialize paginationInfo
 	 *
 	 * @param bool $clearCache = set to true to force new calc & clearing message lists
 	 * @access public
@@ -1405,6 +1404,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 *                  - bool preload = query will fetch full rows and they will be loaded into record objects
 	 *                  - bool nockech = disable access check
 	 *                  - bool clearCache = clear current query cache
+	 *                  - mixed sort = bool to enable / disable sorting, string for sorting options
 	 * @access public
 	 * @return array 
 	 */
@@ -1415,6 +1415,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			'preload' => true,
 			'nocheck' => false,
 			'clearCache' => false,
+			'sort' => true,
 		);
 		$page = $params['page'];
 		$limit = '';
@@ -1437,13 +1438,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$idList = $this->_messageList[$page];
 		} else {
 			if ($this->_paginate['itemCount']) {
-				$idList = $this->db_getMessageListQuery(
-					$limit,
-					array(
-						'preload' => $params['preload'],
-						'nocheck' => $params['nocheck'],
-					)
-				);
+				$idList = $this->db_getMessageListQuery($limit, $params);
 			} else {
 				$idList = array();
 			}
@@ -1464,7 +1459,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 		}
 
-		$this->internalLogs['querys']++;
+		$this->parent->internalLogs['querys']++;
 
 		return $idList;
 	}
@@ -1502,16 +1497,15 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->_messageList['_loaded'][] = $id;
 		}
 
-		$this->internalLogs['querys']++;
+		$this->parent->internalLogs['querys']++;
 
 		return $id;
 	}
 
 	/**
-	 * Return the uid-list of a topic messages
+	 * 
 	 *
-	 * @param array $id = topic's id list
-	 * @param boolean $clearCache = @see pp_lib
+	 * @param 
 	 * @access public
 	 * @return mixed 
 	 */

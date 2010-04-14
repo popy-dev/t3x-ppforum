@@ -1175,7 +1175,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 				$res=is_object($this->topic) && $this->topic->isVisibleRecursive() && $this->topic->messageIsVisible($this->id);
 				break;
 			case 'topic': 
-				$res=is_object($this->forum) && $this->forum->isVisible() && $this->forum->topicIsVisible($this->id);
+				$res=is_object($this->forum) && $this->forum->isVisibleRecursive() && $this->forum->topicIsVisible($this->id);
 				break;
 			}
 		}
