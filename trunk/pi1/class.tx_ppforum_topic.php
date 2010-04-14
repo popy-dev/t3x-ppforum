@@ -244,6 +244,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				$this->forum->event_onUpdateInForum();
 				$this->forum->loadTopicList(true);
 				break;
+			default:
+				$this->forum->event_onUpdateInForum();
+				break;
 			}
 		}
 
@@ -471,12 +474,36 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	}
 
 	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function hasToCheckMessageInputData() {
+		/* Declare */
+		$res = false;
+		$getVars = $this->parent->getVars;
+	
+		/* Begin */
+		if (isset($getVars['editmessage']) && intval($getVars['editmessage'])) {
+			$res = true;
+		}
+
+		if (isset($getVars['deletemessage']) && intval($getVars['deletemessage'])) {
+			$res = true;
+		}
+
+		return $res;
+	}
+
+	/**
 	 * Check if a message is modified/posted/deleted
 	 *
 	 * @access public
 	 * @return void 
 	 */
-	function checkIncommingData() {
+	function checkMessageInputData() {
 		/* Declare */
 		$data = Array(
 			'currentTopic' => $this->data,
@@ -499,16 +526,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Current topic isn't valid, so we can't append (or modify) a child to it !
 		if (!$this->id) return false;
-
 		//Checking mode (don't check permissions, it wouldbe check later)
 		if (intval($this->parent->getVars['editmessage']) > 0) {
 			$data['mode'] = 'edit';
-			unset($data['message']);
 			$data['message'] = &$this->parent->getMessageObj($this->parent->getVars['editmessage']);
 			$data['message']->mergeData($postData);
 		} elseif (intval($this->parent->getVars['deletemessage'])) {
 			$data['mode'] = 'delete';
-			unset($data['message']);
 			$data['message'] = &$this->parent->getMessageObj($this->parent->getVars['deletemessage']);
 		} else {
 			//New message : the message object already exists, also it just need a parent topic (current topic)
@@ -553,7 +577,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 
 		//Playing hook list : Allows to make additional validity/access check
-		$this->parent->pp_playHookObjList('topic_checkIncommingData_checkValidityAndAccess', $data, $this);
+		$this->parent->pp_playHookObjList('topic_checkMessageInputData_checkValidityAndAccess', $data, $this);
 
 		//Allows a hook ordering to exit
 		if (!$data['shouldContinue']) {
@@ -563,7 +587,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		//If we have no errors :
 		if (!count($data['errors'])) {
 			if ($data['mode'] != 'delete') {
-				$data['message']->checkData($data['errors']);
+				$data['errors'] = $data['message']->checkData();
 			}
 
 			if ($data['mode'] == 'new') {
@@ -571,7 +595,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			//Playing hook list : Allows to fill other fields
-			$this->parent->pp_playHookObjList('topic_checkIncommingData_checkAndFetch', $data, $this);
+			$this->parent->pp_playHookObjList('topic_checkMessageInputData_checkAndFetch', $data, $this);
 
 			if (!count($data['errors'])) {
 				if ($data['mode'] == 'delete') {
@@ -629,6 +653,18 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				return false;
 			}
 		}
+
+		if ($this->hasToCheckMessageInputData()) {
+			$this->checkMessageInputData();
+		}
+
+
+		if ($this->parent->getVars['clearCache'] && $this->forum->userIsAdmin()) {
+			$this->forceReload['forum'] = true;
+			$this->event_onUpdateInTopic();
+			unset($this->parent->getVars['clearCache']);
+		}
+
 
 		// Topic is visible
 		return true;
@@ -743,7 +779,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		if (!count($data['errors'])) {
 
 			if ($data['mode'] != 'delete') {
-				$this->checkData($data['errors']);
+				$data['errors'] = $this->checkData();
 			}
 
 			if ($data['mode'] == 'edit' && isset($this->mergedData['move-topic']) && intval($this->mergedData['move-topic'])) {
@@ -894,8 +930,8 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	<div class="'.htmlspecialchars(implode(' ',$addClasses)).'" id="ppforum_topic_'.$this->id.'">';
 		}
 
-		if ($data['mode']!='new') {
-			$this->checkIncommingData();
+		if (0 && $data['mode']!='new') {
+			$this->checkMessageInputData();
 
 			if ($this->parent->getVars['clearCache'] && $this->forum->userIsAdmin()) {
 				$this->forceReload['forum'] = true;
