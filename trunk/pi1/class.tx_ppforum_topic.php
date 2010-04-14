@@ -1575,7 +1575,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function getMessagePageNum($messageId=0) {
 		/* Declare */
-		$res = $this->_paginate['pageCount'] - 1; //Default value
+		$res = $this->_paginate ? ($this->_paginate['pageCount'] - 1) : 'last'; //Default value
 
 		/* Begin */
 		if (!in_array($messageId, $this->_messageList['_loaded'])) {
