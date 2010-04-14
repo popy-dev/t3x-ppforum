@@ -91,7 +91,8 @@ class tx_ppforum_user extends tx_pplib_feuser {
 		$this->parent->pp_playHookObjList('user_save', $null, $this);
 
 		if ($this->id) {
-			$this->parent->log('UPDATE');
+			$this->parent->internalLogs['querys']++;
+			$this->parent->internalLogs['realQuerys']++;
 			return parent::save();
 		} else {
 			return false;

@@ -130,10 +130,16 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function save($forceReload = true, $noTstamp = false) {
 		/* Declare */
-		$null = null;
 		$result = false;
+		$mode = 'update';
 
 		/* Begin */
+		if (!$this->id) {
+			$mode = 'create';
+		} elseif ($this->mergedData['deleted'] && !$this->data['deleted']) {
+			$mode = 'delete';
+		}
+
 		// Special case for topics : only status is changed, don't refresh it
 		if ($tstampField && $this->id) {
 			$diffData = array_diff_assoc(
@@ -150,20 +156,15 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$this->mergedData['forum'] = $this->forum->id;
 
 		// Plays hook list : Allow to change some field before saving
-		$this->parent->pp_playHookObjList('topic_save', $null, $this);
+		$this->parent->pp_playHookObjList('topic_save', $mode, $this);
 
 		$result = $this->basic_save($noTstamp);
 
 		if ($forceReload) {
 			$this->forceReload['forum'] = true;
-
-			if ($this->isNew) {
-				// Reloading list (may have change because of the new row)
-				$this->forceReload['list'] = true;
-			}
 		}
 		//Launch forum event handler
-		$this->event_onUpdateInTopic($this->isNew, false);
+		$this->event_onUpdateInTopic($mode);
 
 		return $result;
 	}
@@ -203,25 +204,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 	}
 
-	/**
-	 *
-	 *
-	 * @uncached
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function isUnread() {
-		if ($this->id && $this->parent->currentUser->id) {
-			$topicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
-			if (isset($topicList[$this->id])) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	/****************************************/
 	/********** Events functions ************/
 	/****************************************/
@@ -233,7 +215,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onUpdateInTopic($isNewTopic = false) {
+	function event_onUpdateInTopic($mode = '') {
 		$null = null;
 		//Playing hook list
 		$this->parent->pp_playHookObjList('topic_event_onUpdateInTopic', $null, $this);
@@ -241,19 +223,28 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		//Clear cached page (but only where this topic is displayed !)
 		tx_pplib_cachemgm::clearItemCaches(Array('topic' => intval($this->id)), false);
 
-		//If needed (deletion/creation of a message), clear the message list query cache
-		if ($this->forceReload['list']) $this->forum->loadTopicList(true);
-
 		//Forcing data and object reload. Could be used to ensure that data is "as fresh as possible"
 		//Useless if oject wasn't builded with 'getMessageObj' function
 		//In this case, you should use $this->parent->getSingleMessage($this->id,'clearCache');
 		if ($this->forceReload['data']) $this->load($this->id, true);
 
-		if ($isNewTopic) {
-			$this->forum->event_onNewTopic($this->id);
-			$this->author->incrementMessageCounter();
-		} elseif ($this->forceReload['forum']) {
-			$this->forum->event_onUpdateInForum();
+		// Cached message list has to be reloaded
+		if ($this->forceReload['list']) $this->initPaginateInfos(true);
+
+		if ($this->forceReload['forum']) {
+			switch ($mode){
+			case 'create':
+				$this->author->incrementMessageCounter();
+				$this->forum->event_onNewTopic($this->id);
+				break;
+			case 'update': 
+				$this->forum->event_onUpdateInForum();
+				break;
+			case 'delete': 
+				$this->forum->event_onUpdateInForum();
+				$this->forum->loadTopicList(true);
+				break;
+			}
 		}
 
 		//Resets directives
@@ -267,10 +258,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onMessageModify($messageId, $isNewMessage = true) {
+	function event_onMessageModify($messageId) {
 		$param = Array(
 			'messageId' => $messageId,
 		);
+
+		$this->event_onUpdateInTopic();
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('topic_event_onMessageModify', $param, $this);
@@ -285,15 +278,14 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function event_onMessageCreate($messageId) {
 		/* Declare */
-		$this->forceReload['forum'] = true;
 		$param = Array(
 			'messageId' => $messageId,
 		);
+		$this->forceReload['list'] = true;
 	
 		/* Begin */
-		$this->forum->event_onNewPostInTopic($this->id, $messageId);
-
-		$this->initPaginateInfos(true);
+		$this->save(); // Touch topic (just update its tstamp date !)
+		$this->forum->event_onMessageCreate($this->id, $messageId);
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('topic_event_onMessageCreate', $param, $this);
@@ -308,13 +300,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function event_onMessageDelete($messageId) {
 		/* Declare */
-		$this->forceReload['forum'] = true;
 		$param = Array(
 			'messageId' => $messageId,
 		);
+		$this->forceReload['list'] = true;
 	
 		/* Begin */
-		$this->initPaginateInfos(true);
+		$this->save(); // Touch topic (just update its tstamp date !)
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('topic_event_onMessageDelete', $param, $this);
@@ -465,8 +457,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function getCounters($clearCache = false) {
 
 		if ($clearCache || is_null($this->counters)) {
+			$this->initPaginateInfos();
 			$this->counters = array(
-				'posts' => $this->db_getMessageCount(),
+				'posts' => $this->_paginate['itemCount'],
 			);
 			
 			$this->parent->pp_playHookObjList('topic_getCounters', $this->counters, $this);

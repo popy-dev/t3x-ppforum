@@ -602,6 +602,9 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function event_onNewTopic($topicId) {
 		$null = null;
+
+		$this->loadTopicList(true);
+
 		$this->parent->pp_playHookObjList('forum_event_onNewTopic', $null, $this);
 
 		$this->event_onUpdateInForum();
@@ -1093,23 +1096,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onNewPostInTopic($topicId, $messageId) {
-		$param = Array(
-			'topicId' => $topicId,
-			'messageId' => $messageId,
-		);
-
-		//Playing hook list
-		$this->parent->pp_playHookObjList('forum_event_onNewPostInTopic', $param, $this);
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
 	function event_onTopicDisplay($topicId) {
 		$param = Array(
 			'topicId' => $topicId,
@@ -1134,6 +1120,23 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('forum_event_onMessageDisplay', $param, $this);
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onMessageCreate($topicId, $messageId) {
+		$param = Array(
+			'topicId' => $topicId,
+			'messageId' => $messageId,
+		);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('forum_event_onMessageCreate', $param, $this);
 	}
 
 	/**

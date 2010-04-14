@@ -295,7 +295,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onNewPostInTopic($topicId,$messageId=0) {
+	function event_onMessageCreate($topicId,$messageId=0) {
 		if ($this->parent->currentUser->id == $this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
 
@@ -307,6 +307,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			$this->user->registerNewPm($messageId,'message',$topicId);
 		}
 
+		parent::event_onMessageCreate($topicId,$messageId);
 	}
 
 	/**
