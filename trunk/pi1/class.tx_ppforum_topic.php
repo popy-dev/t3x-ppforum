@@ -1373,8 +1373,28 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return int 
 	 */
-	function db_getMessageCount() {
-		return $this->db_getMessageListQuery(true);
+	function db_getMessageCount($options = array()) {
+		/* Declare */
+		$res = 0;
+		$options += array(
+			'nocheck' => false,
+		);
+
+		/* Begin */
+		$res = $this->parent->db_queryItems(array(
+			'count(uid) as count_messages',
+			'message',
+			$this->db_messagesWhere($options['nocheck']),
+			'',
+		), array(
+			'sort' => false,
+		));
+
+		if (isset($res[0]['count_messages'])) {
+			$res = intval($res[0]['count_messages']);
+		}
+
+		return $res;
 	}
 
 	/**
@@ -1418,7 +1438,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		} else {
 			if ($this->_paginate['itemCount']) {
 				$idList = $this->db_getMessageListQuery(
-					false,
 					$limit,
 					array(
 						'preload' => $params['preload'],
@@ -1471,7 +1490,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$id = $this->_messageList['_last'];
 		} else {
 			$id = reset($this->db_getMessageListQuery(
-				false,
 				'1',
 				array(
 					'preload' => $params['preload'],
@@ -1497,11 +1515,9 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @access public
 	 * @return mixed 
 	 */
-	function db_getMessageListQuery($countOnly = false, $limit = '', $options = array()) {
+	function db_getMessageListQuery($limit = '', $options = array()) {
 		/* Declare */
 		$res = array();
-		$fields = 'uid'; // Get every fields in case of preloading
-		$indexField = 'uid';
 		$options += array(
 			'preload' => false,
 			'nocheck' => false,
@@ -1509,29 +1525,20 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		);
 
 		/* Begin */
-		if ($countOnly) {
-			$fields = 'count(uid) as count_messages';
-			$indexField = null;
-		}
-
 		$res = $this->parent->db_queryItems(array(
-			$fields,
+			'uid',
 			'message',
 			$this->db_messagesWhere($options['nocheck']),
 			'',
 			null,
 			$limit,
-			$indexField
+			'uid'
 		), array(
-			'preload' => $options['preload'] && !$countOnly,
+			'preload' => $options['preload'],
 			'sort' => $options['sort'],
 		));
 
-		if ($countOnly) {
-			$res = intval($res[0]['count_messages']);
-		} else {
-			$res = array_keys($res);
-		}
+		$res = array_keys($res);
 
 		return $res;
 	}
