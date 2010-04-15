@@ -84,67 +84,162 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 		return $this->parent->pp_getLL('latest.pageTitle', null, false);
 	}
 
+
 	/**
-	 * Load's this virtual forum topic list (unread topics)
+	 * Initialize paginationInfo
 	 *
-	 * @param bool $clearCache = set to true to bypass cache
+	 * @param bool $clearCache = set to true to force new calc & clearing topic lists
 	 * @access public
 	 * @return void 
 	 */
-	function loadTopicList($clearCache = false) {
-		if (!is_array($this->topicList) || !count($this->topicList) || $clearCache) {
-			$this->topicList = Array();
-			$latestVisitDate = $this->parent->currentUser->getUserPreference('latestVisitDate');
-			$latestVisitDate = max($latestVisitDate, intval($this->parent->currentUser->data['crdate']));
-			$preloadedTopicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
+	function initPaginateInfos($clearCache = false) {
+		if (!$clearCache && !$this->_paginate) {
+			$this->_topicList = array();
+			$this->_topicList['_'] = $this->db_getTopicListQuery();
 
-			if (!is_array($preloadedTopicList)) {
-				$preloadedTopicList = Array();
+			$this->_paginate = $this->parent->pagination_calculateBase(
+				$this->db_getTopicCount(),
+				$this->parent->config['display']['maxTopics']
+			);
+
+			$this->_topicList = array_merge(
+				array_chunk($this->_topicList['_'], $this->_paginate['itemPerPage']),
+				array(
+					'_' => $this->_topicList['_'],
+					'_loaded' => $this->_topicList['_'],
+				)
+			);
+		}
+	}
+
+
+	/**
+	 * Counts forum's topics
+	 *
+	 * @access public
+	 * @return int 
+	 */
+	function db_getTopicCount($options = array()) {
+		return count($this->_topicList['_']);
+	}
+
+	/**
+	 * Performs a query on forum's topics ids
+	 *
+	 * @param array $params = query parameters. Keys are :
+	 *                  - int page = "page" to load (null mean everything)
+	 *                  - bool preload = query will fetch full rows and they will be loaded into record objects
+	 *                  - bool nockech = disable access check
+	 *                  - bool clearCache = clear current query cache
+	 *                  - mixed sort = bool to enable / disable sorting, string for sorting options
+	 * @access public
+	 * @return array 
+	 */
+	function db_getTopicList($params = array()) {
+		/* Declare */
+		$params += array(
+			'page' => null,
+		);
+		$page = $params['page'];
+	
+		/* Begin */
+		$this->initPaginateInfos();
+
+		if (is_null($page)) {
+			$page = '_';
+		} else {
+			$page = $this->parent->pagination_parsePointer($this->_paginate, $page);
+		}
+
+		$this->parent->internalLogs['querys']++;
+		return $this->_topicList[$page];
+	}
+
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function db_getLastTopic($params = array()) {
+		return end($this->_topicList['_']);
+	}
+
+	/**
+	 * 
+	 *
+	 * @param 
+	 * @access public
+	 * @return mixed 
+	 */
+	function db_getTopicListQuery($limit = '', $options = array()) {
+		/* Declare */
+		$res = array();
+		$latestVisitDate = $this->parent->currentUser->getUserPreference('latestVisitDate');
+		$latestVisitDate = max($latestVisitDate, intval($this->parent->currentUser->data['crdate']));
+		$preloadedTopicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
+
+		/* Begin */
+		if (!is_array($preloadedTopicList)) {
+			$preloadedTopicList = Array();
+		}
+
+		// Get latests topics & messages
+		$topicList = $this->parent->getLatestsTopics($latestVisitDate);
+
+		$messageList = $this->parent->getLatestsMessages($latestVisitDate);
+
+		// Add previous unread topics
+		$topicList += $preloadedTopicList;
+
+		// Load records into objects
+		$this->parent->loadRecordObjectList($topicList, 'topic');
+		$this->parent->loadRecordObjectList($messageList, 'topic');
+
+		$this->parent->flushDelayedObjects();
+
+		// Merge messages with topics
+		foreach ($messageList as $id => $crdate) {
+			$message = &$this->parent->getMessageObj($id);
+
+			if (isset($topicList[$message->topic->id])) {
+				// Topic is already in list, so store the latest creation date (in case of multiple messages)
+				$topicList[$message->topic->id] = max($topicList[$message->topic->id], $crdate);
+			} else {
+				$topicList[$message->topic->id] = $crdate;
 			}
 
+			unset($message);
+		}
 
-			// Get latests topics & messages
-			$topicList = $this->parent->getLatestsTopics($latestVisitDate);
+		arsort($topicList);
+		$topicList = array_slice($topicList, 0, 40, true);
 
-			$messageList = $this->parent->getLatestsMessages($latestVisitDate);
+		$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
+		$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
 
-			// Add previous unread topics
-			$topicList += $preloadedTopicList;
+		foreach ($topicList as $topicId => $crdate) {
+			$topic = &$this->parent->getTopicObj($topicId);
 
-			// Load records into objects
-			$this->parent->loadRecordObjectList($topicList, 'topic');
-			$this->parent->loadRecordObjectList($messageList, 'topic');
-
-			$this->parent->flushDelayedObjects();
-
-			// Merge messages with topics
-			foreach ($messageList as $id => $crdate) {
-				$message = &$this->parent->getMessageObj($id);
-
-				if (isset($topicList[$message->topic->id])) {
-					// Topic is already in list, so store the latest creation date (in case of multiple messages)
-					$topicList[$message->topic->id] = max($topicList[$message->topic->id], $crdate);
-				} else {
-					$topicList[$message->topic->id] = $crdate;
-				}
-
-				unset($message);
-			}
-
-			arsort($topicList);
-			$topicList = array_slice($topicList, 0, 40, true);
-
-			$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
-			$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
-
-			foreach ($topicList as $topicId => $crdate) {
-				$topic = &$this->parent->getTopicObj($topicId);
-
-				if ($topic->isVisibleRecursive()) {
-					$this->topicList[$topicId] = &$topic;
-				}
+			if ($topic->isVisibleRecursive()) {
+				$res[] = $topicId;
 			}
 		}
+
+		return $res;
+	}
+
+
+	/**
+	 * Build the basic where statement to select forum's topic
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function db_topicsWhere($nocheck = false) {
+		return '1 = 0';
 	}
 
 
