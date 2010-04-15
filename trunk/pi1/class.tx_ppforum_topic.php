@@ -1146,7 +1146,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			// Step 1 : recalculate read / unread messages if needed
 			if ($this->parent->currentUser->getUserPreference('latestVisitDate') <= intval($this->data['tstamp'])) {
 				$handler = &$this->parent->getUnreadTopicsHandler();
-				$handler->loadTopicList();
+				$handler->initPaginateInfos();
 			}
 
 			// Step 2 : Get unread topic list and remove current from them
