@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
+tx_pplib_div::dynClassLoad('tx_ppforum_base');
 
 /**
  * Class 'tx_ppforum_forum' for the 'pp_forum' extension.
@@ -168,7 +168,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			'count(uid) as count_topics',
 			'topic',
 			$this->db_topicsWhere($options['nocheck']),
-			'',
+			null,
 		), array(
 			'sort' => false,
 		));
@@ -199,7 +199,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			'preload' => true,
 			'nocheck' => false,
 			'clearCache' => false,
-			'sort' => true,
 		);
 		$page = $params['page'];
 		$limit = '';
@@ -275,6 +274,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 					'preload' => $params['preload'],
 					'nocheck' => $params['nocheck'],
 					'sort' => 'nopinned',
+					'extendedQuery' => false,
 				)
 			));
 
@@ -304,8 +304,11 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		);
 
 		/* Begin */
-		$options['extendedQuery'] = $options['preload'];
-		if ($options['preload']) {
+		if (!isset($options['extendedQuery'])) {
+			// Disabled : it appear that doing a query per item is less consuming
+			//$options['extendedQuery'] = $options['preload'];
+		}
+		if ($options['extendedQuery']) {
 			$options['extendedQuery_addWhere'] = $this->db_messagesAddWhere($options['nocheck']);
 		}
 
@@ -313,7 +316,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			'uid',
 			'topic',
 			$this->db_topicsWhere($options['nocheck']),
-			'',
+			null,
 			null,
 			$limit,
 			'uid'
@@ -642,20 +645,19 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function getCounters($clearCache = false) {
 		if ($clearCache || is_null($this->counters)) {
+			$subForums = $this->parent->getRecursiveForumChilds($this->id, $clearCache);
+			$counters = $this->parent->getAllForumCounters();
+
 			$this->counters = array(
-				'topics' => 0,
-				'posts'  => 0,
+				'topics' => intval($counters[$this->id]['topics']),
+				'posts'  => intval($counters[$this->id]['posts']),
 			);
 
 			// @TODO CLEAN
-
-			$subForums = $this->parent->getRecursiveForumChilds($this->id, $clearCache);
-			$subForums[] = $this->id;
-
-			$fullTopicList = $this->parent->getForumTopics($subForums, $clearCache);
-
-			$this->counters['topics'] = count($fullTopicList);
-			$this->counters['posts'] = $this->parent->getTopicMessages($fullTopicList, true);
+			foreach ($subForums as $forumId) {
+				$this->counters['topics'] += $counters[$forumId]['topics'];
+				$this->counters['posts'] += $counters[$forumId]['posts'];
+			}
 
 			$this->parent->pp_playHookObjList('forum_getCounters', $this->counters, $this);
 		} else {
@@ -754,7 +756,9 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if (isset($this->_topicList['_loaded']) && in_array($topicId, $this->_topicList['_loaded'])) {
 			return true;
 		}
-		return in_array($topicId, $this->parent->getForumTopics($this->id));
+		return in_array($topicId, $this->db_getTopicList(array(
+			'preload' => false,
+		)));
 	}
 
 	/**
