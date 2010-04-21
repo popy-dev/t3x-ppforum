@@ -84,6 +84,23 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 		return $this->parent->pp_getLL('latest.pageTitle', null, false);
 	}
 
+	/**
+	 * Generate a link to this forum
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function getLink($title = false, $addParams=Array(), $parameter = null) {
+		$addParams['mode'] = 'latest';
+		
+		if (!isset($addParams['lightMode'])) $addParams['lightMode'] = $this->parent->getVars['lightMode'];
+		return $this->parent->pp_linkTP_piVars(
+			$title,
+			$addParams,
+			TRUE,
+			$parameter
+		);
+	}
 
 	/**
 	 * Initialize paginationInfo
@@ -179,58 +196,94 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 		$res = array();
 		$latestVisitDate = $this->parent->currentUser->getUserPreference('latestVisitDate');
 		$latestVisitDate = max($latestVisitDate, intval($this->parent->currentUser->data['crdate']));
-		$preloadedTopicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
+		$preloadedTopicList = tx_pplib_div::forceArray($this->parent->currentUser->getUserPreference('preloadedTopicList'));
 
 		/* Begin */
-		if (!is_array($preloadedTopicList)) {
-			$preloadedTopicList = Array();
+		$debug = $_GET['test'];
+
+		if ($debug) {
+			$latestVisitDate = 0;
 		}
 
-		// Get latests topics & messages
+		$topicList = $this->db_getTopicListQuery_raw($latestVisitDate, $preloadedTopicList);
+		$topicListIds = array_keys($topicList);
+		$countTopics = count($topicListIds);
+		$preloadedTopicList = array();
+
+		if ($debug) t3lib_div::debug($countTopics, 'New topics count');
+
+		$i = 0;
+		$bufferLength = 0;
+		$topicListPage = 0;
+		$countResults = 0;
+
+		while ($countResults < 40 && $i < $countTopics) {
+			// Simulated buffer : Load topics by list to reduce effective query count
+			if (!$bufferLength) {
+				$this->parent->loadRecordObjectList(array_slice($topicListIds, $topicListPage * 20, 20), 'topic');
+				$this->parent->flushDelayedObjects();
+				$bufferLength = 20;
+				$topicListPage++;
+				if ($debug) t3lib_div::debug($topicListPage, 'Buffer call');
+				if ($debug) t3lib_div::debug(t3lib_div::formatSize(memory_get_usage()), 'Memory usage');
+			}
+
+			// Load topic
+			$currentTopicId = $topicListIds[$i];
+			$topic = &$this->parent->getTopicObj($currentTopicId);
+
+			// Check topic visibility
+			if ($topic->isVisibleRecursive()) {
+				// Topic is visible : add it to final topic list
+				$preloadedTopicList[$currentTopicId] = $topicList[$currentTopicId];
+				$countResults++;
+				if ($debug) t3lib_div::debug('Visible -> added to list', 'Topic #'.$currentTopicId. ' : ' . $topic->data['title'] . ' / ' . $topic->forum->id);
+			} else {
+				if ($debug) t3lib_div::debug('Invisible -> free memory', 'Topic #'.$currentTopicId. ' : ' . $topic->data['title'] . ' / ' . $topic->forum->id);
+				// Free memory : as long as objects are assigned with correct EXPLICIT references, it will work
+				$topic = null;
+			}
+
+			$bufferLength--;
+			$i++;
+		}
+
+		$this->parent->currentUser->setUserPreference('preloadedTopicList', $preloadedTopicList);
+		$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
+
+
+		return array_keys($preloadedTopicList);
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function db_getTopicListQuery_raw($latestVisitDate, $preloadedTopicList) {
+		/* Declare */
 		$topicList = $this->parent->getLatestsTopics($latestVisitDate);
-
 		$messageList = $this->parent->getLatestsMessages($latestVisitDate);
-
+	
+		/* Begin */
 		// Add previous unread topics
 		$topicList += $preloadedTopicList;
 
-		// Load records into objects
-		$this->parent->loadRecordObjectList($topicList, 'topic');
-		$this->parent->loadRecordObjectList($messageList, 'topic');
-
-		$this->parent->flushDelayedObjects();
-
-		// Merge messages with topics
-		foreach ($messageList as $id => $crdate) {
-			$message = &$this->parent->getMessageObj($id);
-
-			if (isset($topicList[$message->topic->id])) {
+		foreach ($messageList as $id => $infos) {
+			if (isset($topicList[$infos['topic']])) {
 				// Topic is already in list, so store the latest creation date (in case of multiple messages)
-				$topicList[$message->topic->id] = max($topicList[$message->topic->id], $crdate);
+				$topicList[$infos['topic']] = max($topicList[$infos['topic']], $infos['crdate']);
 			} else {
-				$topicList[$message->topic->id] = $crdate;
+				$topicList[$infos['topic']] = $infos['crdate'];
 			}
-
-			unset($message);
 		}
 
 		arsort($topicList);
-		$topicList = array_slice($topicList, 0, 40, true);
 
-		$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
-		$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
-
-		foreach ($topicList as $topicId => $crdate) {
-			$topic = &$this->parent->getTopicObj($topicId);
-
-			if ($topic->isVisibleRecursive()) {
-				$res[] = $topicId;
-			}
-		}
-
-		return $res;
+		return $topicList;
 	}
-
 
 	/**
 	 * Build the basic where statement to select forum's topic
