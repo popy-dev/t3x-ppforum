@@ -1142,66 +1142,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Return the uid-list of a forum topics
-	 *
-	 * @param mixed $id = forum's uid
-	 * @param boolean $clearCache = @see pp_lib
-	 * @deprecated
-	 * @access public
-	 * @return array 
-	 */
-	function getForumTopics($id, $clearCache = false, $sort = true) {
-		/* Declare */
-		$res = null;
-		$cacheKey = sprintf(
-			'pi-getForumTopics;%s;%s',
-			is_array($id) ? implode(',', $id) : $id,
-			$sort
-		);
-
-		/* Begin */
-		if ($clearCache === 'clearCache') {
-			$this->cache->storeInCache($res, $cacheKey, 'relations');
-		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
-			$res = $this->cache->getFromCache($cacheKey, 'relations');
-		} else {
-			if (is_int($id) && $id < 0) {
-				$res = $this->getUserTopics(-$id, $clearCache, $options);
-			} else {
-
-				$where = '';
-
-				if (is_array($id)) {
-					$where = 'forum IN (' . implode(',', $id) . ')';
-				} else {
-					$where = 'forum = ' . $id;
-				}
-
-				$res = $this->db_queryItems(array(
-					'uid',
-					'topic',
-					$where,
-					null,
-					null,
-					null,
-					'uid'
-				), array(
-					'sort' => $sort,
-				));
-
-
-
-				$res = array_keys($res);
-				$this->cache->storeInCache($res, $cacheKey, 'relations');
-			}
-		}
-
-		$this->internalLogs['querys']++;
-
-		return $res;
-	}
-
-	/**
 	 * Return the uid-list of the user's PM list
 	 *
 	 * @param int $id = user's uid

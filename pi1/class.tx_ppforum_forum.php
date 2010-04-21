@@ -653,7 +653,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				'posts'  => intval($counters[$this->id]['posts']),
 			);
 
-			// @TODO CLEAN
 			foreach ($subForums as $forumId) {
 				$this->counters['topics'] += $counters[$forumId]['topics'];
 				$this->counters['posts'] += $counters[$forumId]['posts'];
