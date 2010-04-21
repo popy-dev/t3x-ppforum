@@ -22,16 +22,6 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-//require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib.php');
-//require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib2.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_forum.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_forumsim.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_topic.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_user.php');
-//require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_smileys.php');
-
-
 /**
  * Plugin 'Popy Forum' for the 'pp_forum' extension.
  * Plugin wrapper : ensure that only one instance of the real plugin object is built
