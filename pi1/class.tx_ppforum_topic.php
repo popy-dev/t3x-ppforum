@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
+tx_pplib_div::dynClassLoad('tx_ppforum_message');
 
 /**
  * Class 'tx_ppforum_topic' for the 'pp_forum' extension.
@@ -1394,7 +1394,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				'count(uid) as count_messages',
 				'message',
 				$this->db_messagesWhere($options['nocheck']),
-				'',
+				null,
 			), array(
 				'sort' => false,
 			));
@@ -1534,7 +1534,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			'uid',
 			'message',
 			$this->db_messagesWhere($options['nocheck']),
-			'',
+			null,
 			null,
 			$limit,
 			'uid'

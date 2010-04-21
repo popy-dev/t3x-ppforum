@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib2.php');
+tx_pplib_div::dynClassLoad('tx_pplib_pibase');
 
 /**
  * Plugin 'Popy Forum' for the 'pp_forum' extension.
@@ -803,9 +803,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'*',
 			'user',
 			'1=1',
-			'',
-			'',
-			'',
+			null,
+			null,
+			null,
 			'uid'
 		), array(
 			'preload' => true,
@@ -850,6 +850,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$content.='Total querys : '.tx_pplib_div::strintval($this->internalLogs['querys']).'.<br />';
 		$content.='Real querys : '.tx_pplib_div::strintval($this->internalLogs['realQuerys']).'.<br />';
+		$content.='Query time : '.tx_pplib_div::strintval($this->internalLogs['queryTime']).'ms.<br />';
 		$content.='<br />';
 		$content.='Called USER_INT cObjects : '.tx_pplib_div::strintval($this->internalLogs['allUserIntPlugins']).'.<br />';
 		$content.='Effective USER_INT cObjects : '.tx_pplib_div::strintval($this->internalLogs['userIntPlugins']).'.<br />';
@@ -1103,9 +1104,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				'uid', // Will be switched to * if preload is true
 				'forum',
 				'parent = ' . tx_pplib_div::strintval($id),
-				'',
 				null,
-				'',
+				null,
+				null,
 				'uid'
 			), array(
 				'preload' => $preload,
@@ -1145,6 +1146,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 *
 	 * @param mixed $id = forum's uid
 	 * @param boolean $clearCache = @see pp_lib
+	 * @deprecated
 	 * @access public
 	 * @return array 
 	 */
@@ -1179,9 +1181,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					'uid',
 					'topic',
 					$where,
-					'',
 					null,
-					'',
+					null,
+					null,
 					'uid'
 				), array(
 					'sort' => $sort,
@@ -1232,6 +1234,40 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		} else {
 			return array();
 		}
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function getAllForumCounters() {
+		/* Declare */
+		$cacheKey = 'getAllForumCounters';
+	
+		/* Begin */
+		if ($this->cache->isInCache($cacheKey, 'relations')) {
+			$res = $this->cache->getFromCache($cacheKey, 'relations');
+		} else {
+			$res = $this->db_queryItems(array(
+				'forum, count(DISTINCT %t%.uid) as topics, count(%t1%.uid) as posts',
+				'topic',
+				'%t%.forum > 0',
+				'%t%.forum',
+				null,
+				'',
+				'forum'
+			), array(
+				'sort' => $sort,
+				'extendedQuery' => true,
+				'extendedQuery_completeSelect' => false,
+			));
+			$this->cache->storeInCache($res, $cacheKey, 'relations');
+		}
+
+		return $res;
 	}
 
 	/**
@@ -1379,7 +1415,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$fields,
 			'topic',
 			'crdate > ' . $since,
-			'',
+			null,
 			'crdate DESC',
 			$maxResults,
 			'uid',
@@ -1427,7 +1463,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$fields,
 			'message',
 			'crdate > ' . $since,
-			'',
+			null,
 			'crdate DESC',
 			$maxResults
 		), array(
@@ -1663,9 +1699,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			null,
 			$type,
 			'uid IN (' . implode(',', $loadIdList) . ')',
-			'',
-			'',
-			'',
+			null,
+			null,
+			null,
 		), array(
 			'sort' => false,
 			'preload' => true,
@@ -1941,7 +1977,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$params = reset($params);
 		}
 
+		$starttime = microtime(true);
 		$res = call_user_func_array(array(&$this->db, 'exec_SELECTgetRows'), $params);
+		$stoptime = microtime(true);
 		$this->internalLogs['querys']++;
 		$this->internalLogs['realQuerys']++;
 
@@ -1950,24 +1988,24 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		//*** Performance watch !
-
 		$query = call_user_func_array(array(&$this->db, 'SELECTquery'), $params);
 		$queryId = md5($query);
+		$exec_time = ($stoptime - $starttime) * 1000;
+		$this->internalLogs['queryTime'] += $exec_time ;
 
-		if (isset($l[$queryId])) {
-			t3lib_div::debug(array($l[$queryId], array(
+		//$debug = true;
+
+		if (isset($l[$queryId]) || $debug) {
+			t3lib_div::debug(array(
 				'lastBuiltQuery' => $query,
 				'queryId' => $queryId,
+				'exec_time' => intval($exec_time) . 'ms',
 				'resCount' => count($res),
-				t3lib_div::debug_trail()
-			)), 'Query');
+				'trail' => t3lib_div::debug_trail(),
+				'previous trail' => $l[$queryId],
+			), 'Query');
 		}
-		$l[$queryId] = array(
-			'lastBuiltQuery' => $query,
-			'queryId' => $queryId,
-			'resCount' => count($res),
-			t3lib_div::debug_trail()
-		);
+		$l[$queryId] = t3lib_div::debug_trail();
 
 		return $res;
 	}
@@ -1982,22 +2020,28 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	function db_queryItems($params, $options = array()) {
 		/* Declare */
 		$tableShortName = $params[1];
+		$replacementArray = array(
+			'%t1%' => '',
+			'%t%' => $this->tables[$tableShortName],
+		);
 		$options += array(
 			'enableFields' => true,
 			'sort' => true,
 			'preload' => false,
 			'extendedQuery' => false,
+			'extendedQuery_completeSelect' => true,
 			'extendedQuery_addWhere' => '',
 		);
 	
 		/* Begin */
-		// Resolves table name
-		$params[1] = $this->tables[$tableShortName];
-
 		// Set default fields
 		if (is_null($params[0]) || ! $params[0] || $options['preload']) {
-			$params[0] = $params[1] . '.*';
+			$params[0] = '%t%.*';
 		}
+
+		// Resolves table name
+		$params[1] = '%t%';
+
 
 		// Add enableFields
 		if ($options['enableFields']) {
@@ -2013,13 +2057,20 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if ($options['extendedQuery']) {
 			switch ($tableShortName) {
 			case 'topic':
-				$params[0] .= ', count(tx_ppforum_messages.uid) as __count_messages';
-				$params[1] .= ' INNER JOIN ' . $this->tables['message'] . ' ON ' . $this->tables['message'] . '.topic = ' . $this->tables['topic'] . '.uid';
-				$params[2] .= $options['extendedQuery_addWhere'] . $this->pp_getEnableFields('message');
-				$params[3] = $this->tables['topic'] . '.uid';
+				$replacementArray['%t1%'] = $this->tables['message'];
+
+				if ($options['extendedQuery_completeSelect']) $params[0] .= ', count(%t1%.uid) as __count_messages';
+
+				$params[1] .= ' LEFT JOIN %t1% ON (%t1%.topic = %t%.uid';
+				$params[1] .= $options['extendedQuery_addWhere'] . $this->pp_getEnableFields('message');
+				$params[1] .= ')';
+
+				if (is_null($params[3])) $params[3] = '%t%.uid';
 				break;
 			}
 		}
+
+		$params = str_replace(array_keys($replacementArray), array_values($replacementArray), $params);
 
 		$res = $this->db_query($params);
 
