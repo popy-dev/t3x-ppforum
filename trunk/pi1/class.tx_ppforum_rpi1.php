@@ -1933,6 +1933,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$exec_time = ($stoptime - $starttime) * 1000;
 		$this->internalLogs['queryTime'] += $exec_time ;
 
+		$debug = false;
 		//$debug = true;
 
 		if (isset($l[$queryId]) || $debug) {

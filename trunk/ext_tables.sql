@@ -46,7 +46,8 @@ CREATE TABLE tx_ppforum_forums (
 	force_language varchar(10) DEFAULT '' NOT NULL,
 	
 	PRIMARY KEY (uid),
-	KEY parent (pid)
+	KEY parent (pid),
+	KEY list_key (deleted, pid, hidden, sys_language_uid, parent)
 );
 
 
@@ -69,11 +70,12 @@ CREATE TABLE tx_ppforum_topics (
 	pinned tinyint(4) DEFAULT '0' NOT NULL,
 	nosmileys tinyint(4) DEFAULT '0' NOT NULL,
 	parser varchar(20) DEFAULT '' NOT NULL,
+	message_counter int(11) DEFAULT '0' NOT NULL,
 	
 	PRIMARY KEY (uid),
 	KEY parent (pid),
 	KEY author_key (deleted, author),
-	KEY enablefields (deleted, hidden, forum)
+	KEY forum_key (deleted, forum, status)
 );
 
 
@@ -98,7 +100,7 @@ CREATE TABLE tx_ppforum_messages (
 	PRIMARY KEY (uid),
 	KEY parent (pid),
 	KEY author_key (deleted, author),
-	KEY enablefields (deleted, hidden, topic)
+	KEY topic_key (deleted, topic, hidden)
 );
 
 
