@@ -1372,23 +1372,27 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function getLatestsTopics($since) {
+	function getLatestsTopics($since, $preload = false, $maxResults = null) {
 		/* Declare */
-		$finalRes = Array();
-		$res = $this->db_query(
-			'uid, crdate',
-			$this->tables['topic'],
-			'crdate > ' . $since . $this->pp_getEnableFields($this->tables['topic']),
+		$fields = $preload ? '*' : 'uid, crdate';
+		$res = $this->db_queryItems(array(
+			$fields,
+			'topic',
+			'crdate > ' . $since,
 			'',
-			'crdate DESC'
-		);
+			'crdate DESC',
+			$maxResults,
+			'uid',
+		), array(
+			'preload' => $preload,
+		));
 	
 		/* Begin */
-		foreach ($res as $val) {
-			$finalRes[intval($val['uid'])] = intval($val['crdate']);
+		foreach ($res as $k => $val) {
+			$res[$k] = intval($val['crdate']);
 		}
 
-		return $finalRes;
+		return $res;
 	}
 
 	/**
@@ -1415,20 +1419,27 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function getLatestsMessages($since) {
+	function getLatestsMessages($since, $preload = false, $maxResults = null) {
 		/* Declare */
 		$finalRes = Array();
-		$res = $this->db_query(
-			'uid, crdate',
-			$this->tables['message'],
-			'crdate > ' . $since . $this->pp_getEnableFields($this->tables['message']),
+		$fields = $preload ? '*' : 'uid, crdate, topic';
+		$res = $this->db_queryItems(array(
+			$fields,
+			'message',
+			'crdate > ' . $since,
 			'',
-			'crdate DESC'
-		);
+			'crdate DESC',
+			$maxResults
+		), array(
+			'preload' => $preload,
+		));
 	
 		/* Begin */
 		foreach ($res as $val) {
-			$finalRes[intval($val['uid'])] = intval($val['crdate']);
+			$finalRes[intval($val['uid'])] = array(
+				'crdate' => intval($val['crdate']),
+				'topic' => intval($val['topic'])
+			);
 		}
 
 		return $finalRes;
@@ -1576,7 +1587,11 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 						$rData['uid'] = 'root';
 						$res->loadData($rData);
 					} else {
-						$res->load($id);
+						if ($id) {
+							$res->load($id);
+						} else {
+							$res->loadData(array());
+						}
 					}
 				}
 			}
@@ -1644,33 +1659,36 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		// Get items
-		$tabRes = $this->db_query(
-			'*',
-			$this->tables[$type],
-			'uid IN (' . implode(',', $loadIdList) . ')' . $this->pp_getEnableFields($this->tables[$type]),
+		$tabRes = $this->db_queryItems(array(
+			null,
+			$type,
+			'uid IN (' . implode(',', $loadIdList) . ')',
 			'',
 			'',
 			'',
-			'uid'
-		);
+		), array(
+			'sort' => false,
+			'preload' => true,
+		));
 		$this->internalLogs['querys']++;
 
-		// Init and load record objects
+		// Ensure that unfound items are correctly created
 		foreach ($loadIdList as $id) {
-			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
+			if (isset($tabRes[$id])) {
+				continue;
+			}
 
 			if (!$this->cache->isInCache($cacheKeys[$id])) {
 				//* Instanciate object
 				$res = &$this->recordObject_instanciate($type);
 
 				$this->cache->storeInCache($res, $cacheKeys[$id]);
-			} else {
-				$res = &$this->cache->getFromCache($cacheKeys[$id]);
-			}
 
-			//* Load data, with delayed sub-item loading
-			$res->loadData($row, true);
+				//* Load data, with delayed sub-item loading
+				$res->loadData(null, true);
+			}
 		}
+
 	}
 
 	/**
@@ -1688,10 +1706,11 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$res = null;
 	
 		/* Begin */
-		foreach ($list as $id=>$row) {
+		foreach ($list as $row) {
+			$id = intval($row['uid']);
 			$cacheKey = $this->generateCacheKey($id, $type);
 
-			if (!$this->cache->isInCache($cacheKeys[$id])) {
+			if (!$this->cache->isInCache($cacheKey)) {
 				//* Instanciate object
 				$res = &$this->recordObject_instanciate($type);
 
@@ -1700,7 +1719,13 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 				$this->cache->storeInCache($res, $cacheKey);
 			} else {
-				// Already loaded : don't do anything
+				// Already loaded
+				$res = &$this->cache->getFromCache($cacheKey);
+
+				// Delayed object
+				if (!$res->id) {
+					$res->loadData($row, true);
+				}
 			}
 		}
 	}
@@ -1961,21 +1986,39 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'enableFields' => true,
 			'sort' => true,
 			'preload' => false,
+			'extendedQuery' => false,
+			'extendedQuery_addWhere' => '',
 		);
 	
 		/* Begin */
-		if (is_null($params[0]) || ! $params[0] || $options['preload']) {
-			$params[0] = '*';
-		}
-
+		// Resolves table name
 		$params[1] = $this->tables[$tableShortName];
 
+		// Set default fields
+		if (is_null($params[0]) || ! $params[0] || $options['preload']) {
+			$params[0] = $params[1] . '.*';
+		}
+
+		// Add enableFields
 		if ($options['enableFields']) {
 			$params[2] .= $this->pp_getEnableFields($tableShortName);
 		}
 
+		// Automatic sorting
 		if ($options['sort'] !== false && !isset($params[4])) {
 			$params[4] = $this->getOrdering($tableShortName, $options['sort']);
+		}
+
+		// Extended queries !!!
+		if ($options['extendedQuery']) {
+			switch ($tableShortName) {
+			case 'topic':
+				$params[0] .= ', count(tx_ppforum_messages.uid) as __count_messages';
+				$params[1] .= ' INNER JOIN ' . $this->tables['message'] . ' ON ' . $this->tables['message'] . '.topic = ' . $this->tables['topic'] . '.uid';
+				$params[2] .= $options['extendedQuery_addWhere'] . $this->pp_getEnableFields('message');
+				$params[3] = $this->tables['topic'] . '.uid';
+				break;
+			}
 		}
 
 		$res = $this->db_query($params);
@@ -2005,6 +2048,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		/* Declare */
 		$addWhere='';
 		$show_hidden = 0;
+		$usePidList = true;
 	
 		/* Begin */
 		if (isset($this->tables[$table])) {
@@ -2016,9 +2060,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		if ($table == $this->tables['message']) {
 			$show_hidden = 1;
+			$usePidList = false;
 		}
 
-		$addWhere .= parent::pp_getEnableFields($table, $show_hidden);
+		if ($table == $this->tables['topic']) {
+			$usePidList = false;
+		}
+
+		$addWhere .= parent::pp_getEnableFields($table, $show_hidden, $usePidList);
 
 		return $addWhere;
 	}
