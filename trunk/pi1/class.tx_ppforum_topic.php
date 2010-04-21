@@ -116,6 +116,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function loadData($data, $delaySubs = false) {
 		if ($res = parent::loadData($data)) {
 			$this->forum = &$this->parent->getRecordObject(intval($this->data['forum']), 'forum', false,$delaySubs);
+
+			if (isset($this->data['__count_messages'])) {
+				unset($this->mergedData['__count_messages']);
+				$this->initPaginateInfos();
+			}
 		}
 
 		return $res;
@@ -526,6 +531,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 
 		//Current topic isn't valid, so we can't append (or modify) a child to it !
 		if (!$this->id) return false;
+
 		//Checking mode (don't check permissions, it wouldbe check later)
 		if (intval($this->parent->getVars['editmessage']) > 0) {
 			$data['mode'] = 'edit';
@@ -1380,17 +1386,22 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		);
 
 		/* Begin */
-		$res = $this->parent->db_queryItems(array(
-			'count(uid) as count_messages',
-			'message',
-			$this->db_messagesWhere($options['nocheck']),
-			'',
-		), array(
-			'sort' => false,
-		));
+		if (isset($this->data['__count_messages'])) {
+			$res = $this->data['__count_messages'];
+			unset($this->data['__count_messages']);
+		} else {
+			$res = $this->parent->db_queryItems(array(
+				'count(uid) as count_messages',
+				'message',
+				$this->db_messagesWhere($options['nocheck']),
+				'',
+			), array(
+				'sort' => false,
+			));
 
-		if (isset($res[0]['count_messages'])) {
-			$res = intval($res[0]['count_messages']);
+			if (isset($res[0]['count_messages'])) {
+				$res = intval($res[0]['count_messages']);
+			}
 		}
 
 		return $res;
@@ -1545,12 +1556,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 */
 	function db_messagesWhere($nocheck = false) {
 		$where = 'topic = ' . $this->id;
-
-		if (!$nocheck) {
-			if (!$this->forum->userIsGuard()) {
-				$where .= ' AND hidden = 0';
-			}
-		}
+		$where .= $this->forum->db_messagesAddWhere($nocheck);
 
 		return $where;
 	}

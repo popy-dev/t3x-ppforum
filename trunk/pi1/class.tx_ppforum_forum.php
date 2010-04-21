@@ -86,6 +86,20 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 	/**
 	 * 
+	 * @access protected
+	 * @var array
+	 */
+	var $_paginate;
+
+	/**
+	 * 
+	 * @access protected
+	 * @var array
+	 */
+	var $_topicList = array();
+
+	/**
+	 * 
 	 * 
 	 * @param 
 	 * @access public
@@ -99,20 +113,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		return $this->id;
 	}
-
-	/**
-	 * 
-	 * @access protected
-	 * @var array
-	 */
-	var $_paginate;
-
-	/**
-	 * 
-	 * @access protected
-	 * @var array
-	 */
-	var $_topicList = array();
 
 
 	/**
@@ -274,14 +274,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				array(
 					'preload' => $params['preload'],
 					'nocheck' => $params['nocheck'],
-					'sort' => 'nopinned,reverse',
-				)
-			));
-			$id = reset($this->db_getTopicListQuery(
-				'1',
-				array(
-					'preload' => $params['preload'],
-					'nocheck' => $params['nocheck'],
 					'sort' => 'nopinned',
 				)
 			));
@@ -312,6 +304,11 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		);
 
 		/* Begin */
+		$options['extendedQuery'] = $options['preload'];
+		if ($options['preload']) {
+			$options['extendedQuery_addWhere'] = $this->db_messagesAddWhere($options['nocheck']);
+		}
+
 		$res = $this->parent->db_queryItems(array(
 			'uid',
 			'topic',
@@ -341,6 +338,22 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			if (!$this->userIsGuard()) {
 				$where .= ' AND status <> 1';
 			}
+		}
+
+		return $where;
+	}
+
+	/**
+	 * Build the basic where statement to select topic's message
+	 *
+	 * @access public
+	 * @return string 
+	 */
+	function db_messagesAddWhere($nocheck = false) {
+		$where = '';
+
+		if (!$nocheck && !$this->forum->userIsGuard()) {
+			$where = ' AND hidden = 0';
 		}
 
 		return $where;
@@ -634,6 +647,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 				'posts'  => 0,
 			);
 
+			// @TODO CLEAN
+
 			$subForums = $this->parent->getRecursiveForumChilds($this->id, $clearCache);
 			$subForums[] = $this->id;
 
@@ -736,6 +751,9 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function topicIsVisible($topicId) {
+		if (isset($this->_topicList['_loaded']) && in_array($topicId, $this->_topicList['_loaded'])) {
+			return true;
+		}
 		return in_array($topicId, $this->parent->getForumTopics($this->id));
 	}
 
@@ -1083,10 +1101,30 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		if ($this->_paginate['itemCount']) {
 			$content .= '<tbody>';
 
+			//*** Preload topic list
 			$topicList = $this->db_getTopicList(array(
 				'page' => isset($this->parent->getVars['pointer']) ? $this->parent->getVars['pointer'] : 0,
 			));
 			$this->parent->loadRecordObjectList($topicList, 'topic');
+
+			//** Possible replacement for "Last message preload"
+			/*
+				SELECT tx_ppforum_messages.topic, tx_ppforum_messages.uid
+				FROM tx_ppforum_messages INNER JOIN (SELECT tx_ppforum_messages.topic, max(tx_ppforum_messages.crdate) as maxdate
+				FROM tx_ppforum_messages INNER JOIN tx_ppforum_topics ON tx_ppforum_messages.topic = tx_ppforum_topics.uid
+				WHERE tx_ppforum_topics.forum = 3
+				GROUP BY tx_ppforum_messages.topic) as t1 ON (t1.maxdate = tx_ppforum_messages.crdate AND t1.topic = tx_ppforum_messages.topic)
+				WHERE 1=1			
+			*/
+
+			//** Last message preload
+			foreach ($topicList as $topicId) {
+				$topic = &$this->parent->getTopicObj($topicId);
+				$topic->initPaginateInfos();
+				$topic->db_getLastMessage();
+			}
+
+			//** Load sub elements (authors)
 			$this->parent->flushDelayedObjects();
 
 			foreach ($topicList as $topicId) {
@@ -1307,7 +1345,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	function isVisibleRecursive() {
 		$res = $this->isVisible();
 
-		if ($this->id) {
+		if ($this->id > 0) {
 			$res = $res && $this->forum->isVisibleRecursive();
 		}
 
