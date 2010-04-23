@@ -110,7 +110,7 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 	 * @return void 
 	 */
 	function initPaginateInfos($clearCache = false) {
-		if (!$clearCache && !$this->_paginate) {
+		if ($clearCache || !$this->_paginate) {
 			$this->_topicList = array();
 			$this->_topicList['_'] = $this->db_getTopicListQuery();
 

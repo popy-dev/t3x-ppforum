@@ -200,7 +200,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 				}
 
 				if ($forceReload) {
-					$this->forceReload['list'] = true;
+					$this->forceReload['forum'] = true;
 				}
 				return $this->save($forceReload);
 			}
@@ -1355,7 +1355,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	 * @return void 
 	 */
 	function initPaginateInfos($clearCache = false) {
-		if (!$clearCache && !$this->_paginate) {
+		if ($clearCache || !$this->_paginate) {
 			$this->_paginate = $this->parent->pagination_calculateBase(
 				$this->db_getMessageCount(),
 				$this->parent->config['display']['maxMessages']

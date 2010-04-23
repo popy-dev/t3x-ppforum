@@ -123,7 +123,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function initPaginateInfos($clearCache = false) {
-		if (!$clearCache && !$this->_paginate) {
+		if ($clearCache || !$this->_paginate) {
 			$this->_paginate = $this->parent->pagination_calculateBase(
 				$this->db_getTopicCount(),
 				$this->parent->config['display']['maxTopics']

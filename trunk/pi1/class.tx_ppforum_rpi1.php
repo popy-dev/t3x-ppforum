@@ -1841,7 +1841,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Build the message browser and set the recordRange var (used for display)
+	 * Build the message browser
 	 *
 	 * @access public
 	 * @return string 
