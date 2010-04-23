@@ -209,6 +209,19 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		}
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function batch_updateMessageCounter() {
+		$this->mergedData['message_counter'] = $this->db_getMessageCount();
+
+		$this->save();
+	}
+
 	/****************************************/
 	/********** Events functions ************/
 	/****************************************/
@@ -292,6 +305,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 		$this->forceReload['list'] = true;
 	
 		/* Begin */
+		$this->mergedData['message_counter']++;
 		$this->save(); // Touch topic (just update its tstamp date !)
 		$this->forum->event_onMessageCreate($this->id, $messageId);
 
@@ -465,14 +479,11 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	function getCounters($clearCache = false) {
 
 		if ($clearCache || is_null($this->counters)) {
-			$this->initPaginateInfos();
 			$this->counters = array(
-				'posts' => $this->_paginate['itemCount'],
+				'posts' => $this->data['message_counter'],
 			);
 			
 			$this->parent->pp_playHookObjList('topic_getCounters', $this->counters, $this);
-		} else {
-			tx_pplib_div::debug('topic:' . $this->id, 'cached counter');
 		}
 
 		return $this->counters;

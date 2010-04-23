@@ -355,7 +355,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	function db_messagesAddWhere($nocheck = false) {
 		$where = '';
 
-		if (!$nocheck && !$this->forum->userIsGuard()) {
+		if (!$nocheck && !$this->userIsGuard()) {
 			$where = ' AND hidden = 0';
 		}
 
@@ -1123,7 +1123,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			//** Last message preload
 			foreach ($topicList as $topicId) {
 				$topic = &$this->parent->getTopicObj($topicId);
-				$topic->initPaginateInfos();
 				$topic->db_getLastMessage();
 			}
 
