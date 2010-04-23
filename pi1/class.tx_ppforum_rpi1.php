@@ -251,6 +251,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			if ($this->config['display']['printStats']) {
 				$content .= $this->printStats();
 			}
+
+			//$this->batch_updateUsersMessageCounter();
+			//$this->batch_updateTopicMessageCounter();
 		}
 		
 		$lConf = Array(
@@ -263,7 +266,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$content .= $this->callINTPlugin($lConf,TRUE);
 		$this->intPartList = Array();
-
 
 		$this->close();
 
@@ -815,8 +817,37 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		foreach ($res as $id) {
 			$temp = &$this->getUserObj($id);
 			$temp->batch_updateMessageCounter();
+			$temp = null;
 		}
+	}
 
+	/**
+	 * 
+	 * 
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function batch_updateTopicMessageCounter() {
+
+		$res = array_keys($this->db_queryItems(array(
+			null,
+			'topic',
+			'1=1',
+			null,
+			null,
+			null,
+			'uid'
+		), array(
+			'preload' => true,
+			'extendedQuery' => true,
+		)));
+		$this->flushDelayedObjects();
+
+		foreach ($res as $id) {
+			$temp = &$this->getTopicObj($id);
+			$temp->batch_updateMessageCounter();
+		}
 	}
 
 	/****************************************/
@@ -1192,7 +1223,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$res = $this->cache->getFromCache($cacheKey, 'relations');
 		} else {
 			$res = $this->db_queryItems(array(
-				'forum, count(DISTINCT %t%.uid) as topics, count(%t1%.uid) as posts',
+				'forum, count(%t%.uid) as topics, SUM(%t%.message_counter) as posts',
 				'topic',
 				'%t%.forum > 0',
 				'%t%.forum',
@@ -1200,9 +1231,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				'',
 				'forum'
 			), array(
-				'sort' => $sort,
-				'extendedQuery' => true,
-				'extendedQuery_completeSelect' => false,
+				'sort' => false,
 			));
 			$this->cache->storeInCache($res, $cacheKey, 'relations');
 		}
