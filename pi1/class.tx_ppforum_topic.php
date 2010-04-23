@@ -1035,7 +1035,6 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$this->parent->loadRecordObjectList($messageList, 'message');
 			$this->parent->flushDelayedObjects();
 
-			//Using recordRange to limit message list
 			foreach ($messageList as $message) {
 				$data = array(
 					'message' => null,
