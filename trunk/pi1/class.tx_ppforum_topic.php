@@ -212,14 +212,13 @@ class tx_ppforum_topic extends tx_ppforum_message {
 	/**
 	 * 
 	 * 
-	 * @param 
 	 * @access public
 	 * @return void 
 	 */
 	function batch_updateMessageCounter() {
 		$this->mergedData['message_counter'] = $this->db_getMessageCount();
 
-		$this->save();
+		$this->save(false, true);
 	}
 
 	/****************************************/
