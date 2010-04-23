@@ -1846,40 +1846,31 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return string 
 	 */
-	function displayPagination($nbChilds,$resPerPage,&$ref,$addClasses=array()) {
+	function displayPagination($nbChilds, $resPerPage, &$ref, $addClasses=array()) {
+		if ($nbChilds <= $resPerPage) return '';
 		/* Declare */
-		$nbChilds=intval($nbChilds);
-		$resPerPage=max(1,$resPerPage);
-		$nbPages=intval(($nbChilds-1)/$resPerPage)+1;
-		$maxPageNum=$nbPages-1;
-		$selectedPage=trim($this->getVars['pointer']);
-		$links=array();
-		$startPage=0;
-		$endPage=0;
-		$pageRange=max(1,intval(intval($this->config['display']['pageRange'])/2));
+		$nbPages = max(1, ceil($nbChilds / $resPerPage));
+		$maxPageNum = $nbPages-1;
+		$selectedPage = trim($this->getVars['pointer']);
+		$links = array();
+		$startPage = 0;
+		$endPage = 0;
+		$pageRange = max(1, intval(intval($this->config['display']['pageRange'])/2));
 	
 		/* Begin */
-		if (!strcmp($selectedPage,'last')) {
-			$selectedPage=$maxPageNum; //Handling 'last' value
+		if ($selectedPage === 'last') {
+			$selectedPage = $maxPageNum; //Handling 'last' value
 		} elseif (intval($selectedPage)<0) {		
-			$selectedPage=max(0,$maxPageNum-intval($selectedPage));//Handling negative value (not use yet, but... one day... maybe !)
+			$selectedPage = max(0, $maxPageNum - intval($selectedPage));//Handling negative value (not use yet, but... one day... maybe !)
 		} else {
-			$selectedPage=min(intval($selectedPage),$maxPageNum);
+			$selectedPage = min(intval($selectedPage) , $maxPageNum);
 		}
 
-		$startPage=max(0,$selectedPage-$pageRange);
-		$endPage=min($maxPageNum,$selectedPage+$pageRange);
-
-		//Setting recordrange from calculated values
-		$ref->recordRange=($selectedPage*$resPerPage).':'.$resPerPage;
-
-		//If we have only one page (or 0)
-		if ($nbPages<2) {
-			return '';
-		}
+		$startPage = max(0, $selectedPage - $pageRange);
+		$endPage = min($maxPageNum,$selectedPage+$pageRange);
 
 		if ($selectedPage>1) {
-			$links[]='<a href="'.htmlspecialchars($ref->getLink(false)).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
+			$links[] = '<a href="'.htmlspecialchars($ref->getLink(false)).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
 		}
 		if ($selectedPage>0) {
 			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$selectedPage-1))).'" title="'.$this->pp_getLL('messages.pointer.goToPrev_title','Back to previous page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToPrev','<',TRUE).'</a>';
