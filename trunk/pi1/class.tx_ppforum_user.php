@@ -24,6 +24,7 @@
 tx_pplib_div::dynClassLoad('tx_ppforum_base');
 tx_pplib_div::dynClassLoad('tx_ppforum_message');
 tx_pplib_div::dynClassLoad('tx_pplib_feuser');
+tx_pplib_div::dynClassLoad('t3lib_BEfunc');
 
 /**
  * Class 'tx_ppforum_user' for the 'pp_forum' extension.
@@ -424,17 +425,22 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @return void 
 	 */
 	function _displaySmallProfile($conf) {
-		//$this->batch_updateMessageCounter();
-		$rows=array();
+		/* Declare */
+		$rows = array();
 		$nbMessages = intval($this->getUserPreference('messageCounter'));
+		$image = $this->print_avatarImg();
 
-		if ($image = $this->print_avatarImg()) {
+		/* Begin */
+		//t3lib_div::debug($this->data['is_online'], '');
+		if ($image) {
 			$rows[] = $image;
 		}
 
 		$rows[] = $this->parent->pp_getLL('user.mainUserGroup','Group: ').$this->getMainUserGroupLabel();
 
 		$rows[] = $this->parent->pp_getLL('user.nbmessages').$nbMessages;
+
+		$rows[] = $this->parent->pp_getLL('user.lastConnect') . ' ' . t3lib_BEfunc::calcAge(abs($GLOBALS['EXEC_TIME'] - $this->data['is_online']), $GLOBALS['TSFE']->sL('LLL:EXT:lang/locallang_core.php:labels.minutesHoursDaysYears'));
 
 		$this->parent->pp_playHookObjList('user_printSmallProfile', $rows, $this);
 
