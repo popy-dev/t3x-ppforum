@@ -95,6 +95,14 @@ class tx_ppforum_message extends tx_ppforum_base {
 	var $validErrors = Array();
 
 	/**
+	 * Message/Topic "througt typo3 cache" cache
+	 * Contains information wich can be given to non cached process
+	 * @access protected
+	 * @var array
+	 */
+	var $cache = array();
+
+	/**
 	 * Loads the message data
 	 * 
 	 * @param array $data = the record row
@@ -401,17 +409,52 @@ class tx_ppforum_message extends tx_ppforum_base {
 	/****************************************/
 
 	/**
+	 * Load every "cachable" information and return the cache array
+	 * This cache will be given throught Typoscript config to _INT part(s)
+	 * 
+	 * @access public
+	 * @return array
+	 */
+	function cache_getCachableData() {
+		$this->getPageNum();
+
+		return $this->cache;
+	}
+
+	/**
+	 * Reload a cache array from Typoscript
+	 * 
+	 * @param array $conf = typoscript conf
+	 * @access public
+	 * @return void 
+	 */
+	function cache_loadHeritedCache($conf) {
+		if (isset($conf['cache.'])) {
+			$this->cache = $conf['cache.'];
+		}
+	}
+
+	/**
 	 * Search in wich page of the topic this message will appear (used by link functions)
 	 *
+	 * @param bool $clearCache = set to true to ignore & reset current cache
 	 * @access public
 	 * @return int = pointer value 
 	 */
-	function getPageNum() {
-		if ($this->id) {
-			return $this->topic->getMessagePageNum($this->id);
+	function getPageNum($clearCache = false) {
+		if (!$clearCache && isset($this->cache['getPageNum'])) {
+			$res = $this->cache['getPageNum'];
 		} else {
-			return 'last';
+			if ($this->id) {
+				$res = $this->topic->getMessagePageNum($this->id);
+			} else {
+				$res = 'last';
+			}
+
+			$this->cache['getPageNum'] = $res;
 		}
+
+		return $res;
 	}
 
 	/**
@@ -1043,6 +1086,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 			if (!$this->id) $conf['cmd.']['div.']['forum'] = $this->forum->id;
 		}
 
+		$conf['cmd.']['cache.'] = $this->cache_getCachableData();
+
 		//Calls the plugin as USER int with this special config
 		// Also the content will be generated each time a user request the page
 		return $this->parent->callINTpart($conf);
@@ -1056,11 +1101,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function _display_toolsRow($conf) {
 		/* Declare */
-		$content='';
-		$mode=$conf['div.']['mode'];
-		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
+		$content = '';
+		$mode = $conf['div.']['mode'];
+		$data = array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
+		$this->cache_loadHeritedCache($conf);
+
 		//Loading topic/forum object (checking type because this function is called for topics too !)
 		if (!$this->id) {
 			if ($this->type=='message') {
