@@ -79,11 +79,14 @@ class tx_ppforum_base {
 	function load($id, $clearCache = false, $delaySubs = false) {
 		$this->tablename = $this->parent->tables[$this->type];
 
-		//t3lib_div::debug(t3lib_div::debug_trail(), '->load method called');
-
+		//t3lib_div::debug(array($this->type . $id, t3lib_div::debug_trail()), '->load method called');
 		$this->parent->internalLogs['querys']++;
 		$this->parent->internalLogs['realQuerys']++;
-		return $this->loadData($this->parent->pp_getRecord($id, $this->tablename), $delaySubs);
+		$starttime = microtime(true);
+		$res = $this->loadData($this->parent->pp_getRecord($id, $this->tablename), $delaySubs);
+		$this->parent->internalLogs['queryTime'] += (microtime(true) - $starttime) * 1000;
+
+		return $res;
 	}
 
 	/**
