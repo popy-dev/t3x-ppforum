@@ -2195,6 +2195,14 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		if (isset($this->conf['cmd.']['parts.']) && is_array($this->conf['cmd.']['parts.']) && count($this->conf['cmd.']['parts.'])) {
 			$data = $this->conf['cmd.']['parts.'];
 
+			// Preload all needed objects
+			foreach ($data as $k => $v) {
+				if ($v['cmd'] == 'callObj') {
+					$this->_delayedObjectList[$v['cmd.']['object']][] = $v['cmd.']['uid'];
+				}
+			}
+			$this->flushDelayedObjects();
+
 			$replace = array();
 			foreach ($data as $key => $val) {
 				$replace['<!-- tx_ppforum_pi1:INTPART_'.$key.'-->'] = $this->mainCallback($val);
