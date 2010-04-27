@@ -50,6 +50,13 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	var $type = '';
 
 	/**
+	 * Internal cache
+	 * @access protected
+	 * @var string
+	 */
+	var $cache = array();
+
+	/**
 	 * Loads the record's data from DB
 	 *
 	 * @param int $id = Record's uid
@@ -278,7 +285,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @return bool 
 	 */
 	function pmIsVisible($id, $table) {
-		$tabRes=$this->parent->db_query(
+		$tabRes = $this->parent->db_query(
 			'rel_id',
 			'tx_ppforum_userpms',
 			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id=' . strval($this->id)
@@ -294,19 +301,22 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @access public
 	 * @return void 
 	 */
-	function countNewPms($inTopic=0) {
-		$addWhere=$inTopic?' AND rel_table=\'message\' AND parent='.strval($inTopic):'';
-		$tabRes=$this->parent->db_query(
-			'count(*)',
-			'tx_ppforum_userpms',
-			'rel_type=\'new\' AND user_id='.strval($this->id).$addWhere
-			);
-
-		if (is_array($tabRes) && count($tabRes)) {
-			return intval(reset(reset($tabRes)));
+	function countNewPms($inTopic = 0, $clearCache = false) {
+		if (!$clearCache && isset($this->cache['countNewPms'][$inTopic])) {
+			$res = $this->cache['countNewPms'][$inTopic];
 		} else {
-			return 0;
+			$addWhere=$inTopic?' AND rel_table=\'message\' AND parent='.strval($inTopic):'';
+			$res = $this->parent->db_query(
+				'count(*)',
+				'tx_ppforum_userpms',
+				'rel_type=\'new\' AND user_id='.strval($this->id).$addWhere
+			);
+			
+			$res = intval(reset(reset($res)));
+			$this->cache['countNewPms'][$inTopic] = $res;
 		}
+
+		return $res;
 	}
 
 	/**
