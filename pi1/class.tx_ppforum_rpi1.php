@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-tx_pplib_div::dynClassLoad('tx_pplib_pibase');
+require_once(t3lib_extMgm::extPath('pp_lib').'class.tx_pplib2.php');
 
 /**
  * Plugin 'Popy Forum' for the 'pp_forum' extension.
@@ -233,9 +233,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 					
 				}
 			} else {
-				$tempList = $this->getForumChilds(0, true);
-				$this->flushDelayedObjects();
-				foreach ($tempList as $key => $forum) {
+				foreach ($this->getForumChilds() as $key => $forum) {
 					$obj[$key] = &$this->getForumObj($forum);
 					if ($obj[$key]->id && $obj[$key]->isVisible()) {
 						$content .= $obj[$key]->display();
@@ -251,9 +249,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			if ($this->config['display']['printStats']) {
 				$content .= $this->printStats();
 			}
-
-			//$this->batch_updateUsersMessageCounter();
-			//$this->batch_updateTopicMessageCounter();
 		}
 		
 		$lConf = Array(
@@ -266,6 +261,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$content .= $this->callINTPlugin($lConf,TRUE);
 		$this->intPartList = Array();
+
 
 		$this->close();
 
@@ -363,7 +359,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		//$page = $ref->getPage();
 
 		//Get latest message list
-		$messages = $this->db_query(
+		$messages = $this->db->exec_SELECTgetRows(
 			'uid,crdate',
 			$this->tables['message'],
 			'1=1' . $this->pp_getEnableFields($this->tables['message']),
@@ -372,7 +368,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		);
 
 		//Get latest topic list
-		$topics = $this->db_query(
+		$topics = $this->db->exec_SELECTgetRows(
 			'uid,crdate',
 			$this->tables['topic'],
 			'forum > 0' . $this->pp_getEnableFields($this->tables['topic']),
@@ -793,63 +789,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 	}
 
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function batch_updateUsersMessageCounter() {
-		$res = array_keys($this->db_queryItems(array(
-			'*',
-			'user',
-			'1=1',
-			null,
-			null,
-			null,
-			'uid'
-		), array(
-			'preload' => true,
-		)));
-		$this->flushDelayedObjects();
-
-		foreach ($res as $id) {
-			$temp = &$this->getUserObj($id);
-			$temp->batch_updateMessageCounter();
-			$temp = null;
-		}
-	}
-
-	/**
-	 * 
-	 * 
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function batch_updateTopicMessageCounter() {
-
-		$res = array_keys($this->db_queryItems(array(
-			null,
-			'topic',
-			'1=1',
-			null,
-			null,
-			null,
-			'uid'
-		), array(
-			'preload' => true,
-			'extendedQuery' => true,
-		)));
-		$this->flushDelayedObjects();
-
-		foreach ($res as $id) {
-			$temp = &$this->getTopicObj($id);
-			$temp->batch_updateMessageCounter();
-		}
-	}
-
 	/****************************************/
 	/************* Print funcs **************/
 	/****************************************/
@@ -881,7 +820,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 		$content.='Total querys : '.tx_pplib_div::strintval($this->internalLogs['querys']).'.<br />';
 		$content.='Real querys : '.tx_pplib_div::strintval($this->internalLogs['realQuerys']).'.<br />';
-		$content.='Query time : '.tx_pplib_div::strintval($this->internalLogs['queryTime']).'ms.<br />';
 		$content.='<br />';
 		$content.='Called USER_INT cObjects : '.tx_pplib_div::strintval($this->internalLogs['allUserIntPlugins']).'.<br />';
 		$content.='Effective USER_INT cObjects : '.tx_pplib_div::strintval($this->internalLogs['userIntPlugins']).'.<br />';
@@ -1115,41 +1053,28 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * Return a uid array of forum's childs (if id=0 then giving the list of root forums)
 	 *
 	 * @param int $id = forum's uid
-	 * @param boolean $preload = 
 	 * @param boolean $clearCache = 
 	 * @access public
 	 * @return array 
 	 */
-	function getForumChilds($id = 0, $preload = false, $clearCache = false) {
-		/* Declare */
-		$res = null;
-		$cacheKey = 'pi-getForumChilds;' . tx_pplib_div::strintval($id);
-
-		/* Begin */
-		if ($clearCache === 'clearCache') {
-			$this->cache->storeInCache($res, $cacheKey, 'relations');
-		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
-			$res = $this->cache->getFromCache($cacheKey, 'relations');
-		} else {
-			$res = $this->db_queryItems(array(
-				'uid', // Will be switched to * if preload is true
-				'forum',
-				'parent = ' . tx_pplib_div::strintval($id),
-				null,
-				null,
-				null,
-				'uid'
-			), array(
-				'preload' => $preload,
-			));
-
-			$res = array_keys($res);
-
-			$this->cache->storeInCache($res, $cacheKey, 'relations');
-		}
+	function getForumChilds($id = 0 , $clearCache = false) {
+		$res = $this->db->exec_SELECTgetRows(
+			'uid',
+			$this->tables['forum'],
+			'parent = ' . tx_pplib_div::strintval($id) . $this->pp_getEnableFields($this->tables['forum']),
+			'',
+			$this->getOrdering('forum'),
+			'',
+			'uid'
+		);
 		$this->internalLogs['querys']++;
+		$this->internalLogs['realQuerys']++;
 
-		return $res;
+		if (is_array($res)) {
+			return array_keys($res);
+		} else {
+			return array();
+		}
 	}
 
 	/**
@@ -1160,9 +1085,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return array 
 	 */
-	function getRecursiveForumChilds($id = 0, $clearCache = false) {
+	function getRecursiveForumChilds($id = 0 , $clearCache = false) {
 		/* Declare */
-		$res = $this->getForumChilds($id, false, $clearCache);
+		$res = $this->getForumChilds($id , $clearCache);
 	
 		/* Begin */
 		foreach ($res as $subId) {
@@ -1170,6 +1095,47 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		return $res;
+	}
+
+	/**
+	 * Return the uid-list of a forum topics
+	 *
+	 * @param mixed $id = forum's uid
+	 * @param boolean $clearCache = @see pp_lib
+	 * @access public
+	 * @return array 
+	 */
+	function getForumTopics($id, $clearCache = false, $options=  '') {
+		if ($id < 0) {
+			return $this->getUserTopics(-$id, $clearCache, $options);
+		} else {
+
+			$where = '';
+
+			if (is_array($id)) {
+				$where = 'forum IN (' . implode(',', $id) . ')';
+			} else {
+				$where = 'forum = ' . $id;
+			}
+
+			$res = $this->db->exec_SELECTgetRows(
+				'uid',
+				$this->tables['topic'],
+				$where . $this->pp_getEnableFields($this->tables['topic']),
+				'',
+				$this->getOrdering('topic', $options),
+				'',
+				'uid'
+			);
+			$this->internalLogs['querys']++;
+			$this->internalLogs['realQuerys']++;
+
+			if (is_array($res)) {
+				return array_keys($res);
+			} else {
+				return array();
+			}
+		}
 	}
 
 	/**
@@ -1189,7 +1155,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		} else {
 			$query = '(forum = '.strval(-$id).' AND author = '.strval($this->currentUser->id).')';
 		}
-		$res = $this->db_query(
+		$res = $this->db->exec_SELECTgetRows(
 			'uid',
 			$this->tables['topic'],
 			$query . $this->pp_getEnableFields($this->tables['topic']),
@@ -1199,6 +1165,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'uid'
 		);
 		$this->internalLogs['querys']++;
+		$this->internalLogs['realQuerys']++;
 
 		if (is_array($res)) {
 			return array_keys($res);
@@ -1208,35 +1175,24 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * 
-	 * 
-	 * @param 
+	 * Return the latest created/updated topic
+	 *
+	 * @param int $id = forum's uid
+	 * @param boolean $clearCache = @see pp_lib
 	 * @access public
 	 * @return void 
 	 */
-	function getAllForumCounters() {
-		/* Declare */
-		$cacheKey = 'getAllForumCounters';
-	
-		/* Begin */
-		if ($this->cache->isInCache($cacheKey, 'relations')) {
-			$res = $this->cache->getFromCache($cacheKey, 'relations');
-		} else {
-			$res = $this->db_queryItems(array(
-				'forum, count(%t%.uid) as topics, SUM(%t%.message_counter) as posts',
-				'topic',
-				'%t%.forum > 0',
-				'%t%.forum',
-				null,
-				'',
-				'forum'
-			), array(
-				'sort' => false,
-			));
-			$this->cache->storeInCache($res, $cacheKey, 'relations');
+	function getForumLastTopic($id,$clearCache=FALSE) {
+		if (!intval($id)) return false;
+		$topicList = $this->getForumTopics($id, $clearCache, 'nopinned');
+		if (!is_array($topicList)) return FALSE;
+		foreach ($topicList as $uid) {
+			$topic = &$this->getTopicObj($uid);
+			if ($topic->isVisible()) {
+				return $topic->id;
+			}
 		}
-
-		return $res;
+		return 0;
 	}
 
 	/**
@@ -1248,8 +1204,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return object 
 	 */
-	function &getForumObj($id,$clearCache = false, $delayed = false) {
-		return $this->getRecordObject($id, 'forum', $clearCache, $delayed);
+	function &getForumObj($id,$clearCache = false) {
+		return $this->getRecordObject($id, 'forum', $clearCache);
 	}
 
 	/****************************************/
@@ -1270,7 +1226,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 	/**
 	 * Return the uid-list of a topic messages
-	 * @deprecated
+	 *
 	 * @param int $id = topic's uid
 	 * @param boolean $clearCache = @see pp_lib
 	 * @access public
@@ -1292,11 +1248,11 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$this->cache->storeInCache($res, $cacheKey, 'relations');
 		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
 			$res = $this->cache->getFromCache($cacheKey, 'relations');
+			tx_pplib_div::debug('getTopicMessages:' . implode(',', $id), 'cached');
 		} else {
 			$res = $this->getTopicMessages_cached($id, $countOnly);
 			$this->cache->storeInCache($res, $cacheKey, 'relations');
 		}
-		$this->internalLogs['querys']++;
 
 		return $res;
 	}
@@ -1309,13 +1265,12 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return mixed 
 	 */
-	function getTopicMessages_cached($id, $countOnly = false, $limit = '', $preload = false) {
+	function getTopicMessages_cached($id, $countOnly = false) {
 		/* Declare */
 		$res = array();
-		$fields = $preload ? '*' : 'uid'; // Get every fields in case of preloading
+		$fields = 'uid';
 		$indexField = 'uid';
 		$isValidId = false;
-		$options = array();
 
 		/* Begin */
 		if ($countOnly) {
@@ -1323,29 +1278,26 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$indexField = null;
 		}
 
-		// Building where condition
 		if (is_array($id)) {
 			$where = 'topic IN (' . implode(',', $id) . ')';
 			$isValidId = count($id);
 		} else {
 			$where = 'topic = ' . $id;
 			$isValidId = intval($id);
-			$options['topicId'] = intval($id);
 		}
 
-		if ($isValidId) { // Sanity check : should NEVER occurs
-			$res = $this->db_query(
+		if ($isValidId) {
+			$res = $this->db->exec_SELECTgetRows(
 				$fields,
 				$this->tables['message'],
-				$where . $this->pp_getEnableFields('message', $options),
+				$where . $this->pp_getEnableFields($this->tables['message']),
 				'',
 				$this->getOrdering('message'),
-				$limit,
+				'',
 				$indexField
 			);
-
-		} else {
-			tx_pplib_div::debug(basename(__FILE__) . ':' . __LINE__ , 'Something bad happened');
+			$this->internalLogs['querys']++;
+			$this->internalLogs['realQuerys']++;
 		}
 
 
@@ -1358,9 +1310,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			}
 		} else {
 			if (is_array($res) && count($res)) {
-				if ($preload) {
-					$this->preloadRecordObjects($res, 'message');
-				}
 				$res = array_keys($res);
 			} else {
 				$res = array();
@@ -1377,27 +1326,23 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function getLatestsTopics($since, $preload = false, $maxResults = null) {
+	function getLatestsTopics($since) {
 		/* Declare */
-		$fields = $preload ? '*' : 'uid, crdate';
-		$res = $this->db_queryItems(array(
-			$fields,
-			'topic',
-			'crdate > ' . $since,
-			null,
-			'crdate DESC',
-			$maxResults,
-			'uid',
-		), array(
-			'preload' => $preload,
-		));
+		$finalRes = Array();
+		$res = $this->db->exec_SELECTgetRows(
+			'uid, crdate',
+			$this->tables['topic'],
+			'crdate > ' . $since . $this->pp_getEnableFields($this->tables['topic']),
+			'',
+			'crdate DESC'
+		);
 	
 		/* Begin */
-		foreach ($res as $k => $val) {
-			$res[$k] = intval($val['crdate']);
+		foreach ($res as $val) {
+			$finalRes[intval($val['uid'])] = intval($val['crdate']);
 		}
 
-		return $res;
+		return $finalRes;
 	}
 
 	/**
@@ -1409,8 +1354,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return object 
 	 */
-	function &getTopicObj($id, $clearCache = false, $delayed = false) {
-		return $this->getRecordObject($id, 'topic', $clearCache, $delayed);
+	function &getTopicObj($id, $clearCache = false) {
+		return $this->getRecordObject($id, 'topic', $clearCache);
 	}
 
 	/****************************************/
@@ -1424,27 +1369,20 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function getLatestsMessages($since, $preload = false, $maxResults = null) {
+	function getLatestsMessages($since) {
 		/* Declare */
 		$finalRes = Array();
-		$fields = $preload ? '*' : 'uid, crdate, topic';
-		$res = $this->db_queryItems(array(
-			$fields,
-			'message',
-			'crdate > ' . $since,
-			null,
-			'crdate DESC',
-			$maxResults
-		), array(
-			'preload' => $preload,
-		));
+		$res = $this->db->exec_SELECTgetRows(
+			'uid, crdate',
+			$this->tables['message'],
+			'crdate > ' . $since . $this->pp_getEnableFields($this->tables['message']),
+			'',
+			'crdate DESC'
+		);
 	
 		/* Begin */
 		foreach ($res as $val) {
-			$finalRes[intval($val['uid'])] = array(
-				'crdate' => intval($val['crdate']),
-				'topic' => intval($val['topic'])
-			);
+			$finalRes[intval($val['uid'])] = intval($val['crdate']);
 		}
 
 		return $finalRes;
@@ -1458,8 +1396,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return object 
 	 */
-	function &getMessageObj($id, $clearCache = false, $delayed = false) {
-		return $this->getRecordObject($id, 'message', $clearCache, $delayed);
+	function &getMessageObj($id, $clearCache = false) {
+		return $this->getRecordObject($id, 'message', $clearCache);
 	}
 
 	/****************************************/
@@ -1485,8 +1423,8 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * @access public
 	 * @return void 
 	 */
-	function &getUserObj($id, $clearCache = false, $delayed = false) {
-		return $this->getRecordObject($id, 'user', $clearCache, $delayed);
+	function &getUserObj($id, $clearCache = false) {
+		return $this->getRecordObject($id, 'user', $clearCache);
 	}
 
 	/****************************************/
@@ -1513,50 +1451,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Determine a record object classname based on the record type
-	 *
-	 * @param string $type = record type
-	 * @access public
-	 * @return string / null if not found 
-	 */
-	function recordObject_getClass($type) {
-		/* Declare */
-		$className = null;
-	
-		/* Begin */
-		if (isset($this->conf['recordObjects.'][$type])) {
-			$className = $this->conf['recordObjects.'][$type];
-		}
-
-		return $className;
-	}
-
-	/**
-	 * Instanciate a record object classname based on the record type
-	 *
-	 * @param string $type = record type
-	 * @access public
-	 * @return object / null 
-	 */
-	function &recordObject_instanciate($type) {
-		/* Declare */
-		$className = $this->recordObject_getClass($type);
-		$res = null;
-	
-		/* Begin */
-		//** if a valid class is found, build object and init it
-		if (trim($className)) {
-			//* Instanciate object
-			$res = &$this->pp_makeInstance($className);
-			
-			//* Force the type proprety value
-			$res->type = $type;
-		}
-
-		return $res;
-	}
-
-	/**
 	 * Get a record object
 	 * Objects are cached : every record object is also unique during the whole page generation
 	 * 
@@ -1570,20 +1464,27 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	function &getRecordObject($id, $type, $clearCache = false, $delayed = false) {
 		/* Declare */
 		$cacheKey = $this->generateCacheKey($id, $type);
-		$className = null;
+		$classKey = $type;
+		$className = false;
 		$res = null;
 
 		/* Begin */
 		//*** Special case : negative forum id means forumsim object
-		if ($type == 'forum' && $id < 0) $type = 'forumsim';
+		if ($type == 'forum' && $id < 0) $classKey = 'forumsim';
+
+		//*** Determine classname
+		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
 
 		if ($clearCache || !$this->cache->isInCache($cacheKey)) {
-			$res = &$this->recordObject_instanciate($type);
+			//** if a valid class is found, build object and init it
+			if (trim($className)) {
+				//* Instanciate object
+				$res = &$this->pp_makeInstance($className);
+				
+				//* Force the type proprety value
+				$res->type = $type;
 
-			// If object have been successfully built
-			if (is_object($res)) {
 				if ($delayed && isset($this->_delayedObjectList[$type])) {
-					// Deleyed mode : The data will not be loaded now, it will be done later trought the method "flushDelayedObjects"
 					$this->_delayedObjectList[$type][] = $id;
 				} else {
 					//* Load data
@@ -1592,11 +1493,9 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 						$rData['uid'] = 'root';
 						$res->loadData($rData);
 					} else {
-						if ($id) {
-							$res->load($id);
-						} else {
-							$res->loadData(array());
-						}
+						$res->load($id);
+						$this->internalLogs['querys']++;
+						$this->internalLogs['realQuerys']++;
 					}
 				}
 			}
@@ -1606,18 +1505,24 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$res = &$this->cache->getFromCache($cacheKey);
 		}
 
+		//*** Increment query counter
+		if ($id > 0) {
+			$this->internalLogs['querys']++;
+		}
+
 		//*** Return the cached object
 		return $res;
 	}
 
 	/**
-	 * Flush the "Object wich have to be loaded" stack by loading them, recursively, type by type
 	 * 
+	 * 
+	 * @param 
 	 * @access public
 	 * @return void 
 	 */
 	function flushDelayedObjects() {
-		do { // This do/while handle internal delaying (each load level can re-load childs as delayed)
+		do {
 			$count = 0;
 			foreach ($this->_delayedObjectList as $type => $idList) {
 				if ($count += count($idList)) {
@@ -1629,120 +1534,82 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Loads a list of records (query only non-loaded records)
 	 * 
-	 * @param array $idList = items ids
-	 * @param string $type = item type (forumsim is skipped, as their is no sense to load a list of them FOR NOW)
-	 * @param bool $justLoadData = Force loading items already cached : used ONLY by flushDelayedObjects
-	 *                               The reason is that a delayed object is cached BUT empty, so we have to fill it
+	 * 
+	 * @param 
 	 * @access public
 	 * @return void 
 	 */
 	function loadRecordObjectList($idList, $type, $justLoadData = false) {
 		/* Declare */
+		$classKey = $type;
+		$className = false;
 		$loadIdList = array();
 		$cacheKeys = Array();
 
 		/* Begin */
-		// Sanity check : Only for REAL data
 		if (!in_array($type, array('message', 'topic', 'user', 'forum'))) {
 			return ;
 		}
+		//*** Determine classname
+		if (isset($this->conf['recordObjects.'][$classKey])) $className = $this->conf['recordObjects.'][$classKey];
 
-		// Generate cache keys and the "Id to load" list
+		if (!is_array($idList)) {
+			tx_pplib_div::debug(t3lib_div::debug_trail(), 'loadRecordObjectList:$idList');
+
+			$idList = array();
+		}
+
 		foreach ($idList as $id) {
 			$cacheKeys[$id] = $this->generateCacheKey($id, $type);
 
-			if ($justLoadData || !$this->cache->isInCache($cacheKeys[$id])) {
+			if (!$this->cache->isInCache($cacheKeys[$id]) || $justLoadData) {
 				$loadIdList[] = $id;
 			}
 		}
 
-		// Exiting if no query is needed
 		if (!count($loadIdList)) {
 			return ;
 		}
 
-		// Get items
-		$tabRes = $this->db_queryItems(array(
-			null,
-			$type,
-			'uid IN (' . implode(',', $loadIdList) . ')',
-			null,
-			null,
-			null,
-		), array(
-			'sort' => false,
-			'preload' => true,
-		));
-		$this->internalLogs['querys']++;
+		$tabRes = $this->db->exec_SELECTgetRows(
+			'*',
+			$this->tables[$type],
+			'uid IN (' . implode(',', $loadIdList) . ')' . $this->pp_getEnableFields($this->tables[$type]),
+			'',
+			'',
+			'',
+			'uid'
+		);
 
-		// Ensure that unfound items are correctly created
+		$this->log('SELECT');
+
 		foreach ($loadIdList as $id) {
-			if (isset($tabRes[$id])) {
-				continue;
-			}
+			$row = isset($tabRes[strval($id)]) ? $tabRes[strval($id)] : null;
 
 			if (!$this->cache->isInCache($cacheKeys[$id])) {
 				//* Instanciate object
-				$res = &$this->recordObject_instanciate($type);
+				$res = &$this->pp_makeInstance($className);
+				
+				//* Force the type proprety value
+				$res->type = $type;
 
 				$this->cache->storeInCache($res, $cacheKeys[$id]);
-
-				//* Load data, with delayed sub-item loading
-				$res->loadData(null, true);
+			} else {
+				$res = &$this->cache->getFromCache($cacheKeys[$id]);
 			}
-		}
 
+			//* Load data
+			$res->loadData($row, true);
+		}
 	}
 
 	/**
-	 * Preload a recordset into data objects
-	 *   Used internally when a query did return full rows instead of just ids, to limit query count
-	 *   Loading has to be completed by flushDelayedObjects
 	 *
-	 * @param array $list = recordset (list of rows)
-	 * @param string $type = items type
+	 *
+	 * @param 
 	 * @access public
 	 * @return void 
-	 */
-	function preloadRecordObjects($list, $type) {
-		/* Declare */
-		$res = null;
-	
-		/* Begin */
-		foreach ($list as $row) {
-			$id = intval($row['uid']);
-			$cacheKey = $this->generateCacheKey($id, $type);
-
-			if (!$this->cache->isInCache($cacheKey)) {
-				//* Instanciate object
-				$res = &$this->recordObject_instanciate($type);
-
-				//* Load data, with delayed sub-item loading
-				$res->loadData($row, true);
-
-				$this->cache->storeInCache($res, $cacheKey);
-			} else {
-				// Already loaded
-				$res = &$this->cache->getFromCache($cacheKey);
-
-				// Delayed object
-				if (!$res->id) {
-					$res->loadData($row, true);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Generate an item (record object) unique cache key
-	 * Used for internal caching API
-	 *
-	 * @param int $id = item's id
-	 * @param string $type = item's type
-	 * @access public
-	 * @return string 
 	 */
 	function generateCacheKey($id, $type) {
 		return $type . ',' . strval($id);
@@ -1757,6 +1624,90 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	function renderDate($tstamp) {
 		return date('d/m/Y H:i:s',$tstamp);
+	}
+
+	/**
+	 * Build WHERE statement wich filter from deleted/hidden/not visible records
+	 * Used by getRecord : feel free to redefine this function !!
+	 * 
+	 * @param string $table = table name
+	 * @param bool $show_hidden = if true, will not filter out hidden records
+	 * @access public
+	 * @return string
+	 */
+	function pp_getEnableFields($table, $unused = false) {
+		/* Declare */
+		$addWhere='';
+		$show_hidden = 0;
+	
+		/* Begin */
+		if ($table == $this->tables['forum']) {
+			$addWhere .= ' AND '.$table.'.sys_language_uid = 0';
+		}
+
+		if ($table == $this->tables['message']) {
+			$show_hidden = 1;
+		}
+
+		$addWhere .= parent::pp_getEnableFields($table, $show_hidden);
+
+		return $addWhere;
+	}
+
+
+
+	/**
+	 * Build the "ORDER BY" clause (without ORDER BY) for the given table
+	 *
+	 * @param string $tablename = table short name
+	 * @param string $options = comma separated options list (allowed options : reverse, nopinned)
+	 * @access public
+	 * @return string 
+	 */
+	function getOrdering($tablename,$options='') {
+		/* Declare */
+		$res=array();
+		$options=array_filter(explode(',',$options),'trim');
+	
+		/* Begin */
+		switch ($tablename){
+		case 'message': 
+			$res[] = $this->tables[$tablename].(in_array('reverse',$options)?'.crdate DESC':'.crdate ASC');
+			break;
+		case 'topic':
+			if (!in_array('nopinned',$options)) {
+				$res[] = $this->tables[$tablename].'.pinned'.(in_array('reverse',$options)?' ASC':' DESC');
+			}
+			$res[]=$this->tables[$tablename].'.tstamp'.(in_array('reverse',$options)?' ASC':' DESC');
+			break;
+		case 'forum': 
+			$res[] = $this->tables[$tablename].(in_array('reverse',$options)?'.sorting DESC':'.sorting ASC');
+			break;
+		}
+
+		return implode(',',$res);
+	}
+
+	/**
+	 * Do nothing for now :p
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function log($type) {
+		/* Declare */
+	
+		/* Begin */
+		switch ($type){
+		case 'UPDATE': 
+		case 'INSERT': 
+		case 'SELECT': 
+			$this->internalLogs['querys']++;
+			break;
+		default:
+			break;
+		}
 	}
 
 	/**
@@ -1789,88 +1740,47 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		return parent::pp_linkTP($str,$addParams,$cache,$altPageId);
 	}
 
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function pagination_calculateBase($nbItems, $resPerPage) {
-		/* Declare */
-		$nbItems = intval($nbItems);
-		$resPerPage = max(1, $resPerPage);
-
-		/* Begin */
-		return array(
-			'itemCount' => $nbItems,
-			'itemPerPage' => $resPerPage,
-			'pageCount' => max(1, ceil($nbItems / $resPerPage)),
-		);
-	}
 
 	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function pagination_parsePointer($pagination, $pointer) {
-		if ($pointer === 'last') {
-			$pointer = $pagination['pageCount'] - 1;
-		}
-		$pointer = min($pointer, $pagination['pageCount'] - 1);
-		$pointer = max($pointer, 0);
-
-		return $pointer;
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function pagination_getRange($paginate, $pointer) {
-		return array(
-			$pointer * $paginate['itemPerPage'],
-			$paginate['itemPerPage'],
-		);
-	}
-
-	/**
-	 * Build the message browser
+	 * Build the message browser and set the recordRange var (used for display)
 	 *
 	 * @access public
 	 * @return string 
 	 */
-	function displayPagination($nbChilds, $resPerPage, &$ref, $addClasses=array()) {
-		if ($nbChilds <= $resPerPage) return '';
+	function displayPagination($nbChilds,$resPerPage,&$ref,$addClasses=array()) {
 		/* Declare */
-		$nbPages = max(1, ceil($nbChilds / $resPerPage));
-		$maxPageNum = $nbPages-1;
-		$selectedPage = trim($this->getVars['pointer']);
-		$links = array();
-		$startPage = 0;
-		$endPage = 0;
-		$pageRange = max(1, intval(intval($this->config['display']['pageRange'])/2));
+		$nbChilds=intval($nbChilds);
+		$resPerPage=max(1,$resPerPage);
+		$nbPages=intval(($nbChilds-1)/$resPerPage)+1;
+		$maxPageNum=$nbPages-1;
+		$selectedPage=trim($this->getVars['pointer']);
+		$links=array();
+		$startPage=0;
+		$endPage=0;
+		$pageRange=max(1,intval(intval($this->config['display']['pageRange'])/2));
 	
 		/* Begin */
-		if ($selectedPage === 'last') {
-			$selectedPage = $maxPageNum; //Handling 'last' value
+		if (!strcmp($selectedPage,'last')) {
+			$selectedPage=$maxPageNum; //Handling 'last' value
 		} elseif (intval($selectedPage)<0) {		
-			$selectedPage = max(0, $maxPageNum - intval($selectedPage));//Handling negative value (not use yet, but... one day... maybe !)
+			$selectedPage=max(0,$maxPageNum-intval($selectedPage));//Handling negative value (not use yet, but... one day... maybe !)
 		} else {
-			$selectedPage = min(intval($selectedPage) , $maxPageNum);
+			$selectedPage=min(intval($selectedPage),$maxPageNum);
 		}
 
-		$startPage = max(0, $selectedPage - $pageRange);
-		$endPage = min($maxPageNum,$selectedPage+$pageRange);
+		$startPage=max(0,$selectedPage-$pageRange);
+		$endPage=min($maxPageNum,$selectedPage+$pageRange);
+
+		//Setting recordrange from calculated values
+		$ref->recordRange=($selectedPage*$resPerPage).':'.$resPerPage;
+
+		//If we have only one page (or 0)
+		if ($nbPages<2) {
+			return '';
+		}
 
 		if ($selectedPage>1) {
-			$links[] = '<a href="'.htmlspecialchars($ref->getLink(false)).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
+			$links[]='<a href="'.htmlspecialchars($ref->getLink(false)).'" title="'.$this->pp_getLL('messages.pointer.goToFirst_title','Back to first page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToFirst','<<',TRUE).'</a>';
 		}
 		if ($selectedPage>0) {
 			$links[]='<a href="'.htmlspecialchars($ref->getLink(false,array('pointer'=>$selectedPage-1))).'" title="'.$this->pp_getLL('messages.pointer.goToPrev_title','Back to previous page',TRUE).'">'.$this->pp_getLL('messages.pointer.goToPrev','<',TRUE).'</a>';
@@ -1913,209 +1823,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 */
 	function registerCloseFunction($callback) {
 		$this->callbackList[] = $callback;
-	}
-
-
-	/****************************************/
-	/******** Database related funcs ********/
-	/****************************************/
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function db_query() {
-		/* Declare */
-		$params = func_get_args();
-		static $l = array();
-	
-		/* Begin */
-		if (count($params) == 1) {
-			$params = reset($params);
-		}
-
-		$starttime = microtime(true);
-		$res = call_user_func_array(array(&$this->db, 'exec_SELECTgetRows'), $params);
-		$stoptime = microtime(true);
-		$this->internalLogs['querys']++;
-		$this->internalLogs['realQuerys']++;
-
-		if (!is_array($res)) {
-			$res = array();
-		}
-
-		//*** Performance watch !
-		$query = call_user_func_array(array(&$this->db, 'SELECTquery'), $params);
-		$queryId = md5($query);
-		$exec_time = ($stoptime - $starttime) * 1000;
-		$this->internalLogs['queryTime'] += $exec_time ;
-
-		$debug = false;
-		//$debug = true;
-
-		if (isset($l[$queryId]) || $debug) {
-			t3lib_div::debug(array(
-				'lastBuiltQuery' => $query,
-				'queryId' => $queryId,
-				'exec_time' => intval($exec_time) . 'ms',
-				'resCount' => count($res),
-				'trail' => t3lib_div::debug_trail(),
-				'previous trail' => $l[$queryId],
-			), 'Query');
-		}
-		$l[$queryId] = t3lib_div::debug_trail();
-
-		return $res;
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function db_queryItems($params, $options = array()) {
-		/* Declare */
-		$tableShortName = $params[1];
-		$replacementArray = array(
-			'%t1%' => '',
-			'%t%' => $this->tables[$tableShortName],
-		);
-		$options += array(
-			'enableFields' => true,
-			'sort' => true,
-			'preload' => false,
-			'extendedQuery' => false,
-			'extendedQuery_completeSelect' => true,
-			'extendedQuery_addWhere' => '',
-		);
-	
-		/* Begin */
-		// Set default fields
-		if (is_null($params[0]) || ! $params[0] || $options['preload']) {
-			$params[0] = '%t%.*';
-		}
-
-		// Resolves table name
-		$params[1] = '%t%';
-
-
-		// Add enableFields
-		if ($options['enableFields']) {
-			$params[2] .= $this->pp_getEnableFields($tableShortName);
-		}
-
-		// Automatic sorting
-		if ($options['sort'] !== false && !isset($params[4])) {
-			$params[4] = $this->getOrdering($tableShortName, $options['sort']);
-		}
-
-		// Extended queries !!!
-		if ($options['extendedQuery']) {
-			switch ($tableShortName) {
-			case 'topic':
-				$replacementArray['%t1%'] = $this->tables['message'];
-
-				if ($options['extendedQuery_completeSelect']) $params[0] .= ', count(%t1%.uid) as __count_messages';
-
-				$params[1] .= ' LEFT JOIN %t1% ON (%t1%.topic = %t%.uid';
-				$params[1] .= $options['extendedQuery_addWhere'] . $this->pp_getEnableFields('message');
-				$params[1] .= ')';
-
-				if (is_null($params[3])) $params[3] = '%t%.uid';
-				break;
-			}
-		}
-
-		$params = str_replace(array_keys($replacementArray), array_values($replacementArray), $params);
-
-		$res = $this->db_query($params);
-
-		if (!is_array($res)) {
-			// Error handling ?
-			return array();
-		}
-
-		if ($options['preload']) {
-			$this->preloadRecordObjects($res, $tableShortName);
-		}
-
-		return $res;
-	}
-
-	/**
-	 * Build WHERE statement wich filter from deleted/hidden/not visible records
-	 * Used by getRecord : feel free to redefine this function !!
-	 * 
-	 * @param string $table = table name
-	 * @param bool $show_hidden = if true, will not filter out hidden records
-	 * @access public
-	 * @return string
-	 */
-	function pp_getEnableFields($table) {
-		/* Declare */
-		$addWhere='';
-		$show_hidden = 0;
-		$usePidList = true;
-	
-		/* Begin */
-		if (isset($this->tables[$table])) {
-			$table = $this->tables[$table];
-		}
-		if ($table == $this->tables['forum']) {
-			$addWhere .= ' AND '.$table.'.sys_language_uid = 0';
-		}
-
-		if ($table == $this->tables['message']) {
-			$show_hidden = 1;
-			$usePidList = false;
-		}
-
-		if ($table == $this->tables['topic']) {
-			$usePidList = false;
-		}
-
-		$addWhere .= parent::pp_getEnableFields($table, $show_hidden, $usePidList);
-
-		return $addWhere;
-	}
-
-
-
-	/**
-	 * Build the "ORDER BY" clause (without ORDER BY) for the given table
-	 *
-	 * @param string $tablename = table short name
-	 * @param string $options = comma separated options list (allowed options : reverse, nopinned)
-	 * @access public
-	 * @return string 
-	 */
-	function getOrdering($tablename,$options='') {
-		/* Declare */
-		$res=array();
-		$options=array_filter(explode(',',$options),'trim');
-	
-		/* Begin */
-		switch ($tablename){
-		case 'message': 
-			$res[] = $this->tables[$tablename].(in_array('reverse',$options)?'.crdate DESC':'.crdate ASC');
-			break;
-		case 'topic':
-			if (!in_array('nopinned',$options)) {
-				$res[] = $this->tables[$tablename].'.pinned'.(in_array('reverse',$options)?' ASC':' DESC');
-			}
-			$res[]=$this->tables[$tablename].'.tstamp'.(in_array('reverse',$options)?' ASC':' DESC');
-			break;
-		case 'forum': 
-			$res[] = $this->tables[$tablename].(in_array('reverse',$options)?'.sorting DESC':'.sorting ASC');
-			break;
-		}
-
-		return implode(',',$res);
 	}
 
 	/****************************************/
@@ -2194,14 +1901,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		/* Begin */
 		if (isset($this->conf['cmd.']['parts.']) && is_array($this->conf['cmd.']['parts.']) && count($this->conf['cmd.']['parts.'])) {
 			$data = $this->conf['cmd.']['parts.'];
-
-			// Preload all needed objects
-			foreach ($data as $k => $v) {
-				if ($v['cmd'] == 'callObj') {
-					$this->_delayedObjectList[$v['cmd.']['object']][] = $v['cmd.']['uid'];
-				}
-			}
-			$this->flushDelayedObjects();
 
 			$replace = array();
 			foreach ($data as $key => $val) {

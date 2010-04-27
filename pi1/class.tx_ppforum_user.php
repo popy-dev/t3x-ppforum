@@ -21,10 +21,10 @@
 *
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
-tx_pplib_div::dynClassLoad('tx_ppforum_base');
-tx_pplib_div::dynClassLoad('tx_ppforum_message');
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_message.php');
+
 tx_pplib_div::dynClassLoad('tx_pplib_feuser');
-tx_pplib_div::dynClassLoad('t3lib_BEfunc');
 
 /**
  * Class 'tx_ppforum_user' for the 'pp_forum' extension.
@@ -91,8 +91,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 		$this->parent->pp_playHookObjList('user_save', $null, $this);
 
 		if ($this->id) {
-			$this->parent->internalLogs['querys']++;
-			$this->parent->internalLogs['realQuerys']++;
+			$this->parent->log('UPDATE');
 			return parent::save();
 		} else {
 			return false;
@@ -278,7 +277,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @return bool 
 	 */
 	function pmIsVisible($id, $table) {
-		$tabRes=$this->parent->db_query(
+		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'rel_id',
 			'tx_ppforum_userpms',
 			'rel_id=' . strval($id) . ' AND rel_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($table, 'tx_ppforum_userpms').' AND rel_type=\'delete\' AND user_id=' . strval($this->id)
@@ -296,7 +295,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 */
 	function countNewPms($inTopic=0) {
 		$addWhere=$inTopic?' AND rel_table=\'message\' AND parent='.strval($inTopic):'';
-		$tabRes=$this->parent->db_query(
+		$tabRes=$GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'count(*)',
 			'tx_ppforum_userpms',
 			'rel_type=\'new\' AND user_id='.strval($this->id).$addWhere
@@ -385,62 +384,26 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 * @access public
 	 * @return void 
 	 */
-	function batch_updateMessageCounter() {
-		/* Declare */
-		$nbMessages = intval(reset(reset($this->parent->db_query(
+	function _displaySmallProfile($conf) {
+		$rows=array();
+		//*** @TODO : should rewrite this ?
+		$nbMessages = intval(reset(reset($this->parent->db->exec_SELECTgetRows(
 			'count(uid) AS nb',
 			$this->parent->tables['message'],
 			'author='.intval($this->id)
-			))))+intval(reset(reset($this->parent->db_query(
+			))))+intval(reset(reset($this->parent->db->exec_SELECTgetRows(
 				'count(uid) AS nb',
 				$this->parent->tables['topic'],
 				'author='.intval($this->id)
 			))));
-	
-		/* Begin */
-		$this->setUserPreference('messageCounter', $nbMessages);
-	}
 
-	/**
-	 *
-	 *
-	 * @access public
-	 * @return void 
-	 */
-	function incrementMessageCounter() {
-		/* Declare */
-		$nbMessages = intval($this->getUserPreference('messageCounter'));
-	
-		/* Begin */
-		$nbMessages++;
-
-		$this->setUserPreference('messageCounter', $nbMessages);
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function _displaySmallProfile($conf) {
-		/* Declare */
-		$rows = array();
-		$nbMessages = intval($this->getUserPreference('messageCounter'));
-		$image = $this->print_avatarImg();
-
-		/* Begin */
-		//t3lib_div::debug($this->data['is_online'], '');
-		if ($image) {
+		if ($image = $this->print_avatarImg()) {
 			$rows[] = $image;
 		}
 
 		$rows[] = $this->parent->pp_getLL('user.mainUserGroup','Group: ').$this->getMainUserGroupLabel();
 
 		$rows[] = $this->parent->pp_getLL('user.nbmessages').$nbMessages;
-
-		$rows[] = $this->parent->pp_getLL('user.lastConnect') . ' ' . t3lib_BEfunc::calcAge(abs($GLOBALS['EXEC_TIME'] - $this->data['is_online']), $GLOBALS['TSFE']->sL('LLL:EXT:lang/locallang_core.php:labels.minutesHoursDaysYears'));
 
 		$this->parent->pp_playHookObjList('user_printSmallProfile', $rows, $this);
 

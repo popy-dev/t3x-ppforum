@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-tx_pplib_div::dynClassLoad('tx_ppforum_forum');
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_forum.php');
 
 /**
  * Class 'tx_ppforum_forum' for the 'pp_forum' extension.
@@ -87,32 +87,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function readAccess() {
 	}
 
-
-	/**
-	 * Build the basic where statement to select forum's topic
-	 *
-	 * @access public
-	 * @return string 
-	 */
-	function db_topicsWhere($nocheck = false) {
-		if ($this->userId == $this->parent->currentUser->id) {
-			$where = '(forum = '.strval($this->id).' OR (forum < 0 AND author = '.strval($this->userId).'))';
-		} else {
-			$where = '((forum = '.strval($this->id).' AND author = '.strval($this->parent->currentUser->id).') OR ' .
-				'(forum = '.strval(-$this->parent->currentUser->id).' AND author = '.strval($this->userId).'))';
-		}
-
-		if (!$nocheck) {
-			if (!$this->userIsGuard()) {
-				$where .= ' AND status <> 1';
-			}
-		}
-
-		return $where;
-
-	}
-
-
 	/**
 	 *
 	 *
@@ -160,6 +134,8 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			return '';
 		}
 		$data['counters'] = $topic->getCounters($topic);
+		$data['topic']->loadMessages();
+
 		$data['conf']['topic-with']='';
 		if ($data['topic']->author->id==$this->parent->currentUser->id) {
 			$data['conf']['topic-with']=$data['topic']->forum->user->displayLight();
@@ -321,7 +297,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onMessageCreate($topicId,$messageId=0) {
+	function event_onNewPostInTopic($topicId,$messageId=0) {
 		if ($this->parent->currentUser->id == $this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
 
@@ -333,7 +309,6 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 			$this->user->registerNewPm($messageId,'message',$topicId);
 		}
 
-		parent::event_onMessageCreate($topicId,$messageId);
 	}
 
 	/**
@@ -356,10 +331,8 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @access public
 	 * @return void 
 	 */
-	function event_onMessageDisplay($topicId, $messageId) {
-		if ($messageId) {
-			$this->parent->currentUser->viewPm($messageId, 'message');
-		}
+	function event_onMessageDisplay($topicId,$messageId) {
+		$this->parent->currentUser->viewPm($messageId,'message');
 
 		parent::event_onMessageDisplay($topicId,$messageId);
 	}
@@ -392,6 +365,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 
 		//** user-delete
 		$this->parent->currentUser->deletePm($messageId,'message');
+		$message->topic->loadMessages(TRUE);
 
 		return TRUE;
 	}
@@ -423,15 +397,11 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		$this->parent->currentUser->deletePm($topicId,'topic');
 
 		//** Unread message should not be counted there !
-		$messageList = $this->db_getMessageList(array(
-			'nocheck' => true,
-			'clearCache' => true,
-		));
-
-		foreach ($messageList as $messageId) {
+		$topic->loadMessages();
+		foreach ($topic->messageList as $messageId) {
 			$this->parent->currentUser->viewPm($messageId,'message');
 		}
-		$this->initPaginateInfos(TRUE);
+		$this->loadTopicList(TRUE);
 		return TRUE;
 	}
 

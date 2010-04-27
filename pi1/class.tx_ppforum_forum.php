@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-tx_pplib_div::dynClassLoad('tx_ppforum_base');
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
 
 /**
  * Class 'tx_ppforum_forum' for the 'pp_forum' extension.
@@ -86,20 +86,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 	/**
 	 * 
-	 * @access protected
-	 * @var array
-	 */
-	var $_paginate;
-
-	/**
-	 * 
-	 * @access protected
-	 * @var array
-	 */
-	var $_topicList = array();
-
-	/**
-	 * 
 	 * 
 	 * @param 
 	 * @access public
@@ -107,259 +93,35 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function loadData($data, $delaySubs = false) {
 		if (parent::loadData($data)) {
-			$this->forum = &$this->parent->getForumObj($this->data['parent'], false, $delaySubs);
+			$this->forum = &$this->parent->getForumObj($this->data['parent'], $delaySubs);
 			$this->getMetaData();
 		}
 
 		return $this->id;
 	}
 
-
 	/**
-	 * Initialize paginationInfo
 	 *
-	 * @param bool $clearCache = set to true to force new calc & clearing topic lists
+	 *
+	 * @param bool $clearCache = 
 	 * @access public
 	 * @return void 
 	 */
-	function initPaginateInfos($clearCache = false) {
-		if ($clearCache || !$this->_paginate) {
-			$this->_paginate = $this->parent->pagination_calculateBase(
-				$this->db_getTopicCount(),
-				$this->parent->config['display']['maxTopics']
-			);
+	function loadTopicList($clearCache = false) {
+		if (!is_array($this->topicList) || $clearCache) {
+			$this->topicList = array();
+			$idList = $this->parent->getForumTopics($this->id, $clearCache);
 
-			if ($this->_topicList['_last'] && !$clearCache) {
-				// Special case : last topic may have been loaded before first init, so keep it
-				$last = $this->_topicList['_last'];
-			}
+			$this->parent->loadRecordObjectList($idList, 'topic');
+			$this->parent->flushDelayedObjects();
 
-			$this->_topicList = array();
-
-			$this->_topicList['_'] = false;
-			$this->_topicList['_loaded'] =	array();
-
-			if (isset($last)) {
-				$this->_topicList['_loaded'][] = $last;
-			}
-
-			for ($i=0; $i<$this->_paginate['pageCount']; $i++) {
-				$this->_topicList[$i] = false;
+			foreach ($idList as $topicId) {
+				$topic = &$this->parent->getTopicObj($topicId);
+				if ($topic->isVisible() && $this->topicIsVisible($topic->id)) {
+					$this->topicList[$topicId] = &$topic;
+				}
 			}
 		}
-	}
-
-
-	/**
-	 * Counts forum's topics
-	 *
-	 * @access public
-	 * @return int 
-	 */
-	function db_getTopicCount($options = array()) {
-		/* Declare */
-		$res = 0;
-		$options += array(
-			'nocheck' => false,
-		);
-
-		/* Begin */
-		$res = $this->parent->db_queryItems(array(
-			'count(uid) as count_topics',
-			'topic',
-			$this->db_topicsWhere($options['nocheck']),
-			null,
-		), array(
-			'sort' => false,
-		));
-
-		if (isset($res[0]['count_topics'])) {
-			$res = intval($res[0]['count_topics']);
-		}
-
-		return $res;
-	}
-
-	/**
-	 * Performs a query on forum's topics ids
-	 *
-	 * @param array $params = query parameters. Keys are :
-	 *                  - int page = "page" to load (null mean everything)
-	 *                  - bool preload = query will fetch full rows and they will be loaded into record objects
-	 *                  - bool nockech = disable access check
-	 *                  - bool clearCache = clear current query cache
-	 *                  - mixed sort = bool to enable / disable sorting, string for sorting options
-	 * @access public
-	 * @return array 
-	 */
-	function db_getTopicList($params = array()) {
-		/* Declare */
-		$params += array(
-			'page' => null,
-			'preload' => true,
-			'nocheck' => false,
-			'clearCache' => false,
-		);
-		$page = $params['page'];
-		$limit = '';
-	
-		/* Begin */
-		$this->initPaginateInfos();
-		if (is_null($page)) {
-			// set special key
-			$page = '_';
-		} else {
-			// Resolve pointer and calculate LIMIT
-			$page = $this->parent->pagination_parsePointer($this->_paginate, $page);
-			$limit = implode(
-				',',
-				$this->parent->pagination_getRange($this->_paginate, $page)
-			);
-		}
-
-		if (!$params['clearCache'] && is_array($this->_topicList[$page])) {
-			$idList = $this->_topicList[$page];
-		} else {
-			if ($this->_paginate['itemCount']) {
-				$idList = $this->db_getTopicListQuery($limit, $params);
-			} else {
-				$idList = array();
-			}
-
-			$this->_topicList[$page] = $idList;
-
-			if ($page == '_') {
-				// As the full list has been loaded, we can determine each page id list
-				$this->_topicList = array_merge(
-					array_chunk($idList, $this->_paginate['itemPerPage']),
-					array(
-						'_' => $idList,
-						'_loaded' => $idList,
-					)
-				);
-			} elseif (!$this->_topicList['_']) {
-				$this->_topicList['_loaded'] = array_merge($this->_topicList['_loaded'], $idList);
-			}
-		}
-
-		$this->parent->internalLogs['querys']++;
-
-		return $idList;
-	}
-
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function db_getLastTopic($params = array()) {
-		/* Declare */
-		$params += array(
-			'preload' => true,
-			'nocheck' => false,
-			'clearCache' => false,
-		);
-		$id = 0;
-	
-		/* Begin */
-		if (!$params['clearCache'] && isset($this->_topicList['_last'])) {
-			$id = $this->_topicList['_last'];
-		} else {
-			$id = reset($this->db_getTopicListQuery(
-				'1',
-				array(
-					'preload' => $params['preload'],
-					'nocheck' => $params['nocheck'],
-					'sort' => 'nopinned',
-					'extendedQuery' => false,
-				)
-			));
-
-			$this->_topicList['_last'] = $id;
-			$this->_topicList['_loaded'][] = $id;
-		}
-
-		$this->parent->internalLogs['querys']++;
-
-		return $id;
-	}
-
-	/**
-	 * 
-	 *
-	 * @param 
-	 * @access public
-	 * @return mixed 
-	 */
-	function db_getTopicListQuery($limit = '', $options = array()) {
-		/* Declare */
-		$res = array();
-		$options += array(
-			'preload' => false,
-			'nocheck' => false,
-			'sort' => true,
-		);
-
-		/* Begin */
-		if (!isset($options['extendedQuery'])) {
-			// Disabled : it appear that doing a query per item is less consuming
-			//$options['extendedQuery'] = $options['preload'];
-		}
-		if ($options['extendedQuery']) {
-			$options['extendedQuery_addWhere'] = $this->db_messagesAddWhere($options['nocheck']);
-		}
-
-		$res = $this->parent->db_queryItems(array(
-			'uid',
-			'topic',
-			$this->db_topicsWhere($options['nocheck']),
-			null,
-			null,
-			$limit,
-			'uid'
-		), $options);
-
-		$res = array_keys($res);
-
-		return $res;
-	}
-
-
-	/**
-	 * Build the basic where statement to select forum's topic
-	 *
-	 * @access public
-	 * @return string 
-	 */
-	function db_topicsWhere($nocheck = false) {
-		$where = 'forum = ' . $this->id;
-
-		if (!$nocheck) {
-			if (!$this->userIsGuard()) {
-				$where .= ' AND status <> 1';
-			}
-		}
-
-		return $where;
-	}
-
-	/**
-	 * Build the basic where statement to select topic's message
-	 *
-	 * @access public
-	 * @return string 
-	 */
-	function db_messagesAddWhere($nocheck = false) {
-		$where = '';
-
-		if (!$nocheck && !$this->userIsGuard()) {
-			$where = ' AND hidden = 0';
-		}
-
-		return $where;
 	}
 
 	/**
@@ -369,10 +131,20 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return int 
 	 */
 	function getLastTopic() {
-		$res = $this->db_getLastTopic();
-		$this->parent->flushDelayedObjects();
+		$listIds=$this->parent->getForumTopics($this->id,FALSE,'nopinned');
+		$ok=FALSE;
+		$current=0;
 
-		return $res;
+		while (!$ok && $current<count($listIds)) {
+			$topic=&$this->parent->getTopicObj($listIds[$current]);
+			if ($topic->isVisible() && $this->topicIsVisible($listIds[$current])) {
+				$ok=TRUE;
+			} else {
+				$current++;
+			}
+		}
+
+		return $listIds[$current];
 	}
 
 	/**
@@ -542,13 +314,12 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		/* Begin */
 		switch ($this->data['ftype']) {
 		case 'topic_shortcut':
-			// Shortcut to first topic : only if no current topic (why did I wanted that ??)
+			// Shortcut to first topic : only if no current topic
 			if (!$topicId) {
-				$idList = $this->db_getTopicList(array('page' => 1)); // preload = true by default
-				$this->parent->flushDelayedObjects();
+				$this->loadTopicList();
 
-				if (count($idList)) {
-					$res['topicId'] = reset($idList);
+				if (count($this->topicList)) {
+					$res['topicId'] = reset(array_keys($this->topicList));
 				}
 			}
 			break;
@@ -645,18 +416,18 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function getCounters($clearCache = false) {
 		if ($clearCache || is_null($this->counters)) {
-			$subForums = $this->parent->getRecursiveForumChilds($this->id, $clearCache);
-			$counters = $this->parent->getAllForumCounters();
-
 			$this->counters = array(
-				'topics' => intval($counters[$this->id]['topics']),
-				'posts'  => intval($counters[$this->id]['posts']),
+				'topics' => 0,
+				'posts'  => 0,
 			);
 
-			foreach ($subForums as $forumId) {
-				$this->counters['topics'] += $counters[$forumId]['topics'];
-				$this->counters['posts'] += $counters[$forumId]['posts'];
-			}
+			$subForums = $this->parent->getRecursiveForumChilds($this->id, $clearCache);
+			$subForums[] = $this->id;
+
+			$fullTopicList = $this->parent->getForumTopics($subForums, $clearCache);
+
+			$this->counters['topics'] = count($fullTopicList);
+			$this->counters['posts'] = $this->parent->getTopicMessages($fullTopicList, true);
 
 			$this->parent->pp_playHookObjList('forum_getCounters', $this->counters, $this);
 		} else {
@@ -752,12 +523,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function topicIsVisible($topicId) {
-		if (isset($this->_topicList['_loaded']) && in_array($topicId, $this->_topicList['_loaded'])) {
-			return true;
-		}
-		return in_array($topicId, $this->db_getTopicList(array(
-			'preload' => false,
-		)));
+		return in_array($topicId, $this->parent->getForumTopics($this->id));
 	}
 
 	/**
@@ -836,9 +602,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function event_onNewTopic($topicId) {
 		$null = null;
-
-		$this->initPaginateInfos(true);
-
 		$this->parent->pp_playHookObjList('forum_event_onNewTopic', $null, $this);
 
 		$this->event_onUpdateInForum();
@@ -928,10 +691,8 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$child=NULL;
 	
 		/* Begin */
-		$childIdList = $this->parent->getForumChilds($this->id, true);
-		$this->parent->flushDelayedObjects();
-		foreach ($childIdList as $childId) {
-			$child = &$this->parent->getForumObj($childId);//Build sub-forum object
+		foreach ($this->parent->getForumChilds($this->id) as $childId) {
+			$child=&$this->parent->getForumObj($childId);//Build sub-forum object
 			if ($child->id && $child->isVisible()) {
 				$childList[$childId]=$child;
 			}
@@ -1085,66 +846,36 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		$topicList=array();
 		$content='<div class="topic-list">';
 		$counter=0;
+		$data=array(
+			'classes'=>array()
+			);
 	
 		/* Begin */
 		$content.='<div class="topic-list-title">'.$this->parent->pp_getLL('topic.list.title','Topic list',TRUE).'</div>';
 		$content.='<table summary="'.$this->parent->pp_getLL('forum.topic-list.summary','Forum topics',TRUE).'">';
 		$content.='<thead>'.$this->displayTopicListHead().'</thead>';
 
-		$this->initPaginateInfos();
+		$this->loadTopicList();
 
-		//Generate topic-browser
-		$tempStr = $this->parent->displayPagination(
-			$this->_paginate['itemCount'],
-			$this->_paginate['itemPerPage'],
-			$this,
-			array('topic-browser')
-		);
+		if ($nbTopics=count($this->topicList)) {
+			$content.='<tbody>';
 
-		if ($this->_paginate['itemCount']) {
-			$content .= '<tbody>';
+			$tempStr=$this->parent->displayPagination($nbTopics,$this->parent->config['display']['maxTopics'],$this,array('topic-browser'));
+			list($start,$length)=explode(':',$this->recordRange);
 
-			//*** Preload topic list
-			$topicList = $this->db_getTopicList(array(
-				'page' => isset($this->parent->getVars['pointer']) ? $this->parent->getVars['pointer'] : 0,
-			));
-			$this->parent->loadRecordObjectList($topicList, 'topic');
+			foreach (array_slice(array_keys($this->topicList),$start,$length) as $topicId) {
+				$data['classes']=array();
+				$data['counter']=$counter;
+				$data['topic']=&$this->topicList[$topicId];
 
-			//** Possible replacement for "Last message preload"
-			/*
-				SELECT tx_ppforum_messages.topic, tx_ppforum_messages.uid
-				FROM tx_ppforum_messages INNER JOIN (SELECT tx_ppforum_messages.topic, max(tx_ppforum_messages.crdate) as maxdate
-				FROM tx_ppforum_messages INNER JOIN tx_ppforum_topics ON tx_ppforum_messages.topic = tx_ppforum_topics.uid
-				WHERE tx_ppforum_topics.forum = 3
-				GROUP BY tx_ppforum_messages.topic) as t1 ON (t1.maxdate = tx_ppforum_messages.crdate AND t1.topic = tx_ppforum_messages.topic)
-				WHERE 1=1			
-			*/
-
-			//** Last message preload
-			foreach ($topicList as $topicId) {
-				$topic = &$this->parent->getTopicObj($topicId);
-				$topic->db_getLastMessage();
-			}
-
-			//** Load sub elements (authors)
-			$this->parent->flushDelayedObjects();
-
-			foreach ($topicList as $topicId) {
-				$data = array(
-					'classes' => array(),
-					'counter' => $counter,
-					'topic' => null,
-				);
-
-				$data['topic'] = &$this->parent->getTopicObj($topicId);
-
-				$data['classes'][] = ($counter%2) ? 'row-alt' : 'row';
+				if ($counter%2) $data['classes'][]='row-alt';
+				else $data['classes'][]='row';
 				if (!$counter) $data['classes'][]='row-first';
 				if ($counter==$nbTopics-1) $data['classes'][]='row-last';
 
 				$this->parent->pp_playHookObjList('forum_displayTopicList', $data, $this);
 
-				$content .= $this->displaySingleTopic($data['topic'], $data['classes']);
+				$content.=$this->displaySingleTopic($data['topic'],$data['classes']);
 				$counter++;
 			}
 			$content.='</tbody></table>'.$tempStr;
@@ -1203,6 +934,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			return '';
 		}
 		$data['counters'] = $topic->getCounters();
+		$data['topic']->loadMessages();
 
 		$data['conf']['topic-title']=$data['topic']->getTitleLink(true);
 		$data['conf']['topic-posts']=$data['counters']['posts'];
@@ -1331,29 +1063,16 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 * @return void 
 	 */
 	function isVisible() {
+		$res=FALSE;
+
 		$this->initAccesses();
-		$res = !$this->data['deleted'] && $this->access['read'];
 
-		return $res;
-	}
+		if (!$this->data['deleted']) {
+			if ((!is_object($this->forum) || $this->forum->isVisible()) && $this->access['read']) {
+				$res=TRUE;
+			}
 
-
-	/**
-	 * Check if this forum AND his parents are visibles
-	 *
-	 * @access public
-	 * @return bool 
-	 */
-	function isVisibleRecursive() {
-		$res = $this->isVisible();
-
-		if ($this->id > 0) {
-			$res = $res && $this->forum->isVisibleRecursive();
 		}
-
-		//Plays hook list : Allows to change the result
-		$this->parent->pp_playHookObjList('forum_isVisibleRecursive', $res, $this);
-
 		return $res;
 	}
 
@@ -1366,6 +1085,23 @@ class tx_ppforum_forum extends tx_ppforum_base {
 	 */
 	function messageIsVisible($messageId) {
 		return TRUE;
+	}
+
+	/**
+	 *
+	 *
+	 * @param 
+	 * @access public
+	 * @return void 
+	 */
+	function event_onNewPostInTopic($topicId, $messageId) {
+		$param = Array(
+			'topicId' => $topicId,
+			'messageId' => $messageId,
+		);
+
+		//Playing hook list
+		$this->parent->pp_playHookObjList('forum_event_onNewPostInTopic', $param, $this);
 	}
 
 	/**
@@ -1399,23 +1135,6 @@ class tx_ppforum_forum extends tx_ppforum_base {
 
 		//Playing hook list
 		$this->parent->pp_playHookObjList('forum_event_onMessageDisplay', $param, $this);
-	}
-
-	/**
-	 *
-	 *
-	 * @param 
-	 * @access public
-	 * @return void 
-	 */
-	function event_onMessageCreate($topicId, $messageId) {
-		$param = Array(
-			'topicId' => $topicId,
-			'messageId' => $messageId,
-		);
-
-		//Playing hook list
-		$this->parent->pp_playHookObjList('forum_event_onMessageCreate', $param, $this);
 	}
 
 	/**

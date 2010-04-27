@@ -22,7 +22,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-tx_pplib_div::dynClassLoad('tx_ppforum_base');
+require_once(t3lib_extMgm::extPath('pp_forum').'pi1/class.tx_ppforum_base.php');
 
 /**
  * Class 'tx_ppforum_message' for the 'pp_forum' extension.
@@ -93,14 +93,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @var string
 	 */
 	var $validErrors = Array();
-
-	/**
-	 * Message/Topic "througt typo3 cache" cache
-	 * Contains information wich can be given to non cached process
-	 * @access protected
-	 * @var array
-	 */
-	var $cache = array();
 
 	/**
 	 * Loads the message data
@@ -178,7 +170,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 			}
 
 			//Playing hook list
-			$this->parent->pp_playHookObjList('message_mergeData', $incommingData, $this);
+			$null = null;
+			$this->parent->pp_playHookObjList('message_mergeData', $null, $this);
 		}
 	}
 
@@ -190,18 +183,12 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function save($forceReload = true) {
 		/* Declare */
+		$null = null;
 		$result = false;
-		$mode = 'update';
 
 		/* Begin */
-		if (!$this->id) {
-			$mode = 'create';
-		} elseif ($this->mergedData['deleted'] && !$this->data['deleted']) {
-			$mode = 'delete';
-		}
-
 		// Plays hook list : Allow to change some field before saving
-		$this->parent->pp_playHookObjList('message_save', $mode, $this);
+		$this->parent->pp_playHookObjList('message_save', $null, $this);
 
 		$this->mergedData['author'] = $this->author->id;
 		$this->mergedData['topic'] = $this->topic->id;
@@ -210,10 +197,15 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		if ($forceReload) {
 			$this->forceReload['topic'] = true;
+
+			if ($this->isNew) {
+				// Reloading list (may have change because of the new row)
+				$this->forceReload['list'] = true;
+			}
 		}
 
 		//Launch topic event handler
-		$this->event_onUpdateInMessage($mode);
+		$this->event_onUpdateInMessage();
 
 		return $result;
 	}
@@ -248,6 +240,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 					$this->data
 				)
 			);
+
+			$this->parent->log('UPDATE');
 		} else {
 			if ($crdateField) {
 				$this->mergedData[$crdateField] = $GLOBALS['SIM_EXEC_TIME'];
@@ -261,13 +255,12 @@ class tx_ppforum_message extends tx_ppforum_base {
 				$this->tablename,
 				$this->mergedData
 			);
+			$this->parent->log('INSERT');
 
 			// Initialize id. Maybe we should load the full row, but no need for now
 			$this->id = $this->mergedData['uid'] = $GLOBALS['TYPO3_DB']->sql_insert_id();
-			if (isset($this->isNew)) $this->isNew = true;
+			$this->isNew = true;
 		}
-		$this->internalLogs['querys']++;
-		$this->internalLogs['realQuerys']++;
 
 		// As we have save mergedData, the item data now equals mergedData
 		$this->data = $this->mergedData;
@@ -290,7 +283,9 @@ class tx_ppforum_message extends tx_ppforum_base {
 			} else {
 				//Normal delete
 				$this->mergedData['deleted'] = 1;
-
+				if ($forceReload) {
+					$this->forceReload['list'] = true;
+				}
 				return $this->save($forceReload);
 			}
 		} else {
@@ -308,13 +303,16 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access protected
 	 * @return void
 	 */
-	function event_onUpdateInMessage($mode) {
+	function event_onUpdateInMessage() {
 		/* Declare */
 		$null = null;
 	
 		/* Begin */
 		//Playing hook list
-		$this->parent->pp_playHookObjList('message_event_onUpdateInMessage', $mode, $this);
+		$this->parent->pp_playHookObjList('message_event_onUpdateInMessage', $null, $this);
+
+		//If needed (deletion/creation of a message), clear the message list query cache
+		if ($this->forceReload['list']) $this->topic->loadMessages(true);
 
 		//Forcing data and object reload. Could be used to ensure that data is "as fresh as possible"
 		//Useless if oject wasn't builded with 'getMessageObj' function
@@ -322,20 +320,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		if ($this->forceReload['data']) $this->load($this->id, true);
 
 		//Launch topic event function only if needed (eg: don't enter here when deleting messages from topic::delete)
-		if ($this->forceReload['topic']) {
-			switch ($mode){
-			case 'create':
-				$this->author->incrementMessageCounter();
-				$this->topic->event_onMessageCreate($this->id);
-				break;
-			case 'update': 
-				$this->topic->event_onMessageModify($this->id);
-				break;
-			case 'delete': 
-				$this->topic->event_onMessageDelete($this->id);
-				break;
-			}
-		}
+		if ($this->forceReload['topic']) $this->topic->event_onMessageModify($this->id, $this->isNew);
 
 		//Resets directives
 		$this->forceReload = array();
@@ -353,7 +338,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return string 
 	 */
-	function getLink($title = false, $addParams = array(), $parameter = null) {
+	function getLink($title = false,$addParams = array(), $parameter = null) {
 		//** Message anchor
 		if (is_null($parameter) && $this->id) {
 			$parameter = $this->parent->_displayPage . '#ppforum_message_'.$this->id;
@@ -409,52 +394,13 @@ class tx_ppforum_message extends tx_ppforum_base {
 	/****************************************/
 
 	/**
-	 * Load every "cachable" information and return the cache array
-	 * This cache will be given throught Typoscript config to _INT part(s)
-	 * 
-	 * @access public
-	 * @return array
-	 */
-	function cache_getCachableData() {
-		$this->getPageNum();
-
-		return $this->cache;
-	}
-
-	/**
-	 * Reload a cache array from Typoscript
-	 * 
-	 * @param array $conf = typoscript conf
-	 * @access public
-	 * @return void 
-	 */
-	function cache_loadHeritedCache($conf) {
-		if (isset($conf['cache.'])) {
-			$this->cache = $conf['cache.'];
-		}
-	}
-
-	/**
 	 * Search in wich page of the topic this message will appear (used by link functions)
 	 *
-	 * @param bool $clearCache = set to true to ignore & reset current cache
 	 * @access public
 	 * @return int = pointer value 
 	 */
-	function getPageNum($clearCache = false) {
-		if (!$clearCache && isset($this->cache['getPageNum'])) {
-			$res = $this->cache['getPageNum'];
-		} else {
-			if ($this->id) {
-				$res = $this->topic->getMessagePageNum($this->id);
-			} else {
-				$res = 'last';
-			}
-
-			$this->cache['getPageNum'] = $res;
-		}
-
-		return $res;
+	function getPageNum() {
+		return $this->topic->getMessagePageNum($this->id);
 	}
 
 	/**
@@ -549,18 +495,19 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 * @access public
 	 * @return void 
 	 */
-	function checkData() {
-		/* Declare */
-		$errors = array();
-
-		/* Begin */
+	function checkData(&$errors) {
 		//*** Checking message field
 		if (!trim($this->mergedData['message'])) {
 			$errors['field']['message'] = $this->parent->pp_getLL('errors.fields.message');
 		} else {
 			//** Clean text (correct CR/LF)
-			$this->mergedData['message'] = tx_pplib_div::normalizeLineBreaks($this->mergedData['message']);
+			$this->mergedData['message'] = str_replace(
+				array("\r\n", "\r"),
+				Array(chr(10), chr(10)),
+				$this->mergedData['message']
+			);
 		}
+
 
 		if ($this->type == 'topic') {
 			//** Checking Topic fields
@@ -592,8 +539,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 
 		//Playing hook list : Allows to fill other fields
 		$this->parent->pp_playHookObjList('message_checkData', $errors, $this);
-
-		return $errors;
 	}
 
 	/****************************************/
@@ -1046,7 +991,8 @@ class tx_ppforum_message extends tx_ppforum_base {
 			'level' => $level,
 		);
 
-		$forumIdList = $this->parent->getForumChilds($forum->id, true);
+		$forumIdList = $this->parent->getForumChilds($forum->id);
+		$this->parent->loadRecordObjectList($forumIdList, 'forum');
 		$this->parent->flushDelayedObjects();
 
 		foreach ($forumIdList as $child) {
@@ -1086,8 +1032,6 @@ class tx_ppforum_message extends tx_ppforum_base {
 			if (!$this->id) $conf['cmd.']['div.']['forum'] = $this->forum->id;
 		}
 
-		$conf['cmd.']['cache.'] = $this->cache_getCachableData();
-
 		//Calls the plugin as USER int with this special config
 		// Also the content will be generated each time a user request the page
 		return $this->parent->callINTpart($conf);
@@ -1101,13 +1045,11 @@ class tx_ppforum_message extends tx_ppforum_base {
 	 */
 	function _display_toolsRow($conf) {
 		/* Declare */
-		$content = '';
-		$mode = $conf['div.']['mode'];
-		$data = array('mode'=>$mode,'left'=>array(),'right'=>array());
+		$content='';
+		$mode=$conf['div.']['mode'];
+		$data=array('mode'=>$mode,'left'=>array(),'right'=>array());
 	
 		/* Begin */
-		$this->cache_loadHeritedCache($conf);
-
 		//Loading topic/forum object (checking type because this function is called for topics too !)
 		if (!$this->id) {
 			if ($this->type=='message') {
@@ -1222,7 +1164,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 				$res=is_object($this->topic) && $this->topic->isVisibleRecursive() && $this->topic->messageIsVisible($this->id);
 				break;
 			case 'topic': 
-				$res=is_object($this->forum) && $this->forum->isVisibleRecursive() && $this->forum->topicIsVisible($this->id);
+				$res=is_object($this->forum) && $this->forum->isVisible() && $this->forum->topicIsVisible($this->id);
 				break;
 			}
 		}
@@ -1231,6 +1173,26 @@ class tx_ppforum_message extends tx_ppforum_base {
 		$this->parent->pp_playHookObjList('message_isVisibleRecursive', $res, $this);
 
 		return $res;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function isMessage() {
+		return true;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return bool 
+	 */
+	function isTopic() {
+		return false;
 	}
 
 	/**
