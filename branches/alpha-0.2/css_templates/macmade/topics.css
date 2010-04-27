@@ -1,0 +1,68 @@
+/********************************************
+ * Css template for the pp_forum extension
+ * @see http://typo3.org
+ *
+ * @author: macmade
+ * @co-author: popy
+ *
+ * Topics part
+ */
+
+
+/******* Design liste de topics   *******/
+.tx-ppforum-pi1 .topic-list-title {
+	background-color: #FF8700;
+	padding: 5px;
+	color: #FFFFFF;
+}
+.tx-ppforum-pi1 .topic-list-head {
+	background-color: #FFBD73;
+	color: #FFFFFF;
+}
+
+.tx-ppforum-pi1 .topic-list-isempty {
+	background-color: #EEEEEE;
+	padding: 5px;
+}
+
+.tx-ppforum-pi1 .topic-list .single-col {
+	border-left: solid 1px #FFFFFF;
+}
+
+.tx-ppforum-pi1 .topic-list table td {
+	padding: 5px;
+}
+
+.tx-ppforum-pi1 .topic-list table .row {
+	background-color: #EEEEEE;
+	border-bottom: solid 1px #FFFFFF;
+}
+.tx-ppforum-pi1 .topic-list table .row-alt {
+	background-color: #DDDDDD;
+	border-bottom: solid 1px #FFFFFF;
+}
+
+
+
+.tx-ppforum-pi1 .single-topic .title-row {
+	background-color: #FF8700;
+	padding: 5px;
+	color: #FFFFFF;
+	font-weight: bold;
+}
+
+.tx-ppforum-pi1 .single-topic .title-row a {
+	color: #FFFFFF;
+}
+
+.tx-ppforum-pi1 .single-topic form .title-row {
+	background-color: #DDDDDD;
+	padding: 5px;
+	color: inherit;
+	font-weight: normal;
+}
+
+.tx-ppforum-pi1 .single-topic form .title-row .error {
+	display: inline;
+	margin-left: 1em;
+}

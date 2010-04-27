@@ -1,0 +1,175 @@
+plugin.tx_ppforum_pi1 {
+	config {
+    flexFormConfig=1
+
+    // Starting point config
+    pidList=configuration|lDEF|pidlist|vDEF
+    pidList.ifEmpty.data=page:uid
+    pidList.ifEmpty.override={$plugin.tx_ppforum_pi1.startingPoint}
+
+    // Recursive field
+		recursive=configuration|lDEF|recursive|vDEF
+
+    // Page where to save new records
+    savepage=configuration|lDEF|savepage|vDEF
+    savepage.ifEmpty.data=page:uid
+    savepage.ifEmpty.override={$plugin.tx_ppforum_pi1.savepage}
+
+    denyHooks = tab_plugins|lDEF|denyHooks|vDEF
+
+    //Some display options
+    display=CONF_ARRAY
+    display {
+
+      // Selected css template
+      csstemplate=display|lDEF|csstemplate|vDEF
+      csstemplate.ifEmpty=macmade
+
+      maxMessages=display|lDEF|maxMessages|vDEF
+      maxMessages.ifEmpty=5
+
+      maxTopics=display|lDEF|maxTopics|vDEF
+      maxTopics.ifEmpty=5
+
+      pageRange=display|lDEF|pageRange|vDEF
+      pageRange.ifEmpty=5
+
+      lightMode_def=display|lDEF|lightMode_def|vDEF
+
+      printStats=display|lDEF|printStats|vDEF
+    }
+
+    //Search engine option : merging messages from the same topic in a single result
+    mergeSearchResults=configuration|lDEF|mergeSearchResults|vDEF
+
+    avatar=CONF_ARRAY
+    avatar {
+      maxWidth=tab_image|lDEF|maxWidth|vDEF
+      maxWidth.ifEmpty=180
+
+      maxHeight=tab_image|lDEF|maxHeight|vDEF
+      maxHeight.ifEmpty=180
+
+      resizeImg=tab_image|lDEF|resizeImg|vDEF
+
+      allowedExt=tab_image|lDEF|allowedExt|vDEF
+      allowedExt.ifEmpty=gif,jpg,jpeg
+    }
+
+    rootForum = CONF_ARRAY
+    rootForum {
+      force_language = tab_rootForum|lDEF|force_language|vDEF
+      readaccess = tab_rootForum|lDEF|readaccess|vDEF
+      writeaccess = tab_rootForum|lDEF|writeaccess|vDEF
+      guardaccess = tab_rootForum|lDEF|guardaccess|vDEF
+      adminaccess = tab_rootForum|lDEF|adminaccess|vDEF
+      newtopic_restrict = tab_rootForum|lDEF|newtopic_restrict|vDEF
+      reply_restrict = tab_rootForum|lDEF|reply_restrict|vDEF
+      edit_restrict = tab_rootForum|lDEF|edit_restrict|vDEF
+      delete_restrict = tab_rootForum|lDEF|delete_restrict|vDEF
+    }
+	}
+
+  //** Data object classes
+  recordObjects {
+    message = tx_ppforum_message
+    topic = tx_ppforum_topic
+    forum = tx_ppforum_forum
+    forumsim = tx_ppforum_forumsim
+    user = tx_ppforum_user
+  }
+
+  javascript {
+    prototype = typo3/contrib/prototype/prototype.js
+
+    resize = EXT:pp_forum/res/belink.resizable.js
+
+    pp_forum = EXT:pp_forum/res/pp_forum.js
+  }
+
+  //Css templates configuration
+  csstemplates {
+
+    //Default template :
+    macmade=COA
+    macmade {
+      10 = FILE
+      10.file = EXT:pp_forum/css_templates/macmade/global.css
+
+      20 = FILE
+      20.file = EXT:pp_forum/css_templates/macmade/forums.css
+
+      30 = FILE
+      30.file = EXT:pp_forum/css_templates/macmade/topics.css
+
+      40 = FILE
+      40.file = EXT:pp_forum/css_templates/macmade/messages.css
+
+      50 = FILE
+      50.file = EXT:pp_forum/css_templates/macmade/users.css
+    }
+
+    green = COA
+    green {
+      10 = FILE
+      10.file = EXT:pp_forum/css_templates/green/global.css
+
+      20 = FILE
+      20.file = EXT:pp_forum/css_templates/green/forums.css
+
+      30 = FILE
+      30.file = EXT:pp_forum/css_templates/green/topics.css
+
+      40 = FILE
+      40.file = EXT:pp_forum/css_templates/green/messages.css
+    }
+
+    //Default template :
+    archetype =COA
+    archetype {
+      10 = FILE
+      10.file = EXT:pp_forum/css_templates/archetype/global.css
+
+      20 = FILE
+      20.file = EXT:pp_forum/css_templates/archetype/forums.css
+
+      30 = FILE
+      30.file = EXT:pp_forum/css_templates/archetype/topics.css
+
+      40 = FILE
+      40.file = EXT:pp_forum/css_templates/archetype/messages.css
+
+      50 = FILE
+      50.file = EXT:pp_forum/css_templates/archetype/users.css
+    }
+
+  }
+
+
+}
+
+// pp_rsslatestcontent integration
+config.pp_rsslatestcontent.external.pp_forum_pi1=tx_ppforum_pi1->rss_getList
+config.pp_rsslatestcontent.external.pp_forum_pi1 {
+  config.pidList.field=pages
+  config.recursive=5000
+
+  recordObjects < plugin.tx_ppforum_pi1.recordObjects
+}
+config.pp_rsslatestcontent.external.pp_forum_pi1 >
+config.pp_rsslatestcontent.external.pp_forum_pi1 < plugin.tx_ppforum_pi1
+config.pp_rsslatestcontent.external.pp_forum_pi1 = tx_ppforum_pi1->rss_getList
+
+// pp_searchengine integration
+plugin.tx_ppsearchengine_pi1.engines.pp_forum {
+  label.data=LLL:EXT:pp_forum/pi1/locallang.php:global.search_engine
+  parseSWord=1
+  type=multiplePis
+
+  table=tt_content
+  where=tt_content.tx_ppsearchengine_isengine=1 AND tt_content.list_type='pp_forum_pi1'
+  languageField = sys_language_uid
+
+  cObject=<plugin.tx_ppforum_pi1
+  cObject.userFunc=tx_ppforum_pi1->doSearch
+}

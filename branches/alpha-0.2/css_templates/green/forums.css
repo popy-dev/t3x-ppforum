@@ -1,0 +1,44 @@
+/********************************************
+ * Css template for the pp_forum extension
+ * @see http://typo3.org
+ *
+ * @author: ???
+ *
+ * Forums part
+ */
+
+.tx-ppforum-pi1 .child-list-title {
+	background-color: #ccff66;
+	padding: 4px;
+	color: #ffffff;
+	font-weight: bold;
+	font-size: 14px;
+	background-image: url(EXT:pp_forum/css_templates/green/bg.jpg);
+}
+
+.tx-ppforum-pi1 .child-list-head {
+	background-color: #e1fea6;
+	color: #333333;
+	font-size: 10px;
+}
+
+.tx-ppforum-pi1 .child-list table td {
+	padding: 5px;
+}
+
+.tx-ppforum-pi1 .child-list .single-col {
+}
+.tx-ppforum-pi1 .child-list table .row-alt {
+	background-color: #ececec;
+}
+.tx-ppforum-pi1 .child-list table .row {
+	background-color: #ffffff;
+}
+
+.tx-ppforum-pi1 .child-list table .row {
+	background-color: #ffffff;
+}
+
+.tx-ppforum-pi1 .topic-list {
+	margin-bottom: 10px;
+}

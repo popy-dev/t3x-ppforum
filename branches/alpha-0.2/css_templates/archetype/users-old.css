@@ -1,0 +1,44 @@
+/********************************************
+ * Css template for the pp_forum extension
+ * @see http://typo3.org
+ *
+ * @author: macmade
+ * @co-author: popy
+ *
+ * Topics part
+ */
+
+
+
+.tx-ppforum-pi1 .user-profile .title-row {
+	background-color: rgb(15, 68, 84);
+	padding: 5px;
+	font-weight: bold;
+}
+
+.tx-ppforum-pi1 .user-profile .title-row a {
+
+}
+
+
+.tx-ppforum-pi1 .user-profile .row {
+	border-bottom: 1px white solid;
+}
+.tx-ppforum-pi1 .user-profile .left-col {
+	border-right: 1px white solid;
+}
+.tx-ppforum-pi1 .user-profile .row .row, .tx-ppforum-pi1 .user-profile .row .row .left-col {
+	border: none;
+}
+
+.tx-ppforum-pi1 .user-profile .subtitle-row {
+	background: rgb(255, 189, 115);
+}
+
+.tx-ppforum-pi1 .user-profile .main-row {
+	background: rgb(100, 147, 200);
+}
+
+.tx-ppforum-pi1 .user-profile .submit-row {
+	background: rgb(91, 167, 192);
+}
