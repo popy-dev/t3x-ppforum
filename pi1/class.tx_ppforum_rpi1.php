@@ -1269,108 +1269,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	}
 
 	/**
-	 * Return the uid-list of a topic messages
-	 * @deprecated
-	 * @param int $id = topic's uid
-	 * @param boolean $clearCache = @see pp_lib
-	 * @access public
-	 * @return mixed 
-	 */
-	function getTopicMessages($id, $countOnly = false, $clearCache = false) {
-		/* Declare */
-		$countOnly = !!$countOnly;
-		$res = null;
-	
-		/* Begin */
-		if (!is_array($id)) {
-			$id = array($id);
-		}
-
-		$cacheKey = 'pi-getTopicMessages;' . implode(',', $id) . ';' . $countOnly;
-
-		if ($clearCache === 'clearCache') {
-			$this->cache->storeInCache($res, $cacheKey, 'relations');
-		} elseif (!$clearCache && $this->cache->isInCache($cacheKey, 'relations')) {
-			$res = $this->cache->getFromCache($cacheKey, 'relations');
-		} else {
-			$res = $this->getTopicMessages_cached($id, $countOnly);
-			$this->cache->storeInCache($res, $cacheKey, 'relations');
-		}
-		$this->internalLogs['querys']++;
-
-		return $res;
-	}
-	
-	/**
-	 * Return the uid-list of a topic messages
-	 *
-	 * @param array $id = topic's id list
-	 * @param boolean $clearCache = @see pp_lib
-	 * @access public
-	 * @return mixed 
-	 */
-	function getTopicMessages_cached($id, $countOnly = false, $limit = '', $preload = false) {
-		/* Declare */
-		$res = array();
-		$fields = $preload ? '*' : 'uid'; // Get every fields in case of preloading
-		$indexField = 'uid';
-		$isValidId = false;
-		$options = array();
-
-		/* Begin */
-		if ($countOnly) {
-			$fields = 'count(uid) as count_messages';
-			$indexField = null;
-		}
-
-		// Building where condition
-		if (is_array($id)) {
-			$where = 'topic IN (' . implode(',', $id) . ')';
-			$isValidId = count($id);
-		} else {
-			$where = 'topic = ' . $id;
-			$isValidId = intval($id);
-			$options['topicId'] = intval($id);
-		}
-
-		if ($isValidId) { // Sanity check : should NEVER occurs
-			$res = $this->db_query(
-				$fields,
-				$this->tables['message'],
-				$where . $this->pp_getEnableFields('message', $options),
-				'',
-				$this->getOrdering('message'),
-				$limit,
-				$indexField
-			);
-
-		} else {
-			tx_pplib_div::debug(basename(__FILE__) . ':' . __LINE__ , 'Something bad happened');
-		}
-
-
-		if ($countOnly) {
-			if (is_array($res) && count($res)) {
-				$res = reset($res);
-				$res = intval($res['count_messages']);
-			} else {
-				$res = 0;
-			}
-		} else {
-			if (is_array($res) && count($res)) {
-				if ($preload) {
-					$this->preloadRecordObjects($res, 'message');
-				}
-				$res = array_keys($res);
-			} else {
-				$res = array();
-			}
-		}
-
-		return $res;
-	}
-
-	/**
 	 *
 	 *
 	 * @param 
@@ -1622,10 +1520,25 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			foreach ($this->_delayedObjectList as $type => $idList) {
 				if ($count += count($idList)) {
 					$this->_delayedObjectList[$type] = Array();
-					$this->loadRecordObjectList(array_unique($idList), $type, true);
+					$this->loadRecordObjectList(array_unique($idList), $type);
 				}
 			}
 		} while ($count);
+	}
+
+	/**
+	 * Add an item list to the preloadStack
+	 * Those items will be loaded by the "flushDelayedObjects" method
+	 * 
+	 * @param array $idList = items ids
+	 * @param string $type = item type
+	 * @access public
+	 * @return void 
+	 */
+	function addItemsToPreloadStack($idList, $type) {
+		foreach ($idList as $id) {
+			$this->getRecordObject($id, $type, false, true);
+		}
 	}
 
 	/**
@@ -1633,33 +1546,12 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 * 
 	 * @param array $idList = items ids
 	 * @param string $type = item type (forumsim is skipped, as their is no sense to load a list of them FOR NOW)
-	 * @param bool $justLoadData = Force loading items already cached : used ONLY by flushDelayedObjects
-	 *                               The reason is that a delayed object is cached BUT empty, so we have to fill it
-	 * @access public
+	 * @access protected
 	 * @return void 
 	 */
-	function loadRecordObjectList($idList, $type, $justLoadData = false) {
-		/* Declare */
-		$loadIdList = array();
-		$cacheKeys = Array();
-
-		/* Begin */
+	function loadRecordObjectList($idList, $type) {
 		// Sanity check : Only for REAL data
 		if (!in_array($type, array('message', 'topic', 'user', 'forum'))) {
-			return ;
-		}
-
-		// Generate cache keys and the "Id to load" list
-		foreach ($idList as $id) {
-			$cacheKeys[$id] = $this->generateCacheKey($id, $type);
-
-			if ($justLoadData || !$this->cache->isInCache($cacheKeys[$id])) {
-				$loadIdList[] = $id;
-			}
-		}
-
-		// Exiting if no query is needed
-		if (!count($loadIdList)) {
 			return ;
 		}
 
@@ -1667,7 +1559,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$tabRes = $this->db_queryItems(array(
 			null,
 			$type,
-			'uid IN (' . implode(',', $loadIdList) . ')',
+			'uid IN (' . implode(',', $idList) . ')',
 			null,
 			null,
 			null,
@@ -1676,24 +1568,6 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			'preload' => true,
 		));
 		$this->internalLogs['querys']++;
-
-		// Ensure that unfound items are correctly created
-		foreach ($loadIdList as $id) {
-			if (isset($tabRes[$id])) {
-				continue;
-			}
-
-			if (!$this->cache->isInCache($cacheKeys[$id])) {
-				//* Instanciate object
-				$res = &$this->recordObject_instanciate($type);
-
-				$this->cache->storeInCache($res, $cacheKeys[$id]);
-
-				//* Load data, with delayed sub-item loading
-				$res->loadData(null, true);
-			}
-		}
-
 	}
 
 	/**
@@ -1703,10 +1577,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 	 *
 	 * @param array $list = recordset (list of rows)
 	 * @param string $type = items type
-	 * @access public
+	 * @access protected
 	 * @return void 
 	 */
-	function preloadRecordObjects($list, $type) {
+	function preloadDataIntoRecordObjects($list, $type) {
 		/* Declare */
 		$res = null;
 	
@@ -1733,6 +1607,23 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param int $id =
+	 * @param string $type = 
+	 * @access public
+	 * @return void 
+	 */
+	function isRecordLoaded($id, $type) {
+		/* Declare */
+		$cacheKey = $this->generateCacheKey($id, $type);
+		$tmp = &$this->cache->getFromCache($cacheKey);
+	
+		/* Begin */
+		return is_object($tmp) && $tmp->id;
 	}
 
 	/**
@@ -2041,7 +1932,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		}
 
 		if ($options['preload']) {
-			$this->preloadRecordObjects($res, $tableShortName);
+			$this->preloadDataIntoRecordObjects($res, $tableShortName);
 		}
 
 		return $res;
@@ -2198,9 +2089,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			// Preload all needed objects
 			foreach ($data as $k => $v) {
 				if ($v['cmd'] == 'callObj') {
-					$this->_delayedObjectList[$v['cmd.']['object']][] = $v['cmd.']['uid'];
+					$this->getRecordObject($v['cmd.']['uid'], $v['cmd.']['object'], false, true);
 				}
 			}
+
 			$this->flushDelayedObjects();
 
 			$replace = array();
