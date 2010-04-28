@@ -1108,7 +1108,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 			$topicList = $this->db_getTopicList(array(
 				'page' => isset($this->parent->getVars['pointer']) ? $this->parent->getVars['pointer'] : 0,
 			));
-			$this->parent->loadRecordObjectList($topicList, 'topic');
+			$this->parent->addItemsToPreloadStack($topicList, 'topic');
 
 			//** Possible replacement for "Last message preload"
 			/*

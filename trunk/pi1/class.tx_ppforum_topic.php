@@ -1612,7 +1612,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			'page' => $page,
 		));
 	
-		$this->parent->loadRecordObjectList($messageList, 'message');
+		$this->parent->addItemsToPreloadStack($messageList, 'message');
 		$this->parent->flushDelayedObjects();
 
 		return $messageList;

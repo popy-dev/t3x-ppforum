@@ -220,7 +220,7 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 		while ($countResults < 40 && $i < $countTopics) {
 			// Simulated buffer : Load topics by list to reduce effective query count
 			if (!$bufferLength) {
-				$this->parent->loadRecordObjectList(array_slice($topicListIds, $topicListPage * 20, 20), 'topic');
+				$this->parent->addItemsToPreloadStack(array_slice($topicListIds, $topicListPage * 20, 20), 'topic');
 				$this->parent->flushDelayedObjects();
 				$bufferLength = 20;
 				$topicListPage++;
