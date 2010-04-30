@@ -1518,9 +1518,13 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		do { // This do/while handle internal delaying (each load level can re-load childs as delayed)
 			$count = 0;
 			foreach ($this->_delayedObjectList as $type => $idList) {
-				if ($count += count($idList)) {
+				$idList = array_unique($idList);
+				$listCount = count($idList);
+
+				if ($listCount) {
+					$count += $listCount;
 					$this->_delayedObjectList[$type] = Array();
-					$this->loadRecordObjectList(array_unique($idList), $type);
+					$this->loadRecordObjectList($idList, $type);
 				}
 			}
 		} while ($count);

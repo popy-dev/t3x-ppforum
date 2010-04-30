@@ -119,3 +119,9 @@ Belink.Resizable.prototype = {
 		this.wrapper.style.height = Math.max((parseInt(height)), this.options.minHeight) + 'px';
 	}
 }
+
+if(navigator.userAgent.toLowerCase().indexOf('safari/') > -1;){
+	Belink.Resizable = function (){
+		
+	}
+}
