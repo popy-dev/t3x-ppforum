@@ -67,6 +67,16 @@ class tx_ppforum_base {
 	var $type = '';
 
 	/**
+	 * 
+	 * 
+	 * @access public
+	 * @return int
+	 */
+	function getId() {
+		return $this->id;
+	}
+
+	/**
 	 * Loads the record's data from DB
 	 *
 	 * @param int $id = Record's uid

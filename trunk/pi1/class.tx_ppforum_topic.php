@@ -152,7 +152,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 		}
 
-		$this->mergedData['author'] = $this->author->id;
+		$this->mergedData['author'] = $this->author->getId();
 		$this->mergedData['forum'] = $this->forum->id;
 
 		// Plays hook list : Allow to change some field before saving
@@ -1105,7 +1105,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 					'method'=>'_displayTopicTools',
 				),
 			);
-		return $this->parent->callINTPlugin($conf);
+		return $this->parent->callINTpart($conf);
 	}
 
 	/**

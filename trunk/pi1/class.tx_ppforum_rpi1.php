@@ -115,8 +115,12 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 	 * @param	array		$conf: The PlugIn configuration
 	 * @return	The content that is displayed on the website
 	 */
-	function main($conf)	{
+	function main($content, $conf)	{
 		$content = '';
+
+		if (isset($conf['isCallBack']) && $conf['isCallBack']) {
+			return $this->mainCallback($conf);
+		}
 
 		//*** Basic init
 		$this->init($conf);
@@ -163,7 +167,7 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 					)
 				);
 
-				$content .= $this->callINTPlugin($lConf);
+				$content .= $this->callINTpart($lConf);
 
 			} elseif ($viewLatests) {
 				$obj = &$this->getUnreadTopicsHandler();
@@ -177,7 +181,7 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 				);
 
 
-				$content .= $this->callINTPlugin($lConf);
+				$content .= $this->callINTpart($lConf);
 			} elseif ($topic = $this->getCurrentTopic()) {
 				$obj = &$this->getTopicObj(intval($topic));
 				if ($obj->id) {
@@ -200,7 +204,7 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 						)
 					);
 
-					$content .= $this->callINTPlugin($lConf);
+					$content .= $this->callINTpart($lConf);
 					
 				} else {
 
@@ -279,20 +283,8 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 
 		switch ($this->conf['cmd']){
 		case 'callObj': //Asked to build an object
-			switch ($this->conf['cmd.']['object']){
-			case 'forum':
-				$theObj = &$this->getForumObj($this->conf['cmd.']['uid']);
-				break;
-			case 'user': 
-				$theObj = &$this->getUserObj($this->conf['cmd.']['uid']);
-				break;
-			case 'topic': 
-				$theObj = &$this->getTopicObj($this->conf['cmd.']['uid']);
-				break;
-			case 'message': 
-				$theObj = &$this->getMessageObj($this->conf['cmd.']['uid']);
-				break;
-			}
+			$theObj = &$this->getRecordObject($this->conf['cmd.']['uid'], $this->conf['cmd.']['object']);
+
 			//$theObj->parent = &$this;//Force backref to this
 			if (method_exists($theObj,$method = $this->conf['cmd.']['method'])) {
 				$content = $theObj->$method($this->conf['cmd.']); //Call the specified method
@@ -337,7 +329,7 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 		$this->conf['parsers.'] = $GLOBALS['TSFE']->tmpl->setup['plugin.']['tx_ppforum_pi1.']['parsers.'];
 		$mergedList = array();
 		$finalList = array();
-	
+
 		/* Begin */
 		$this->init();
 		tx_pplib_cachemgm::storeHash(Array());
@@ -1014,7 +1006,13 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 			//*** Switching to default
 			$cssTemplate = 'macmade';
 		}
+		$this->cObj->cObjGetSingle(
+			$this->conf['csstemplates.'][$cssTemplate],
+			$this->conf['csstemplates.'][$cssTemplate.'.'],
+			'pp_forum->csstemplate'
+		);
 
+		/*
 		tx_pplib_headmgr::addCssContent(
 			$this->cObj->cObjGetSingle(
 				$this->conf['csstemplates.'][$cssTemplate],
@@ -1022,6 +1020,7 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 				'pp_forum->csstemplate'
 			)
 		);
+		*/
 	}
 
 	/**
@@ -1404,7 +1403,7 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 	function recordObject_getClass($type) {
 		/* Declare */
 		$className = null;
-	
+
 		/* Begin */
 		if (isset($this->conf['recordObjects.'][$type])) {
 			$className = $this->conf['recordObjects.'][$type];
@@ -2010,7 +2009,8 @@ class tx_ppforum_rpi1 extends tx_pplib_pibase {
 	 */
 	function callINTPlugin($conf) {
 		//Forcing userFunc propretie
-		$conf['userFunc']='tx_ppforum_pi1->mainCallback';
+		//$conf['userFunc']='tx_ppforum_pi1->mainCallback';
+		$conf['isCallBack'] = true;
 		//Ensure that a INT part can't call another INT part
 		if ($this->_disableINTCallback) {
 			$this->internalLogs['userIntPlugins']--; //Because this is not a real USER_INT and it will increase the counter

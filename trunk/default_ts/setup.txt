@@ -91,58 +91,37 @@ plugin.tx_ppforum_pi1 {
   csstemplates {
 
     //Default template :
-    macmade=COA
-    macmade {
-      10 = FILE
-      10.file = EXT:pp_forum/css_templates/macmade/global.css
+		macmade = PPLIB_CSSFILE
+		macmade {
+			filename (
+				EXT:pp_forum/css_templates/macmade/global.css
+				EXT:pp_forum/css_templates/macmade/forums.css
+				EXT:pp_forum/css_templates/macmade/topics.css
+				EXT:pp_forum/css_templates/macmade/messages.css
+				EXT:pp_forum/css_templates/macmade/users.css
+			)
 
-      20 = FILE
-      20.file = EXT:pp_forum/css_templates/macmade/forums.css
+			minify = 1
+			compileAsScope = template
+		}
 
-      30 = FILE
-      30.file = EXT:pp_forum/css_templates/macmade/topics.css
 
-      40 = FILE
-      40.file = EXT:pp_forum/css_templates/macmade/messages.css
+    green < .macmade
+    green.filename (
+      EXT:pp_forum/css_templates/green/global.css
+      EXT:pp_forum/css_templates/green/forums.css
+      EXT:pp_forum/css_templates/green/topics.css
+      EXT:pp_forum/css_templates/green/messages.css
+    )
 
-      50 = FILE
-      50.file = EXT:pp_forum/css_templates/macmade/users.css
-    }
-
-    green = COA
-    green {
-      10 = FILE
-      10.file = EXT:pp_forum/css_templates/green/global.css
-
-      20 = FILE
-      20.file = EXT:pp_forum/css_templates/green/forums.css
-
-      30 = FILE
-      30.file = EXT:pp_forum/css_templates/green/topics.css
-
-      40 = FILE
-      40.file = EXT:pp_forum/css_templates/green/messages.css
-    }
-
-    //Default template :
-    archetype =COA
-    archetype {
-      10 = FILE
-      10.file = EXT:pp_forum/css_templates/archetype/global.css
-
-      20 = FILE
-      20.file = EXT:pp_forum/css_templates/archetype/forums.css
-
-      30 = FILE
-      30.file = EXT:pp_forum/css_templates/archetype/topics.css
-
-      40 = FILE
-      40.file = EXT:pp_forum/css_templates/archetype/messages.css
-
-      50 = FILE
-      50.file = EXT:pp_forum/css_templates/archetype/users.css
-    }
-
+		archetype < .macmade
+		archetype.filename (
+			EXT:pp_forum/css_templates/archetype/global.css
+			EXT:pp_forum/css_templates/archetype/forums.css
+			EXT:pp_forum/css_templates/archetype/topics.css
+			EXT:pp_forum/css_templates/archetype/messages.css
+			EXT:pp_forum/css_templates/archetype/users.css
+		)
   }
 
 

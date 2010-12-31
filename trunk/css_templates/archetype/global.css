@@ -143,17 +143,17 @@
 }
 
 .tx-ppforum-pi1 .belink-resizable-corner {
-	background-image: url(EXT:pp_forum/res/resizable-corner.png);
+	background-image: url(../../res/resizable-corner.png);
 }
 
 .tx-ppforum-pi1 .pinned-topic {
-	background-image: url(EXT:pp_forum/css_templates/archetype/sticky.gif);
+	background-image: url(sticky.gif);
 	width: 22px;
 	height: 15px;
 }
 
 .tx-ppforum-pi1 .closed-topic {
-	background-image: url(EXT:pp_forum/css_templates/archetype/lock-icon.gif);
+	background-image: url(lock-icon.gif);
 	width: 15px;
 	height: 15px;
 }
@@ -166,13 +166,13 @@
 
 
 .tx-ppforum-pi1 .topic-icon {
-	background-image: url(EXT:pp_forum/css_templates/archetype/square.gif);
+	background-image: url(square.gif);
 	width: 15px;
 	height: 15px;
 }
 
 .tx-ppforum-pi1 img.unread-topic-icon {
-	background-image: url(EXT:pp_forum/css_templates/archetype/square-update.gif);
+	background-image: url(square-update.gif);
 }
 
 /*** BEGIN Tools part */
