@@ -203,7 +203,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		// Plays hook list : Allow to change some field before saving
 		$this->parent->pp_playHookObjList('message_save', $mode, $this);
 
-		$this->mergedData['author'] = $this->author->id;
+		$this->mergedData['author'] = $this->author->getId();
 		$this->mergedData['topic'] = $this->topic->id;
 
 		$result = $this->basic_save();

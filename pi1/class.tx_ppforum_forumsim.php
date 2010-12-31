@@ -161,7 +161,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		}
 		$data['counters'] = $topic->getCounters($topic);
 		$data['conf']['topic-with']='';
-		if ($data['topic']->author->id==$this->parent->currentUser->getId()) {
+		if ($data['topic']->author->getId()==$this->parent->currentUser->getId()) {
 			$data['conf']['topic-with']=$data['topic']->forum->user->displayLight();
 		} else {
 			$data['conf']['topic-with']=$data['topic']->author->displayLight();
@@ -250,13 +250,14 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 
 		$res = false;
 
-		if ($user->id == $topic->author->id) {
+		if ($user->getId() == $topic->author->getId()) {
 			$res = true;
-		} elseif ($user->id == $this->userId) {
+		} elseif ($user->getId() == $this->userId) {
 			$res = true;
 		}
 
-		$res = $res && $user->pmIsVisible($topic->id, 'topic');
+		// Temporary
+		//$res = $res && $user->pmIsVisible($topic->id, 'topic');
 		
 		return $res;
 	}
