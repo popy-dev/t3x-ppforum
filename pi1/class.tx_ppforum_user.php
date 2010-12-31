@@ -466,7 +466,7 @@ class tx_ppforum_user extends tx_pplib_feuser {
 	 */
 	function userCanEdit() {
 		$res=FALSE;
-		if ($this->id && ($this->id==$this->parent->currentUser->id)) {
+		if ($this->id && ($this->id==$this->parent->currentUser->getId())) {
 			$res=TRUE;
 		}
 		return $res;

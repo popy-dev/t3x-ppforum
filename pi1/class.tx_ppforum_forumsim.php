@@ -95,11 +95,11 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return string 
 	 */
 	function db_topicsWhere($nocheck = false) {
-		if ($this->userId == $this->parent->currentUser->id) {
+		if ($this->userId == $this->parent->currentUser->getId()) {
 			$where = '(forum = '.strval($this->id).' OR (forum < 0 AND author = '.strval($this->userId).'))';
 		} else {
-			$where = '((forum = '.strval($this->id).' AND author = '.strval($this->parent->currentUser->id).') OR ' .
-				'(forum = '.strval(-$this->parent->currentUser->id).' AND author = '.strval($this->userId).'))';
+			$where = '((forum = '.strval($this->id).' AND author = '.strval($this->parent->currentUser->getId()).') OR ' .
+				'(forum = '.strval(-$this->parent->currentUser->getId()).' AND author = '.strval($this->userId).'))';
 		}
 
 		if (!$nocheck) {
@@ -161,7 +161,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		}
 		$data['counters'] = $topic->getCounters($topic);
 		$data['conf']['topic-with']='';
-		if ($data['topic']->author->id==$this->parent->currentUser->id) {
+		if ($data['topic']->author->id==$this->parent->currentUser->getId()) {
 			$data['conf']['topic-with']=$data['topic']->forum->user->displayLight();
 		} else {
 			$data['conf']['topic-with']=$data['topic']->author->displayLight();
@@ -303,7 +303,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return void 
 	 */
 	function event_onNewTopic($topicId) {
-		if ($this->parent->currentUser->id==$this->userId) {
+		if ($this->parent->currentUser->getId()==$this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
 			
 			$topic->author->registerNewPm($topicId,'topic');
@@ -322,7 +322,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return void 
 	 */
 	function event_onMessageCreate($topicId,$messageId=0) {
-		if ($this->parent->currentUser->id == $this->userId) {
+		if ($this->parent->currentUser->getId() == $this->userId) {
 			$topic=&$this->parent->getTopicObj($topicId);
 
 			$topic->author->unDeletePm($topicId,'topic');
@@ -375,7 +375,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	function deleteMessage($messageId) {
 		tx_pplib_div::debug($messageId, 'deleteMessage');
 		$message=&$this->parent->getMessageObj($messageId);
-		if ($this->parent->currentUser->id == $this->userId) {
+		if ($this->parent->currentUser->getId() == $this->userId) {
 
 			//** Real delete if other user has already deleted this message
 			if (!$message->author->pmIsVisible($messageId,'message') || !$message->topic->isVisible()) {
@@ -405,7 +405,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 */
 	function deleteTopic($topicId) {
 		$topic=&$this->parent->getTopicObj($topicId);
-		if ($this->parent->currentUser->id == $this->userId) {
+		if ($this->parent->currentUser->getId() == $this->userId) {
 
 			//** Real delete if other user has already deleted this message
 			if (!$topic->author->pmIsVisible($topicId,'topic')) {
@@ -439,7 +439,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return string 
 	 */
 	function getTitleLink() {
-		if ($this->userId==$this->parent->currentUser->id) {
+		if ($this->userId==$this->parent->currentUser->getId()) {
 			$title=$this->parent->pp_getLL('inbox.self.title','Inbox');
 			if ($temp=$this->user->countNewPms()) {
 				$title.=' ['.$temp.']';
@@ -490,7 +490,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return bool 
 	 */
 	function userCanPostInForum() {
-		return $this->userCanWriteInForum() && $this->parent->currentUser->id!=$this->userId;
+		return $this->userCanWriteInForum() && $this->parent->currentUser->getId()!=$this->userId;
 	}
 
 	/**
@@ -512,7 +512,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 	 * @return void 
 	 */
 	function isVisible() {
-		return $this->parent->currentUser->id;
+		return $this->parent->currentUser->getId();
 	}
 
 }

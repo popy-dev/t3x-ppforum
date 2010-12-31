@@ -31,31 +31,15 @@ tx_pplib_div::dynClassLoad('tx_pplib_pibase');
  * @package	TYPO3
  * @subpackage	tx_ppforum
  */
-class tx_ppforum_rpi1 extends tx_pplib2 {
-	/**
-	 * backReference to the mother cObj object (set at call time by cObj itself)
-	 * @access public
-	 * @var &object
-	 */
-	var $cObj = null;
-	/**
-	 * Should be same as classname of the plugin, used for CSS classes, variables
-	 * @access public
-	 * @var string
-	 */
+class tx_ppforum_rpi1 extends tx_pplib_pibase {
 	var $prefixId = 'tx_ppforum_pi1';
-	/**
-	 * Path to the plugin class script relative to extension directory, eg. 'pi1/class.tx_newfaq_pi1.php'
-	 * @access public
-	 * @var string
-	 */
 	var $scriptRelPath = 'pi1/class.tx_ppforum_pi1.php';
-	/**
-	 * The plugin's extension key
-	 * @access public
-	 * @var string
-	 */
 	var $extKey = 'pp_forum';
+	public $piVars = array();
+	public $getVars = array();
+	public $config = array();
+
+
 	/**
 	 * "Current user" object (tx_ppforum_user instance)
 	 * @access public
@@ -163,7 +147,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$viewProfile = isset($this->getVars['viewProfile']) ? intval($this->getVars['viewProfile']) : false;
 			$userProfileId = $editProfile ? $editProfile : $viewProfile;
 			$viewLatests = isset($this->getVars['mode']) ? ($this->getVars['mode'] == 'latest') : false;
-			$viewLatests = $viewLatests && $this->currentUser->id;
+			$viewLatests = $viewLatests && $this->currentUser->getId();
 
 			if ($userProfileId) {
 				$obj = &$this->getUserObj($userProfileId);
@@ -476,7 +460,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 
 			$this->currentUser = &$this->getUserObj($this->getCurrentUser());
 
-			if ($this->currentUser->id && !$this->currentUser->getUserPreference('latestVisitDate')) {
+			if ($this->currentUser->getId() && !$this->currentUser->getUserPreference('latestVisitDate')) {
 				$this->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
 			}
 			$this->autoDisableCache();
@@ -983,7 +967,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 			$this->pp_getLL('user.loguedas', 'Logued as', true).
 			$this->currentUser->displayLight();
 
-		if ($this->currentUser->id) {
+		if ($this->currentUser->getId()) {
 			$content .= ' ('.
 				$this->currentUser->displayLogout() . ' / ' .
 				$this->currentUser->displayEditLink() . ' / ' .
@@ -1184,10 +1168,10 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$id = intval($id);
 		$query = '';
 
-		if ($id == $this->currentUser->id) {
-			$query = '(forum = '.strval(-$id).' OR (forum < 0 AND author = '.strval($this->currentUser->id).'))';
+		if ($id == $this->currentUser->getId()) {
+			$query = '(forum = '.strval(-$id).' OR (forum < 0 AND author = '.strval($this->currentUser->getId()).'))';
 		} else {
-			$query = '(forum = '.strval(-$id).' AND author = '.strval($this->currentUser->id).')';
+			$query = '(forum = '.strval(-$id).' AND author = '.strval($this->currentUser->getId()).')';
 		}
 		$res = $this->db_query(
 			'uid',
@@ -1606,7 +1590,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 				$res = &$this->cache->getFromCache($cacheKey);
 
 				// Delayed object
-				if (!$res->id) {
+				if (!$res->getId()) {
 					$res->loadData($row, true);
 				}
 			}
@@ -1851,7 +1835,7 @@ class tx_ppforum_rpi1 extends tx_pplib2 {
 		$debug = false;
 		//$debug = true;
 
-		if (isset($l[$queryId]) || $debug) {
+		if (0 && (isset($l[$queryId]) || $debug)) {
 			t3lib_div::debug(array(
 				'lastBuiltQuery' => $query,
 				'queryId' => $queryId,
