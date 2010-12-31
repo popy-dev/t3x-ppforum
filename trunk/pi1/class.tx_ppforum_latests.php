@@ -193,11 +193,21 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 	 */
 	function db_getTopicListQuery($limit = '', $options = array()) {
 		/* Declare */
-		$latestVisitDate = $this->parent->currentUser->getUserPreference('latestVisitDate');
-		$latestVisitDate = max($latestVisitDate, intval($this->parent->currentUser->data['crdate']));
-		$preloadedTopicList = tx_pplib_div::forceArray($this->parent->currentUser->getUserPreference('preloadedTopicList'));
+		$forumKey = t3lib_div::shortMD5($this->parent->config['pidFullList']);
+		$forumInfos = $this->parent->currentUser->getUserPreference('latest_' . $forumKey);
 
 		/* Begin */
+		if (is_array($forumInfos)) {
+			$latestVisitDate = &$forumInfos['latestVisitDate'];
+			$preloadedTopicList = &$forumInfos['preloadedTopicList'];
+		} else {
+			//*** Back compat
+			$latestVisitDate = $this->parent->currentUser->getUserPreference('latestVisitDate');
+			$preloadedTopicList = tx_pplib_div::forceArray($this->parent->currentUser->getUserPreference('preloadedTopicList'));
+			$latestVisitDate = max($latestVisitDate, intval($this->parent->currentUser->data['crdate']));
+		}
+
+
 		$topicList = $this->db_getTopicListQuery_raw($latestVisitDate, $preloadedTopicList);
 		$topicListIds = array();
 		foreach ($topicList as $v) {
@@ -240,8 +250,8 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 
 		//arsort($preloadedTopicList);
 
-		$this->parent->currentUser->setUserPreference('preloadedTopicList', $preloadedTopicList);
-		$this->parent->currentUser->setUserPreference('latestVisitDate', $GLOBALS['SIM_EXEC_TIME']);
+		$latestVisitDate = $GLOBALS['SIM_EXEC_TIME'];
+		$this->parent->currentUser->setUserPreference('latest_' . $forumKey, $forumInfos);
 
 
 		return array_keys($preloadedTopicList);

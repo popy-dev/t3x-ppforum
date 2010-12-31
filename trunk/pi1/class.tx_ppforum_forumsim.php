@@ -423,10 +423,7 @@ class tx_ppforum_forumsim extends tx_ppforum_forum {
 		$this->parent->currentUser->deletePm($topicId,'topic');
 
 		//** Unread message should not be counted there !
-		$messageList = $this->db_getMessageList(array(
-			'nocheck' => true,
-			'clearCache' => true,
-		));
+		$messageList = $topic->db_getMessageList();
 
 		foreach ($messageList as $messageId) {
 			$this->parent->currentUser->viewPm($messageId,'message');
