@@ -1173,7 +1173,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			$content.='</div>';
 		}
 
-		if ($this->id && intval($this->id) && $this->parent->currentUser->id) {
+		if ($this->id && intval($this->id) && $this->parent->currentUser->getId()) {
 			
 			// Step 1 : recalculate read / unread messages if needed
 			if ($this->parent->currentUser->getUserPreference('latestVisitDate') <= intval($this->data['tstamp'])) {
@@ -1275,7 +1275,7 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			if (!$this->id) {
 				//Mode "new topic"
 				$res=TRUE;
-			} elseif ($this->parent->currentUser->id && ($this->data['author']==$this->parent->currentUser->id)) {
+			} elseif ($this->parent->currentUser->getId() && ($this->data['author']==$this->parent->currentUser->getId())) {
 				//User is author
 				# /!\ User based check /!\
 				$res=TRUE;

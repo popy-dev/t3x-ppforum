@@ -453,7 +453,7 @@ class tx_ppforum_forum extends tx_ppforum_base {
 		/* Begin */
 		if ($mode != 'inherit' || !$this->id) { //Mode erase (forum 0 is always set to erase)
 			if (count($list)) {
-				if ($user->id && count(array_intersect($list, array_keys($user->userGroups)))) {
+				if ($user->getId() && count(array_intersect($list, array_keys($user->userGroups)))) {
 					$res = true;
 				}
 			} elseif ($noneIsEverybody) {

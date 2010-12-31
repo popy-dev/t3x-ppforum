@@ -904,7 +904,7 @@ class tx_ppforum_message extends tx_ppforum_base {
 		}
 
 		//*** Author signature
-		if ($this->author->id && !$this->parent->config['.lightMode']) {
+		if (is_object($this->author) && $this->author->getId() && !$this->parent->config['.lightMode']) {
 			$profilData = $this->author->getUserPreference('profil');
 			if (in_array($data['mode'], array('view','preview')) && trim($profilData['signature'])) {
 				// Apply parser
