@@ -1182,11 +1182,12 @@ class tx_ppforum_topic extends tx_ppforum_message {
 			}
 
 			// Step 2 : Get unread topic list and remove current from them
-			$topicList = $this->parent->currentUser->getUserPreference('preloadedTopicList');
-			if (isset($topicList[$this->id])) {
-				unset($topicList[$this->id]);
+			$forumKey = t3lib_div::shortMD5($this->parent->config['pidFullList']);
+			$forumInfos = $this->parent->currentUser->getUserPreference('latest_' . $forumKey);
+			if (isset($forumInfos['preloadedTopicList'][$this->id])) {
+				unset($forumInfos['preloadedTopicList'][$this->id]);
 			}
-			$this->parent->currentUser->setUserPreference('preloadedTopicList', $topicList);
+			$this->parent->currentUser->setUserPreference('latest_' . $forumKey, $forumInfos);
 		}
 
 		return $content;

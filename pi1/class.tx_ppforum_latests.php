@@ -250,7 +250,7 @@ class tx_ppforum_latests extends tx_ppforum_forum {
 
 		//arsort($preloadedTopicList);
 
-		$latestVisitDate = $GLOBALS['SIM_EXEC_TIME'];
+		$forumInfos['latestVisitDate'] = $GLOBALS['SIM_EXEC_TIME'];
 		$this->parent->currentUser->setUserPreference('latest_' . $forumKey, $forumInfos);
 
 
